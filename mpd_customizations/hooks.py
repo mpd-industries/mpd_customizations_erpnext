@@ -5,6 +5,77 @@ app_description = "Customizations For MPD Industries"
 app_email = "ayush@mpdindustries.com"
 app_license = "mit"
 
+fixtures = [
+    {
+        "dt": "Role",
+        "filters": [
+            ["role_name", "in", ["Master Approver"]]
+        ]
+    },
+    {
+        "dt": "Workflow State",
+        "filters": [
+            ["workflow_state_name", "in", [
+                "Draft",
+                "Pending AI Review",
+                "AI Approved",
+                "AI Flagged",
+                "Pending MA Review",
+                "Approved",
+                "Rejected",
+                "Retired",
+            ]]
+        ]
+    },
+    {
+        "dt": "Workflow",
+        "filters": [
+            ["name", "in", ["Item Approval Workflow"]]
+        ]
+    },
+]
+
+after_install = "mpd_customizations.setup.after_install"
+after_migrate = ["mpd_customizations.setup.after_migrate"]
+
+doc_events = {
+    "Item": {
+        "on_update": (
+            "mpd_customizations.masters.item_approval.on_update"
+        ),
+    },
+    "Purchase Order": {
+        "on_submit": (
+            "mpd_customizations.masters.transaction_checks.check_items"
+        ),
+    },
+    "Purchase Receipt": {
+        "validate": (
+            "mpd_customizations.masters.transaction_checks.check_items"
+        ),
+    },
+    "Request for Quotation": {
+        "validate": (
+            "mpd_customizations.masters.transaction_checks.check_items"
+        ),
+    },
+    "Supplier Quotation": {
+        "validate": (
+            "mpd_customizations.masters.transaction_checks.check_items"
+        ),
+    },
+    "Sales Order": {
+        "on_submit": (
+            "mpd_customizations.masters.transaction_checks.check_items"
+        ),
+    },
+    "Sales Invoice": {
+        "on_submit": (
+            "mpd_customizations.masters.transaction_checks.check_items"
+        ),
+    },
+}
+
 # Apps
 # ------------------
 

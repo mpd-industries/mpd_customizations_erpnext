@@ -1,0 +1,3 @@
+include README.md license.txt pyproject.toml requirements.txt
+recursive-include mpd_customizations *.py *.json *.js *.html *.css *.md *.txt
+global-exclude __pycache__ *.py[cod] *~

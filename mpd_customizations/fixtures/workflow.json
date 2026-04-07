@@ -1,0 +1,144 @@
+[
+    {
+        "doctype": "Workflow",
+        "name": "Item Approval Workflow",
+        "workflow_name": "Item Approval Workflow",
+        "document_type": "Item",
+        "is_active": 1,
+        "override_status": 0,
+        "send_email_alert": 1,
+        "workflow_state_field": "workflow_state",
+        "states": [
+            {
+                "doctype": "Workflow Document State",
+                "state": "Draft",
+                "doc_status": "0",
+                "style": "Secondary",
+                "allow_edit": "All"
+            },
+            {
+                "doctype": "Workflow Document State",
+                "state": "Pending AI Review",
+                "doc_status": "0",
+                "style": "Warning",
+                "allow_edit": "Master Approver"
+            },
+            {
+                "doctype": "Workflow Document State",
+                "state": "AI Approved",
+                "doc_status": "0",
+                "style": "Success",
+                "allow_edit": "All"
+            },
+            {
+                "doctype": "Workflow Document State",
+                "state": "AI Flagged",
+                "doc_status": "0",
+                "style": "Danger",
+                "allow_edit": "Master Approver"
+            },
+            {
+                "doctype": "Workflow Document State",
+                "state": "Pending MA Review",
+                "doc_status": "0",
+                "style": "Warning",
+                "allow_edit": "Master Approver"
+            },
+            {
+                "doctype": "Workflow Document State",
+                "state": "Approved",
+                "doc_status": "1",
+                "style": "Success",
+                "allow_edit": "Master Approver"
+            },
+            {
+                "doctype": "Workflow Document State",
+                "state": "Rejected",
+                "doc_status": "0",
+                "style": "Danger",
+                "allow_edit": "All"
+            },
+            {
+                "doctype": "Workflow Document State",
+                "state": "Retired",
+                "doc_status": "2",
+                "style": "Secondary",
+                "allow_edit": "Master Approver"
+            }
+        ],
+        "transitions": [
+            {
+                "doctype": "Workflow Transition",
+                "state": "Draft",
+                "action": "Submit for Review",
+                "next_state": "Pending AI Review",
+                "allowed": "All",
+                "allow_self_approval": 1
+            },
+            {
+                "doctype": "Workflow Transition",
+                "state": "Pending AI Review",
+                "action": "AI Approve",
+                "next_state": "AI Approved",
+                "allowed": "Master Approver",
+                "allow_self_approval": 1
+            },
+            {
+                "doctype": "Workflow Transition",
+                "state": "Pending AI Review",
+                "action": "AI Flag",
+                "next_state": "Pending MA Review",
+                "allowed": "Master Approver",
+                "allow_self_approval": 1
+            },
+            {
+                "doctype": "Workflow Transition",
+                "state": "AI Approved",
+                "action": "Approve",
+                "next_state": "Approved",
+                "allowed": "Master Approver",
+                "allow_self_approval": 1
+            },
+            {
+                "doctype": "Workflow Transition",
+                "state": "AI Approved",
+                "action": "Reject",
+                "next_state": "Rejected",
+                "allowed": "Master Approver",
+                "allow_self_approval": 1
+            },
+            {
+                "doctype": "Workflow Transition",
+                "state": "Pending MA Review",
+                "action": "Approve",
+                "next_state": "Approved",
+                "allowed": "Master Approver",
+                "allow_self_approval": 1
+            },
+            {
+                "doctype": "Workflow Transition",
+                "state": "Pending MA Review",
+                "action": "Reject",
+                "next_state": "Rejected",
+                "allowed": "Master Approver",
+                "allow_self_approval": 1
+            },
+            {
+                "doctype": "Workflow Transition",
+                "state": "Approved",
+                "action": "Retire",
+                "next_state": "Retired",
+                "allowed": "Master Approver",
+                "allow_self_approval": 1
+            },
+            {
+                "doctype": "Workflow Transition",
+                "state": "Rejected",
+                "action": "Resubmit",
+                "next_state": "Pending AI Review",
+                "allowed": "All",
+                "allow_self_approval": 1
+            }
+        ]
+    }
+]

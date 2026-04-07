@@ -1,0 +1,50 @@
+[
+	{
+		"doctype": "Workflow State",
+		"name": "Draft",
+		"workflow_state_name": "Draft",
+		"style": "Secondary"
+	},
+	{
+		"doctype": "Workflow State",
+		"name": "Pending AI Review",
+		"workflow_state_name": "Pending AI Review",
+		"style": "Warning"
+	},
+	{
+		"doctype": "Workflow State",
+		"name": "AI Approved",
+		"workflow_state_name": "AI Approved",
+		"style": "Success"
+	},
+	{
+		"doctype": "Workflow State",
+		"name": "AI Flagged",
+		"workflow_state_name": "AI Flagged",
+		"style": "Danger"
+	},
+	{
+		"doctype": "Workflow State",
+		"name": "Pending MA Review",
+		"workflow_state_name": "Pending MA Review",
+		"style": "Warning"
+	},
+	{
+		"doctype": "Workflow State",
+		"name": "Approved",
+		"workflow_state_name": "Approved",
+		"style": "Success"
+	},
+	{
+		"doctype": "Workflow State",
+		"name": "Rejected",
+		"workflow_state_name": "Rejected",
+		"style": "Danger"
+	},
+	{
+		"doctype": "Workflow State",
+		"name": "Retired",
+		"workflow_state_name": "Retired",
+		"style": "Secondary"
+	}
+]
