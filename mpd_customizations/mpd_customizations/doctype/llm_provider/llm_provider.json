@@ -1,0 +1,90 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-07 14:21:43.319670",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "provider_name",
+  "provider_key",
+  "api_key",
+  "enabled",
+  "rate_limit_rpm",
+  "fallback_order",
+  "section_break_hhwu",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "provider_name",
+   "fieldtype": "Data",
+   "label": "Provider Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "provider_key",
+   "fieldtype": "Select",
+   "label": "Provider Key",
+   "options": "anthropic\nopenai\ngoogle\nollama\nopenrouter"
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "rate_limit_rpm",
+   "fieldtype": "Int",
+   "label": "Rate Limit (RPM)"
+  },
+  {
+   "fieldname": "fallback_order",
+   "fieldtype": "Int",
+   "label": "Fallback Order"
+  },
+  {
+   "fieldname": "section_break_hhwu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-07 14:25:44.333340",
+ "modified_by": "Administrator",
+ "module": "Mpd Customizations",
+ "name": "LLM Provider",
+ "owner": "Administrator",
+ "title_field": "provider_name",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
