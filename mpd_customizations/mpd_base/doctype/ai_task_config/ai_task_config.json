@@ -1,0 +1,120 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "Prompt",
+ "creation": "2026-04-11 11:34:57.783045",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "task_key",
+  "task_label",
+  "description",
+  "llm_provider",
+  "model",
+  "temperature",
+  "max_tokens",
+  "system_prompt",
+  "is_active",
+  "parameters"
+ ],
+ "fields": [
+  {
+   "description": "Slug used in code e.g. item_classification",
+   "fieldname": "task_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Task Key",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "Human name e.g. \"Item Classification\"",
+   "fieldname": "task_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Task Label",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "llm_provider",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "LLM Provider",
+   "options": "LLM Provider",
+   "reqd": 1
+  },
+  {
+   "description": "e.g. openrouter/anthropic/claude-3.5-sonnet",
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Model",
+   "reqd": 1
+  },
+  {
+   "default": "0.1",
+   "fieldname": "temperature",
+   "fieldtype": "Float",
+   "label": "Temperature"
+  },
+  {
+   "default": "2000",
+   "fieldname": "max_tokens",
+   "fieldtype": "Int",
+   "label": "Max Tokens"
+  },
+  {
+   "description": "Editable without deployment",
+   "fieldname": "system_prompt",
+   "fieldtype": "Long Text",
+   "label": "System Prompt"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "parameters",
+   "fieldtype": "Table",
+   "label": "Parameters",
+   "options": "AI Task Config Parameter"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-11 11:34:57.783045",
+ "modified_by": "Administrator",
+ "module": "mpd_base",
+ "name": "AI Task Config",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "task_label"
+}

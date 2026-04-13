@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-11 11:32:03.802185",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "parameter_key",
+  "parameter_value",
+  "description"
+ ],
+ "fields": [
+  {
+   "description": "e.g. confidence_threshold",
+   "fieldname": "parameter_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Parameter Key"
+  },
+  {
+   "description": "Always stored as string, parsed in code",
+   "fieldname": "parameter_value",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Parameter Value"
+  },
+  {
+   "description": "What this parameter does",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-04-11 11:33:54.514900",
+ "modified_by": "Administrator",
+ "module": "mpd_base",
+ "name": "AI Task Config Parameter",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

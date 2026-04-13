@@ -45,6 +45,7 @@ app_license = "mit"
 # include js in doctype views
 doctype_js = {
     "Item": "public/js/item_custom.js"
+
 }
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
@@ -250,3 +251,5 @@ doctype_js = {
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+after_install = "mpd_customizations.setup.after_install"
+after_migrate = "mpd_customizations.setup.after_migrate"

@@ -1,0 +1,402 @@
+{
+ "actions": [],
+ "autoname": "ITR-.YYYY.-.#####",
+ "creation": "2026-04-11 12:13:53.303828",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_request_details",
+  "status",
+  "requested_by",
+  "requester_description",
+  "column_break_hints",
+  "gst_hsn_code",
+  "stock_uom",
+  "is_stock_item",
+  "is_fixed_asset",
+  "tally_name",
+  "tally_alias",
+  "legacy_material_code",
+  "reference_doctype",
+  "reference_name",
+  "section_break_attachments",
+  "attach_documents",
+  "dedup_check_done",
+  "check_similar_items_btn",
+  "generate_ai_btn",
+  "section_break_ai_suggestion",
+  "create_item_btn",
+  "ai_item_name_suggestion",
+  "ai_prefix_suggestion",
+  "ai_sub_category_suggestion",
+  "ai_item_group_suggestion",
+  "ai_asset_category_suggestion",
+  "ai_solids_suffix_suggestion",
+  "ai_hsn_suggestion",
+  "ai_hsn_note",
+  "ai_uom_suggestion",
+  "ai_review_brief",
+  "ai_confidence_score",
+  "ai_duplicate_warning",
+  "ai_reviewed_on",
+  "ai_model_used",
+  "section_break_ai_snapshot",
+  "ai_snapshot",
+  "section_break_ai_new_suggestions",
+  "ai_suggested_new_prefix",
+  "ai_suggested_new_prefix_name",
+  "ai_suggested_new_item_group",
+  "section_break_approval",
+  "created_item_code",
+  "ma_review_note",
+  "approved_by",
+  "approved_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_request_details",
+   "fieldtype": "Section Break",
+   "label": "Item Details"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPending Dedup Check\nDedup Confirmed\nPending AI Review\nAI Reviewed\nDuplicate Flagged\nPending MA Approval\nApproved\nRejected",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "__user",
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "description": "Describe the item \u2014 include grade, purity, specification, intended use",
+   "fieldname": "requester_description",
+   "fieldtype": "Text",
+   "label": "Description",
+   "placeholder": "Describe the item \u2014 include grade, purity, specification, intended use",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_hints",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Optional at request stage",
+   "fieldname": "gst_hsn_code",
+   "fieldtype": "Data",
+   "label": "HSN Code"
+  },
+  {
+   "description": "Default unit for the new item. Overrides AI suggestion if set.",
+   "fieldname": "stock_uom",
+   "fieldtype": "Link",
+   "label": "Stock UOM",
+   "options": "UOM"
+  },
+  {
+   "default": "1",
+   "description": "Defaulted to yes \u2014 uncheck if not a stock item",
+   "fieldname": "is_stock_item",
+   "fieldtype": "Check",
+   "label": "Is Stock Item"
+  },
+  {
+   "default": "0",
+   "description": "Check if this is a fixed asset",
+   "fieldname": "is_fixed_asset",
+   "fieldtype": "Check",
+   "label": "Is Fixed Asset"
+  },
+  {
+   "description": "Legacy Tally item code e.g. ORM0010",
+   "fieldname": "tally_name",
+   "fieldtype": "Data",
+   "label": "Tally Name"
+  },
+  {
+   "description": "Tally alias or supplier code",
+   "fieldname": "tally_alias",
+   "fieldtype": "Data",
+   "label": "Tally Alias"
+  },
+  {
+   "description": "Any other legacy code",
+   "fieldname": "legacy_material_code",
+   "fieldtype": "Data",
+   "label": "Legacy Material Code"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Data",
+   "label": "Reference DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Data",
+   "label": "Reference Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_attachments",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Invoices, datasheets, MSDS, photos. PDF/PNG/JPG.",
+   "fieldname": "attach_documents",
+   "fieldtype": "Attach",
+   "label": "Attach Documents"
+  },
+  {
+   "default": "0",
+   "fieldname": "dedup_check_done",
+   "fieldtype": "Check",
+   "label": "Dedup Check Done",
+   "read_only": 1
+  },
+  {
+   "fieldname": "check_similar_items_btn",
+   "fieldtype": "Button",
+   "label": "Check for Similar Items",
+   "depends_on": "eval:!doc.dedup_check_done"
+  },
+  {
+   "fieldname": "generate_ai_btn",
+   "fieldtype": "Button",
+   "label": "Generate AI Suggestion",
+   "depends_on": "eval:doc.dedup_check_done && doc.status === 'Dedup Confirmed'"
+  },
+  {
+   "fieldname": "section_break_ai_suggestion",
+   "fieldtype": "Section Break",
+   "label": "AI Suggestion",
+   "depends_on": "eval:doc.ai_reviewed_on"
+  },
+  {
+   "fieldname": "create_item_btn",
+   "fieldtype": "Button",
+   "label": "Create Item",
+   "depends_on": "eval:doc.status === 'AI Reviewed'"
+  },
+  {
+   "fieldname": "ai_item_name_suggestion",
+   "fieldtype": "Data",
+   "label": "Suggested Item Name"
+  },
+  {
+   "fieldname": "ai_prefix_suggestion",
+   "fieldtype": "Link",
+   "label": "Suggested Prefix",
+   "options": "Item Category Code"
+  },
+  {
+   "description": "Only for PKG, AST",
+   "fieldname": "ai_sub_category_suggestion",
+   "fieldtype": "Data",
+   "label": "Suggested Sub-Category"
+  },
+  {
+   "fieldname": "ai_item_group_suggestion",
+   "fieldtype": "Link",
+   "label": "Suggested Item Group",
+   "options": "Item Group"
+  },
+  {
+   "description": "Only if fixed asset",
+   "fieldname": "ai_asset_category_suggestion",
+   "fieldtype": "Link",
+   "label": "Suggested Asset Category",
+   "options": "Asset Category"
+  },
+  {
+   "description": "Only for resin families",
+   "fieldname": "ai_solids_suffix_suggestion",
+   "fieldtype": "Data",
+   "label": "Solids Suffix"
+  },
+  {
+   "description": "AI-recommended Indian GST HSN (digits only). Copy into HSN Code if you agree.",
+   "fieldname": "ai_hsn_suggestion",
+   "fieldtype": "Data",
+   "label": "Suggested HSN Code"
+  },
+  {
+   "description": "Shown when AI suggests a different HSN than entered, or to justify the pick.",
+   "fieldname": "ai_hsn_note",
+   "fieldtype": "Small Text",
+   "label": "HSN Note",
+   "read_only": 1
+  },
+  {
+   "description": "AI-suggested Stock UOM. Must match a UOM name in the system.",
+   "fieldname": "ai_uom_suggestion",
+   "fieldtype": "Link",
+   "label": "Suggested Stock UOM",
+   "options": "UOM"
+  },
+  {
+   "fieldname": "ai_review_brief",
+   "fieldtype": "Small Text",
+   "label": "AI Review Brief",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_confidence_score",
+   "fieldtype": "Float",
+   "label": "Confidence Score",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_duplicate_warning",
+   "fieldtype": "Small Text",
+   "label": "Duplicate Warning",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_reviewed_on",
+   "fieldtype": "Datetime",
+   "label": "AI Reviewed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_model_used",
+   "fieldtype": "Data",
+   "label": "Model Used",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ai_snapshot",
+   "fieldtype": "Section Break",
+   "label": "AI Snapshot",
+   "depends_on": "eval:doc.ai_reviewed_on"
+  },
+  {
+   "fieldname": "ai_snapshot",
+   "fieldtype": "Long Text",
+   "label": "AI Snapshot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ai_new_suggestions",
+   "fieldtype": "Section Break",
+   "label": "AI New Category Suggestions",
+   "depends_on": "eval:doc.ai_suggested_new_prefix || doc.ai_suggested_new_item_group"
+  },
+  {
+   "description": "Prefix code the AI suggests creating if none match",
+   "fieldname": "ai_suggested_new_prefix",
+   "fieldtype": "Data",
+   "label": "Suggested New Prefix Code",
+   "read_only": 1
+  },
+  {
+   "description": "Full name for the suggested new prefix",
+   "fieldname": "ai_suggested_new_prefix_name",
+   "fieldtype": "Data",
+   "label": "Suggested New Prefix Name",
+   "read_only": 1
+  },
+  {
+   "description": "Item group the AI suggests creating if none match",
+   "fieldname": "ai_suggested_new_item_group",
+   "fieldtype": "Data",
+   "label": "Suggested New Item Group",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_approval",
+   "fieldtype": "Section Break",
+   "label": "Approval",
+   "depends_on": "eval:['Approved','Rejected','Pending MA Approval','Duplicate Flagged'].includes(doc.status)"
+  },
+  {
+   "description": "Set on approval.",
+   "fieldname": "created_item_code",
+   "fieldtype": "Link",
+   "label": "Created Item Code",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "description": "Required on reject",
+   "fieldname": "ma_review_note",
+   "fieldtype": "Small Text",
+   "label": "MA Review Note"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-11 16:08:22.925988",
+ "modified_by": "Administrator",
+ "module": "mpd_base",
+ "name": "Item Request",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Master Approver",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,152 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:prefix",
+ "creation": "2026-04-11 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "prefix",
+  "full_name",
+  "domain",
+  "description",
+  "example_code",
+  "example_item_name",
+  "requires_solids_suffix",
+  "has_sub_category",
+  "sub_category_options",
+  "llm_guidance_notes",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "description": "Name field. 3 letters e.g. SOL",
+   "fieldname": "prefix",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Prefix",
+   "length": 3,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "e.g. \"Solvent (aromatic, aliphatic...)\"",
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Full Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Domain",
+   "options": "Chemicals\nResins\nPackaging\nHardware\nFixed Assets\nServices\nOther",
+   "reqd": 1
+  },
+  {
+   "description": "What belongs here. Fed directly to LLM.",
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
+  },
+  {
+   "description": "e.g. SOL-0001",
+   "fieldname": "example_code",
+   "fieldtype": "Data",
+   "label": "Example Code"
+  },
+  {
+   "description": "e.g. \"Xylene Mix, Min 98%\"",
+   "fieldname": "example_item_name",
+   "fieldtype": "Data",
+   "label": "Example Item Name"
+  },
+  {
+   "default": "0",
+   "description": "Yes for ALK, PES, PAM etc.",
+   "fieldname": "requires_solids_suffix",
+   "fieldtype": "Check",
+   "label": "Requires Solids Suffix"
+  },
+  {
+   "default": "0",
+   "description": "Yes for PKG, AST",
+   "fieldname": "has_sub_category",
+   "fieldtype": "Check",
+   "label": "Has Sub Category"
+  },
+  {
+   "description": "Comma separated e.g. DRM,CAN,CRB",
+   "fieldname": "sub_category_options",
+   "fieldtype": "Small Text",
+   "label": "Sub Category Options"
+  },
+  {
+   "description": "Extra hints for the LLM",
+   "fieldname": "llm_guidance_notes",
+   "fieldtype": "Text",
+   "label": "LLM Guidance Notes"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Is Active"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-11 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "mpd_base",
+ "name": "Item Category Code",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Master Approver",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "full_name"
+}
