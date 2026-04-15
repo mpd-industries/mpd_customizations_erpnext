@@ -141,6 +141,12 @@ doctype_js = {
 # ---------------
 # Hook on document methods and events
 
+doc_events = {
+	"Item": {
+		"on_trash": "mpd_customizations.mpd_base.item_ai.item_hooks.on_trash"
+	}
+}
+
 # doc_events = {
 # 	"*": {
 # 		"on_update": "method",

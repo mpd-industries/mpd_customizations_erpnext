@@ -42,6 +42,10 @@ class ItemRequest(Document):
                 self.status = "Pending MA Approval"
                 return
 
+    def on_trash(self):
+        if self.created_item_code:
+            frappe.db.set_value("Item", self.created_item_code, "custom_item_request", None)
+
     def rebuild_item_index(self):
         """Called after Item is created on approval."""
         build_search_index()
