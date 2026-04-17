@@ -442,6 +442,9 @@ def _build_and_insert_item(doc):
     stock_uom = _resolve_stock_uom_for_item(doc)
     gst_link = _resolve_gst_hsn_link_for_item(doc)
 
+    if doc.is_fixed_asset and not doc.ai_asset_category_suggestion:
+        frappe.throw("Asset Category is required for Fixed Asset items — AI suggestion is missing.")
+
     item = frappe.get_doc({
         "doctype":           "Item",
         "item_code":         item_code,
@@ -453,6 +456,7 @@ def _build_and_insert_item(doc):
         "stock_uom":         stock_uom,
         "purchase_uom":      stock_uom,
         "gst_hsn_code":      gst_link,
+        "asset_category":    doc.ai_asset_category_suggestion or None,
     })
 
     item.custom_item_request = doc.name
