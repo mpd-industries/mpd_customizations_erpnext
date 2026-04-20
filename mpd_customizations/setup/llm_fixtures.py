@@ -6,13 +6,14 @@ from mpd_customizations.setup.item_classification_prompt import ITEM_CLASSIFICAT
 
 
 def seed_llm_fixtures():
-    """OpenRouter provider + item_classification task. Idempotent — skips if rows exist."""
+    """OpenRouter provider + item_classification + meeting_note_extraction tasks. Idempotent."""
     if not frappe.db.exists("DocType", "LLM Provider"):
         return
     _seed_openrouter_provider()
     _seed_item_classification_config()
+    _seed_meeting_note_extraction_config()
     frappe.db.commit()
-    print("Seeded LLM fixtures (OpenRouter + item_classification)")
+    print("Seeded LLM fixtures (OpenRouter + item_classification + meeting_note_extraction)")
 
 
 def sync_item_classification_system_prompt_from_code():
@@ -59,5 +60,41 @@ def _seed_item_classification_config():
             {"parameter_key": "confidence_threshold", "parameter_value": "0.85"},
             {"parameter_key": "max_candidates", "parameter_value": "5"},
         ],
+    })
+    doc.insert(ignore_permissions=True)
+
+
+def _seed_meeting_note_extraction_config():
+    """
+    Seeds an AI Task Config for meeting note extraction.
+
+    Uses the existing OpenRouter provider. Model is read from frappe.conf
+    (openrouter_model) if set, otherwise defaults to claude-sonnet-4-6.
+    Skips silently if OpenRouter provider doesn't exist yet.
+    """
+    if frappe.db.exists("AI Task Config", "meeting_note_extraction"):
+        return
+    if not frappe.db.exists("LLM Provider", "OpenRouter"):
+        return
+
+    model = (
+        frappe.conf.get("openrouter_model")
+        or "openrouter/anthropic/claude-sonnet-4-6"
+    )
+
+    doc = frappe.get_doc({
+        "doctype": "AI Task Config",
+        "name": "meeting_note_extraction",
+        "task_key": "meeting_note_extraction",
+        "task_label": "Meeting Note Action Extraction",
+        "description": (
+            "Analyses meeting transcripts and creates/updates project tasks. "
+            "Change model or provider here without any code changes."
+        ),
+        "llm_provider": "OpenRouter",
+        "model": model,
+        "temperature": 0.2,
+        "max_tokens": 4000,
+        "is_active": 1,
     })
     doc.insert(ignore_permissions=True)

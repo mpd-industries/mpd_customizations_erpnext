@@ -10,6 +10,8 @@ dynamic = ["version"]
 dependencies = [
     "litellm==1.83.4",
     "scikit-learn==1.8.0",
+    "mcp>=1.0",
+    "sarvamai==0.1.28",
     # "frappe~=15.0.0" # Installed and managed by bench.
 ]
 

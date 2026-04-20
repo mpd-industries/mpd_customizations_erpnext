@@ -1,0 +1,151 @@
+{
+ "actions": [],
+ "autoname": "format:MN-{YYYY}-{#####}",
+ "creation": "2026-04-20 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "project",
+  "meeting_date",
+  "status",
+  "section_attendees",
+  "attendees",
+  "section_open_tasks",
+  "project_tasks_html",
+  "section_recording",
+  "transcript",
+  "audio_file",
+  "section_summary",
+  "meeting_summary",
+  "section_extraction_log",
+  "extraction_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1
+  },
+  {
+   "default": "now",
+   "fieldname": "meeting_date",
+   "fieldtype": "Datetime",
+   "label": "Meeting Date",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nTranscribing\nProcessing\nReview\nCompleted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_attendees",
+   "fieldtype": "Section Break",
+   "label": "Attendees"
+  },
+  {
+   "fieldname": "attendees",
+   "fieldtype": "Table",
+   "label": "Attendees",
+   "options": "Meeting Note Attendee"
+  },
+  {
+   "collapsible": 0,
+   "depends_on": "eval:doc.project",
+   "fieldname": "section_open_tasks",
+   "fieldtype": "Section Break",
+   "label": "Open Tasks"
+  },
+  {
+   "fieldname": "project_tasks_html",
+   "fieldtype": "HTML",
+   "label": "Project Tasks"
+  },
+  {
+   "fieldname": "section_recording",
+   "fieldtype": "Section Break",
+   "label": "Recording"
+  },
+  {
+   "fieldname": "transcript",
+   "fieldtype": "Long Text",
+   "label": "Transcript"
+  },
+  {
+   "fieldname": "audio_file",
+   "fieldtype": "Attach",
+   "label": "Audio File",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.meeting_summary",
+   "fieldname": "section_summary",
+   "fieldtype": "Section Break",
+   "label": "Meeting Summary"
+  },
+  {
+   "fieldname": "meeting_summary",
+   "fieldtype": "Long Text",
+   "label": "Meeting Summary",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_extraction_log",
+   "fieldtype": "Section Break",
+   "label": "Extraction Log"
+  },
+  {
+   "fieldname": "extraction_log",
+   "fieldtype": "Long Text",
+   "label": "Extraction Log",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-04-20 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Meeting Notes",
+ "name": "Meeting Note",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Employee",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Project Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "meeting_date",
+ "sort_order": "DESC",
+ "title_field": "title",
+ "track_changes": 1
+}

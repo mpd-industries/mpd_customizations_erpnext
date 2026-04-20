@@ -44,8 +44,9 @@ app_license = "mit"
 
 # include js in doctype views
 doctype_js = {
-    "Item": "public/js/item_custom.js"
-
+    "Item": "public/js/item_custom.js",
+    "Meeting Note": "meeting_notes/doctype/meeting_note/meeting_note.js",
+    "Project": "public/js/project_custom.js",
 }
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
@@ -155,26 +156,23 @@ doc_events = {
 # 	}
 # }
 
+# Fixtures
+# --------
+
+fixtures = [
+    {"dt": "Custom Field", "filters": [["dt", "in", ["Task"]]]},
+]
+
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"mpd_customizations.tasks.all"
-# 	],
-# 	"daily": [
-# 		"mpd_customizations.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"mpd_customizations.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"mpd_customizations.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"mpd_customizations.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+    "cron": {
+        "*/15 * * * *": [
+            "mpd_customizations.meeting_notes.action_extraction.pipeline.reset_stuck_jobs"
+        ]
+    }
+}
 
 # Testing
 # -------
