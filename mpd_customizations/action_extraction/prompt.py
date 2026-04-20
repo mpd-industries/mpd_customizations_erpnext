@@ -76,6 +76,47 @@ When updating the task description, preserve or add these sections:
 Be thorough — check the entire transcript before deciding."""
 
 
+def build_task_batch_prompt(tasks, attendees, speaker_map_text, meeting_date):
+	"""System prompt for processing a batch of up to 5 tasks in one LLM call."""
+	attendee_lines = _format_attendees(attendees)
+	task_list = "\n".join(
+		f"  {i+1}. [{t['name']}] {t['subject']} — assigned: {t.get('assigned_to') or 'unassigned'}, "
+		f"due: {t.get('exp_end_date') or 'none'}, priority: {t.get('priority', 'Medium')}"
+		for i, t in enumerate(tasks)
+	)
+
+	return f"""You are reviewing a batch of ERPNext tasks against a meeting transcript.
+
+## Meeting Date
+{meeting_date}
+
+## Attendees
+{attendee_lines}
+
+## Speaker Identities
+{speaker_map_text}
+
+## Tasks in This Batch
+{task_list}
+
+## Task Description Format
+When updating descriptions, preserve or add:
+## Objective
+[One clear sentence]
+## Acceptance Criteria
+- [Measurable criterion]
+## Meeting Updates
+[{meeting_date}] [Summary of discussion]
+
+## Instructions
+For EACH task in this batch:
+1. Search the full transcript for any discussion about that task (semantic matching — different wording may refer to the same task).
+2. If discussed: call update_existing_task once for that task with a comment + any updates to objective, criteria, due date, priority, assignee, or status.
+3. If NOT discussed: skip it — call no tools for it.
+
+Process all tasks before finishing. You may call update_existing_task multiple times (once per discussed task)."""
+
+
 def build_new_tasks_prompt(attendees, speaker_map_text, meeting_date):
 	"""System prompt for the new-task-extraction step."""
 	attendee_lines = _format_attendees(attendees)

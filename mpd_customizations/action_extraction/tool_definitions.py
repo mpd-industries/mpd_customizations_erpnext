@@ -178,7 +178,7 @@ TOOL_DEFINITIONS = [
 						"description": "Due date YYYY-MM-DD if mentioned.",
 					},
 				},
-				"required": ["subject", "parent_task", "project", "source_meeting"],
+				"required": ["subject", "parent_task", "project"],
 			},
 		},
 	},

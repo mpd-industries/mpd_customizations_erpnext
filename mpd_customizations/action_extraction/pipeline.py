@@ -4,19 +4,20 @@ import os
 import frappe
 from frappe import _
 
-from mpd_customizations.meeting_notes.action_extraction.tool_definitions import (
+from mpd_customizations.action_extraction.tool_definitions import (
 	TASK_UPDATE_TOOLS,
 	REOPEN_TOOLS,
 	NEW_TASK_TOOLS,
 )
-from mpd_customizations.meeting_notes.action_extraction.prompt import (
+from mpd_customizations.action_extraction.prompt import (
 	build_speaker_id_prompt,
-	build_task_update_prompt,
+	build_task_batch_prompt,
 	build_new_tasks_prompt,
 	resolve_attendees,
 )
-from mpd_customizations.meeting_notes.action_extraction import tools as _tools
+from mpd_customizations.action_extraction import tools as _tools
 
+BATCH_SIZE = 5
 
 # ─── public entry points ──────────────────────────────────────────────────────
 
@@ -39,11 +40,11 @@ def run_transcription(meeting_note_name):
 
 def run(meeting_note_name):
 	"""
-	Three-step pipeline:
-	  1. Identify who each Speaker N is from attendee list + transcript context
-	  2. Per-task loop: one focused LLM call per open task → update if discussed
-	  3. New-task extraction: one LLM call → create tasks for action items not in backlog
-	     (also checks recently-closed tasks for possible reopen)
+	Pipeline:
+	  1. Identify speakers
+	  2. Process open tasks in batches of 5
+	  3. Extract new tasks + reopen recently-closed ones
+	  4. Generate meeting summary
 	"""
 	doc = frappe.get_doc("Meeting Note", meeting_note_name)
 	log_entries = []
@@ -64,7 +65,6 @@ def run(meeting_note_name):
 		speaker_map_text = _format_speaker_map(speaker_map, attendees)
 		log_entries.append({"step": "speaker_identification", "result": speaker_map})
 
-		# Save progress early without touching modified/version
 		frappe.db.set_value("Meeting Note", doc.name, "extraction_log",
 			json.dumps({"speaker_map": speaker_map}, indent=2))
 		frappe.db.commit()
@@ -80,12 +80,18 @@ def run(meeting_note_name):
 			"closed_count": len(recent_closed),
 		})
 
-		# ── Step 3: Per-task update loop ──────────────────────────────────────
-		for task in open_tasks:
-			result = _process_single_task(task, doc, attendees, speaker_map_text, litellm, kwargs)
-			log_entries.append({"step": "task_update", "task": task["name"], "subject": task["subject"], "result": result})
+		# ── Step 3: Process tasks in batches of BATCH_SIZE ───────────────────
+		for i in range(0, len(open_tasks), BATCH_SIZE):
+			batch = open_tasks[i:i + BATCH_SIZE]
+			results = _process_task_batch(batch, doc, attendees, speaker_map_text, litellm, kwargs)
+			log_entries.append({
+				"step": "task_batch",
+				"batch": i // BATCH_SIZE + 1,
+				"tasks": [t["name"] for t in batch],
+				"result": results,
+			})
 
-		# ── Step 4: Check recently-closed for reopen + extract new tasks ──────
+		# ── Step 4: New tasks + reopen recently-closed ────────────────────────
 		result = _extract_and_reopen(open_tasks, recent_closed, doc, attendees, speaker_map_text, litellm, kwargs)
 		log_entries.append({"step": "new_tasks_and_reopen", "result": result})
 
@@ -94,7 +100,7 @@ def run(meeting_note_name):
 		log_entries.append({"step": "summary_generated", "length": len(summary)})
 
 		# ── Done ──────────────────────────────────────────────────────────────
-		doc.reload()  # pick up latest modified timestamp before final save
+		doc.reload()
 		doc.extraction_log = json.dumps(log_entries, indent=2, ensure_ascii=False)
 		doc.meeting_summary = summary
 		doc.status = "Review"
@@ -102,11 +108,13 @@ def run(meeting_note_name):
 		frappe.db.commit()
 
 	except Exception:
-		doc.status = "Draft"
-		doc.extraction_log = frappe.get_traceback()
-		doc.save(ignore_permissions=True)
+		tb = frappe.get_traceback()
+		frappe.db.set_value("Meeting Note", meeting_note_name, {
+			"status": "Draft",
+			"extraction_log": tb,
+		})
 		frappe.db.commit()
-		frappe.log_error(frappe.get_traceback(), f"Meeting Note Extraction Failed: {meeting_note_name}")
+		frappe.log_error(tb, f"Meeting Note Extraction Failed: {meeting_note_name}")
 
 
 def reset_stuck_jobs():
@@ -136,11 +144,6 @@ def reset_stuck_jobs():
 # ─── pipeline steps ───────────────────────────────────────────────────────────
 
 def _identify_speakers(doc, attendees, litellm, kwargs):
-	"""
-	Ask the LLM to map 'Speaker 0', 'Speaker 1' etc. to real user IDs.
-	Uses only the first 3000 chars of transcript — enough for identification.
-	Returns dict like {"Speaker 0": "user@email.com", "Speaker 1": null}.
-	"""
 	system_prompt = build_speaker_id_prompt(attendees)
 	transcript_sample = doc.transcript[:3000]
 
@@ -157,7 +160,6 @@ def _identify_speakers(doc, attendees, litellm, kwargs):
 			max_tokens=500,
 		)
 		raw = response.choices[0].message.content or "{}"
-		# Strip markdown fences if present
 		raw = raw.strip().strip("```json").strip("```").strip()
 		return json.loads(raw)
 	except Exception:
@@ -165,21 +167,21 @@ def _identify_speakers(doc, attendees, litellm, kwargs):
 		return {}
 
 
-def _process_single_task(task, doc, attendees, speaker_map_text, litellm, kwargs):
+def _process_task_batch(tasks, doc, attendees, speaker_map_text, litellm, kwargs):
 	"""
-	One LLM call focused on a single task.
-	Returns a short summary of what was done (or "NOT_DISCUSSED").
+	One LLM call for up to BATCH_SIZE tasks.
+	LLM calls update_existing_task for each task it finds discussed; skips the rest.
 	"""
-	system_prompt = build_task_update_prompt(
-		task=task,
+	system_prompt = build_task_batch_prompt(
+		tasks=tasks,
 		attendees=attendees,
 		speaker_map_text=speaker_map_text,
 		meeting_date=str(doc.meeting_date),
 	)
 
-	task_context = _format_task_for_prompt(task)
+	task_details = "\n\n".join(_format_task_for_prompt(t) for t in tasks)
 	user_message = (
-		f"{task_context}\n\n"
+		f"{task_details}\n\n"
 		f"--- FULL TRANSCRIPT ---\n{doc.transcript}\n--- END ---"
 	)
 
@@ -188,11 +190,11 @@ def _process_single_task(task, doc, attendees, speaker_map_text, litellm, kwargs
 		{"role": "user", "content": user_message},
 	]
 
-	return _run_tool_loop(messages, TASK_UPDATE_TOOLS, litellm, kwargs, max_rounds=4)
+	# Allow up to 4 rounds per task in the batch
+	return _run_tool_loop(messages, TASK_UPDATE_TOOLS, litellm, kwargs, max_rounds=len(tasks) * 4)
 
 
 def _generate_summary(doc, attendees, speaker_map_text, litellm, kwargs):
-	"""Generates a concise meeting summary paragraph from the transcript."""
 	attendee_names = ", ".join(a["full_name"] for a in attendees if a.get("full_name")) or "unknown attendees"
 	system = (
 		"You summarize meeting transcripts. Write a concise 3-6 sentence paragraph covering: "
@@ -220,11 +222,6 @@ def _generate_summary(doc, attendees, speaker_map_text, litellm, kwargs):
 
 
 def _extract_and_reopen(open_tasks, recent_closed, doc, attendees, speaker_map_text, litellm, kwargs):
-	"""
-	Single LLM call that:
-	  - Creates new tasks for action items not in the existing backlog
-	  - Reopens recently-closed tasks if the transcript indicates they need more work
-	"""
 	system_prompt = build_new_tasks_prompt(
 		attendees=attendees,
 		speaker_map_text=speaker_map_text,
@@ -262,10 +259,6 @@ def _extract_and_reopen(open_tasks, recent_closed, doc, attendees, speaker_map_t
 # ─── tool execution ───────────────────────────────────────────────────────────
 
 def _run_tool_loop(messages, tools, litellm, kwargs, max_rounds=5):
-	"""
-	Mini agentic loop: runs LLM with given tools until no more tool calls or max_rounds reached.
-	Returns the final text response.
-	"""
 	call_kwargs = dict(
 		model=kwargs["model"],
 		api_key=kwargs["api_key"],

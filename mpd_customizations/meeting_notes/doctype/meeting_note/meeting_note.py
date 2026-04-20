@@ -37,7 +37,7 @@ class MeetingNote(Document):
         frappe.db.commit()
 
         frappe.enqueue(
-            "mpd_customizations.meeting_notes.action_extraction.pipeline.run_transcription",
+            "mpd_customizations.action_extraction.pipeline.run_transcription",
             meeting_note_name=self.name,
             queue="long",
             timeout=900,
@@ -55,7 +55,7 @@ class MeetingNote(Document):
         frappe.db.commit()
 
         frappe.enqueue(
-            "mpd_customizations.meeting_notes.action_extraction.pipeline.run",
+            "mpd_customizations.action_extraction.pipeline.run",
             meeting_note_name=self.name,
             queue="long",
             timeout=900,
