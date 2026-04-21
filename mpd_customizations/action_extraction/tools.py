@@ -9,7 +9,7 @@ def get_backlog(project, status_filter=None):
 	if status_filter is None:
 		status_filter = ["Open", "Working", "Pending Review"]
 
-	_fields = ["name", "subject", "status", "_assign", "priority", "description", "exp_end_date"]
+	_fields = ["name", "subject", "status", "_assign", "priority", "md_description", "exp_end_date"]
 
 	open_tasks = frappe.get_all(
 		"Task",
@@ -53,8 +53,8 @@ def update_existing_task(task_name, comment,
 	changed = False
 
 	if objective or acceptance_criteria:
-		task.description = _patch_description(
-			task.description or "",
+		task.md_description = _patch_description(
+			task.md_description or "",
 			objective=objective,
 			acceptance_criteria=acceptance_criteria,
 		)
@@ -128,7 +128,7 @@ def create_pending_task(subject, project, description,
 	task = frappe.new_doc("Task")
 	task.subject = subject
 	task.project = project
-	task.description = full_description
+	task.md_description = full_description
 	task.priority = priority
 	task.status = "Open"
 	task.suggested_assignee = suggested_assignee or ""
@@ -156,7 +156,7 @@ def create_subtask(subject, parent_task, project,
 	task.subject = subject
 	task.parent_task = parent_task
 	task.project = project
-	task.description = description or ""
+	task.md_description = description or ""
 	task.suggested_assignee = suggested_assignee or ""
 	task.priority = priority
 	task.status = "Open"

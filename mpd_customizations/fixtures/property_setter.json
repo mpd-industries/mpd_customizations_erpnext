@@ -1,0 +1,12 @@
+[
+ {
+  "doctype": "Property Setter",
+  "name": "Task-description-hidden",
+  "doc_type": "Task",
+  "field_name": "description",
+  "property": "hidden",
+  "property_type": "Check",
+  "doctype_or_field": "DocField",
+  "value": "1"
+ }
+]

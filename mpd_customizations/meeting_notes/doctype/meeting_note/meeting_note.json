@@ -86,8 +86,7 @@
   {
    "fieldname": "audio_file",
    "fieldtype": "Attach",
-   "label": "Audio File",
-   "read_only": 1
+   "label": "Audio File"
   },
   {
    "collapsible": 1,

@@ -1,15 +1,12 @@
 [
  {
   "doctype": "Custom Field",
-  "name": "Task-source_meeting",
+  "name": "Task-md_description",
   "dt": "Task",
-  "fieldname": "source_meeting",
-  "label": "Source Meeting",
-  "fieldtype": "Link",
-  "options": "Meeting Note",
-  "insert_after": "description",
-  "read_only": 1,
-  "no_copy": 1
+  "fieldname": "md_description",
+  "label": "Description",
+  "fieldtype": "Markdown Editor",
+  "insert_after": "description"
  },
  {
   "doctype": "Custom Field",
@@ -19,7 +16,7 @@
   "label": "Suggested Assignee",
   "fieldtype": "Link",
   "options": "User",
-  "insert_after": "source_meeting",
+  "insert_after": "md_description",
   "read_only": 1,
   "no_copy": 1
  }

@@ -414,6 +414,15 @@ function _renderButtons(frm) {
     if (status === "Review") {
         frm.add_custom_button(__("Review Actions"), () => _openReviewDialog(frm), __("Actions"));
     }
+
+    if (status === "Transcribing" || status === "Processing") {
+        frm.add_custom_button(__("Reset to Draft"), () => {
+            frappe.confirm(
+                __("Reset this meeting note back to Draft? The background job will be abandoned and you can retry."),
+                () => frm.call("reset_to_draft").then(() => frm.reload_doc())
+            );
+        }, __("Actions"));
+    }
 }
 
 async function _loadTaskTable(frm) {

@@ -161,6 +161,7 @@ doc_events = {
 
 fixtures = [
     {"dt": "Custom Field", "filters": [["dt", "in", ["Task"]]]},
+    {"dt": "Property Setter", "filters": [["doc_type", "=", "Task"], ["field_name", "=", "description"]]},
 ]
 
 # Scheduled Tasks

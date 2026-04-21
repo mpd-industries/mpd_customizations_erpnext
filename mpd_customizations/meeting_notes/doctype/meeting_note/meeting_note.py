@@ -105,6 +105,14 @@ class MeetingNote(Document):
         return {"status": "rejected", "task": task_name}
 
     @frappe.whitelist()
+    def reset_to_draft(self):
+        if self.status not in ("Transcribing", "Processing"):
+            frappe.throw(_("Can only reset from Transcribing or Processing status."))
+        frappe.db.set_value("Meeting Note", self.name, "status", "Draft")
+        frappe.db.commit()
+        return {"status": "reset"}
+
+    @frappe.whitelist()
     def bulk_approve(self, approvals):
         import json
         if isinstance(approvals, str):
