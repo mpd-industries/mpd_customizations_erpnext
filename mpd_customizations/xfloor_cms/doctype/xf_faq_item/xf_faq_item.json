@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "question",
+  "answer",
+  "sort_order",
+  "published"
+ ],
+ "fields": [
+  {
+   "fieldname": "question",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Question",
+   "reqd": 1
+  },
+  {
+   "fieldname": "answer",
+   "fieldtype": "Text",
+   "label": "Answer"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sort Order"
+  },
+  {
+   "default": "1",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Published"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF FAQ Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "sort_order",
+ "sort_order": "ASC"
+}

@@ -1,0 +1,146 @@
+{
+ "actions": [],
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "published",
+  "route",
+  "section_meta",
+  "meta_title",
+  "meta_description",
+  "og_type",
+  "schema_type",
+  "section_hero",
+  "hero_title",
+  "hero_subtitle",
+  "section_office",
+  "office_name",
+  "office_address",
+  "office_address_sub_label",
+  "map_embed_url",
+  "phone_hours_sub_label",
+  "email_response_sla"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route"
+  },
+  {
+   "fieldname": "section_meta",
+   "fieldtype": "Section Break",
+   "label": "SEO / Meta"
+  },
+  {
+   "fieldname": "meta_title",
+   "fieldtype": "Data",
+   "label": "Meta Title"
+  },
+  {
+   "fieldname": "meta_description",
+   "fieldtype": "Small Text",
+   "label": "Meta Description"
+  },
+  {
+   "fieldname": "og_type",
+   "fieldtype": "Data",
+   "label": "OG Type"
+  },
+  {
+   "fieldname": "schema_type",
+   "fieldtype": "Data",
+   "label": "Schema Type"
+  },
+  {
+   "fieldname": "section_hero",
+   "fieldtype": "Section Break",
+   "label": "Hero"
+  },
+  {
+   "fieldname": "hero_title",
+   "fieldtype": "Data",
+   "label": "Hero Title"
+  },
+  {
+   "fieldname": "hero_subtitle",
+   "fieldtype": "Small Text",
+   "label": "Hero Subtitle"
+  },
+  {
+   "fieldname": "section_office",
+   "fieldtype": "Section Break",
+   "label": "Office Details"
+  },
+  {
+   "fieldname": "office_name",
+   "fieldtype": "Data",
+   "label": "Office Name"
+  },
+  {
+   "fieldname": "office_address",
+   "fieldtype": "Small Text",
+   "label": "Office Address"
+  },
+  {
+   "fieldname": "office_address_sub_label",
+   "fieldtype": "Data",
+   "label": "Office Address Sub Label"
+  },
+  {
+   "fieldname": "map_embed_url",
+   "fieldtype": "Data",
+   "label": "Map Embed URL"
+  },
+  {
+   "fieldname": "phone_hours_sub_label",
+   "fieldtype": "Data",
+   "label": "Phone Hours Sub Label"
+  },
+  {
+   "fieldname": "email_response_sla",
+   "fieldtype": "Data",
+   "label": "Email Response SLA"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF Contact Page",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Xfloor CMS Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

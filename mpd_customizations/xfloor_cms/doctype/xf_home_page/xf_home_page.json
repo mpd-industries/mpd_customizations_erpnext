@@ -1,0 +1,193 @@
+{
+ "actions": [],
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "published",
+  "route",
+  "section_meta",
+  "meta_title",
+  "meta_description",
+  "og_type",
+  "schema_type",
+  "section_hero",
+  "hero_eyebrow_text",
+  "hero_headline",
+  "hero_subheadline",
+  "hero_background_image",
+  "featured_system",
+  "hero_stats",
+  "section_process",
+  "process_steps",
+  "section_clients",
+  "client_logos_section_title",
+  "client_logos",
+  "section_cta",
+  "cta_banner_title",
+  "cta_banner_subtitle",
+  "cta_banner_primary_button_text",
+  "cta_banner_secondary_button_text"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published"
+  },
+  {
+   "default": "/",
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route"
+  },
+  {
+   "fieldname": "section_meta",
+   "fieldtype": "Section Break",
+   "label": "SEO / Meta"
+  },
+  {
+   "fieldname": "meta_title",
+   "fieldtype": "Data",
+   "label": "Meta Title"
+  },
+  {
+   "fieldname": "meta_description",
+   "fieldtype": "Small Text",
+   "label": "Meta Description"
+  },
+  {
+   "fieldname": "og_type",
+   "fieldtype": "Data",
+   "label": "OG Type"
+  },
+  {
+   "fieldname": "schema_type",
+   "fieldtype": "Data",
+   "label": "Schema Type"
+  },
+  {
+   "fieldname": "section_hero",
+   "fieldtype": "Section Break",
+   "label": "Hero"
+  },
+  {
+   "fieldname": "hero_eyebrow_text",
+   "fieldtype": "Data",
+   "label": "Hero Eyebrow Text"
+  },
+  {
+   "fieldname": "hero_headline",
+   "fieldtype": "Data",
+   "label": "Hero Headline"
+  },
+  {
+   "fieldname": "hero_subheadline",
+   "fieldtype": "Small Text",
+   "label": "Hero Subheadline"
+  },
+  {
+   "fieldname": "hero_background_image",
+   "fieldtype": "Attach Image",
+   "label": "Hero Background Image"
+  },
+  {
+   "fieldname": "featured_system",
+   "fieldtype": "Data",
+   "label": "Featured System",
+   "description": "system_code reference e.g. SYS-201"
+  },
+  {
+   "fieldname": "hero_stats",
+   "fieldtype": "Table",
+   "label": "Hero Stats",
+   "options": "XF Hero Stat"
+  },
+  {
+   "fieldname": "section_process",
+   "fieldtype": "Section Break",
+   "label": "Process Steps"
+  },
+  {
+   "fieldname": "process_steps",
+   "fieldtype": "Table",
+   "label": "Process Steps",
+   "options": "XF Process Step"
+  },
+  {
+   "fieldname": "section_clients",
+   "fieldtype": "Section Break",
+   "label": "Client Logos"
+  },
+  {
+   "fieldname": "client_logos_section_title",
+   "fieldtype": "Data",
+   "label": "Client Logos Section Title"
+  },
+  {
+   "fieldname": "client_logos",
+   "fieldtype": "Table",
+   "label": "Client Logos",
+   "options": "XF Client Logo"
+  },
+  {
+   "fieldname": "section_cta",
+   "fieldtype": "Section Break",
+   "label": "CTA Banner"
+  },
+  {
+   "fieldname": "cta_banner_title",
+   "fieldtype": "Data",
+   "label": "CTA Banner Title"
+  },
+  {
+   "fieldname": "cta_banner_subtitle",
+   "fieldtype": "Small Text",
+   "label": "CTA Banner Subtitle"
+  },
+  {
+   "fieldname": "cta_banner_primary_button_text",
+   "fieldtype": "Data",
+   "label": "CTA Banner Primary Button Text"
+  },
+  {
+   "fieldname": "cta_banner_secondary_button_text",
+   "fieldtype": "Data",
+   "label": "CTA Banner Secondary Button Text"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF Home Page",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Xfloor CMS Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

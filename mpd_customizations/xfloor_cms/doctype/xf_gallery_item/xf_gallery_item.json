@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "caption",
+  "sector",
+  "project_image",
+  "sort_order",
+  "published"
+ ],
+ "fields": [
+  {
+   "fieldname": "caption",
+   "fieldtype": "Data",
+   "label": "Caption",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sector",
+   "fieldtype": "Select",
+   "label": "Sector",
+   "options": "\nAutomotive\nFood Processing\nHigh-Tech Labs\nWarehousing\nPharmaceuticals",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "project_image",
+   "fieldtype": "Attach Image",
+   "label": "Project Image"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order",
+   "in_list_view": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published",
+   "in_list_view": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF Gallery Item",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Xfloor CMS Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "sort_order",
+ "sort_order": "ASC",
+ "title_field": "caption",
+ "track_changes": 1
+}

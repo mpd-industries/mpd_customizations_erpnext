@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "site_name",
+  "default_seo_image",
+  "contact_phone",
+  "contact_email",
+  "whatsapp_number",
+  "topbar_text",
+  "business_hours",
+  "footer_brand_tagline",
+  "registered_office_address",
+  "copyright_text",
+  "section_nav",
+  "nav_links",
+  "section_footer",
+  "footer_links",
+  "section_trust",
+  "trust_bar_items",
+  "section_certifications",
+  "certifications",
+  "section_form_stats",
+  "form_stats"
+ ],
+ "fields": [
+  {
+   "fieldname": "site_name",
+   "fieldtype": "Data",
+   "label": "Site Name"
+  },
+  {
+   "fieldname": "default_seo_image",
+   "fieldtype": "Attach Image",
+   "label": "Default SEO Image"
+  },
+  {
+   "fieldname": "contact_phone",
+   "fieldtype": "Data",
+   "label": "Contact Phone"
+  },
+  {
+   "fieldname": "contact_email",
+   "fieldtype": "Data",
+   "label": "Contact Email"
+  },
+  {
+   "fieldname": "whatsapp_number",
+   "fieldtype": "Data",
+   "label": "WhatsApp Number"
+  },
+  {
+   "fieldname": "topbar_text",
+   "fieldtype": "Data",
+   "label": "Topbar Text"
+  },
+  {
+   "fieldname": "business_hours",
+   "fieldtype": "Data",
+   "label": "Business Hours"
+  },
+  {
+   "fieldname": "footer_brand_tagline",
+   "fieldtype": "Small Text",
+   "label": "Footer Brand Tagline"
+  },
+  {
+   "fieldname": "registered_office_address",
+   "fieldtype": "Small Text",
+   "label": "Registered Office Address"
+  },
+  {
+   "fieldname": "copyright_text",
+   "fieldtype": "Data",
+   "label": "Copyright Text"
+  },
+  {
+   "fieldname": "section_nav",
+   "fieldtype": "Section Break",
+   "label": "Navigation"
+  },
+  {
+   "fieldname": "nav_links",
+   "fieldtype": "Table",
+   "label": "Nav Links",
+   "options": "XF Nav Link"
+  },
+  {
+   "fieldname": "section_footer",
+   "fieldtype": "Section Break",
+   "label": "Footer Links"
+  },
+  {
+   "fieldname": "footer_links",
+   "fieldtype": "Table",
+   "label": "Footer Links",
+   "options": "XF Footer Link"
+  },
+  {
+   "fieldname": "section_trust",
+   "fieldtype": "Section Break",
+   "label": "Trust Bar"
+  },
+  {
+   "fieldname": "trust_bar_items",
+   "fieldtype": "Table",
+   "label": "Trust Bar Items",
+   "options": "XF Trust Bar Item"
+  },
+  {
+   "fieldname": "section_certifications",
+   "fieldtype": "Section Break",
+   "label": "Certifications"
+  },
+  {
+   "fieldname": "certifications",
+   "fieldtype": "Table",
+   "label": "Certifications",
+   "options": "XF Certification"
+  },
+  {
+   "fieldname": "section_form_stats",
+   "fieldtype": "Section Break",
+   "label": "Form Stats"
+  },
+  {
+   "fieldname": "form_stats",
+   "fieldtype": "Table",
+   "label": "Form Stats",
+   "options": "XF Form Stat"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF Site Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Xfloor CMS Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

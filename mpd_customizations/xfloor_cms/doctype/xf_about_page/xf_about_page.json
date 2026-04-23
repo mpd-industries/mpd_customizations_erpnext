@@ -1,0 +1,148 @@
+{
+ "actions": [],
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "published",
+  "route",
+  "section_meta",
+  "meta_title",
+  "meta_description",
+  "og_type",
+  "schema_type",
+  "section_story",
+  "story_title",
+  "story_lead_paragraph",
+  "story_body",
+  "facility_image",
+  "facility_image_caption",
+  "section_timeline",
+  "timeline_events",
+  "section_values",
+  "core_values"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route"
+  },
+  {
+   "fieldname": "section_meta",
+   "fieldtype": "Section Break",
+   "label": "SEO / Meta"
+  },
+  {
+   "fieldname": "meta_title",
+   "fieldtype": "Data",
+   "label": "Meta Title"
+  },
+  {
+   "fieldname": "meta_description",
+   "fieldtype": "Small Text",
+   "label": "Meta Description"
+  },
+  {
+   "fieldname": "og_type",
+   "fieldtype": "Data",
+   "label": "OG Type"
+  },
+  {
+   "fieldname": "schema_type",
+   "fieldtype": "Data",
+   "label": "Schema Type"
+  },
+  {
+   "fieldname": "section_story",
+   "fieldtype": "Section Break",
+   "label": "Story"
+  },
+  {
+   "fieldname": "story_title",
+   "fieldtype": "Data",
+   "label": "Story Title"
+  },
+  {
+   "fieldname": "story_lead_paragraph",
+   "fieldtype": "Small Text",
+   "label": "Story Lead Paragraph"
+  },
+  {
+   "fieldname": "story_body",
+   "fieldtype": "Text",
+   "label": "Story Body"
+  },
+  {
+   "fieldname": "facility_image",
+   "fieldtype": "Attach Image",
+   "label": "Facility Image"
+  },
+  {
+   "fieldname": "facility_image_caption",
+   "fieldtype": "Data",
+   "label": "Facility Image Caption"
+  },
+  {
+   "fieldname": "section_timeline",
+   "fieldtype": "Section Break",
+   "label": "Timeline"
+  },
+  {
+   "fieldname": "timeline_events",
+   "fieldtype": "Table",
+   "label": "Timeline Events",
+   "options": "XF Timeline Event"
+  },
+  {
+   "fieldname": "section_values",
+   "fieldtype": "Section Break",
+   "label": "Core Values"
+  },
+  {
+   "fieldname": "core_values",
+   "fieldtype": "Table",
+   "label": "Core Values",
+   "options": "XF Core Value"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF About Page",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Xfloor CMS Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

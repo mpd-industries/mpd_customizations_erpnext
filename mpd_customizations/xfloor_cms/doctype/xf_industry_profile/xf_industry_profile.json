@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "autoname": "Prompt",
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "industry_name",
+  "description",
+  "sort_order",
+  "published",
+  "route",
+  "section_seo",
+  "meta_title",
+  "meta_description",
+  "og_title",
+  "og_description",
+  "og_image",
+  "og_type",
+  "schema_type",
+  "canonical_url",
+  "no_index",
+  "section_spec_tags",
+  "spec_tags",
+  "section_systems",
+  "recommended_systems"
+ ],
+ "fields": [
+  {
+   "fieldname": "industry_name",
+   "fieldtype": "Data",
+   "label": "Industry Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order"
+  },
+  {
+   "default": "1",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route",
+   "description": "e.g. /industries/automotive"
+  },
+  {
+   "fieldname": "section_seo",
+   "fieldtype": "Section Break",
+   "label": "SEO / Meta",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "meta_title",
+   "fieldtype": "Data",
+   "label": "Meta Title"
+  },
+  {
+   "fieldname": "meta_description",
+   "fieldtype": "Small Text",
+   "label": "Meta Description"
+  },
+  {
+   "fieldname": "og_title",
+   "fieldtype": "Data",
+   "label": "OG Title"
+  },
+  {
+   "fieldname": "og_description",
+   "fieldtype": "Small Text",
+   "label": "OG Description"
+  },
+  {
+   "fieldname": "og_image",
+   "fieldtype": "Attach Image",
+   "label": "OG Image"
+  },
+  {
+   "fieldname": "og_type",
+   "fieldtype": "Data",
+   "label": "OG Type"
+  },
+  {
+   "fieldname": "schema_type",
+   "fieldtype": "Data",
+   "label": "Schema Type"
+  },
+  {
+   "fieldname": "canonical_url",
+   "fieldtype": "Data",
+   "label": "Canonical URL"
+  },
+  {
+   "default": "0",
+   "fieldname": "no_index",
+   "fieldtype": "Check",
+   "label": "No Index"
+  },
+  {
+   "fieldname": "section_spec_tags",
+   "fieldtype": "Section Break",
+   "label": "Spec Tags"
+  },
+  {
+   "fieldname": "spec_tags",
+   "fieldtype": "Table",
+   "label": "Spec Tags",
+   "options": "XF Industry Spec Tag"
+  },
+  {
+   "fieldname": "section_systems",
+   "fieldtype": "Section Break",
+   "label": "Recommended Systems"
+  },
+  {
+   "fieldname": "recommended_systems",
+   "fieldtype": "Table",
+   "label": "Recommended Systems",
+   "options": "XF Industry Recommended System"
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF Industry Profile",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Xfloor CMS Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "sort_order",
+ "sort_order": "ASC",
+ "title_field": "industry_name",
+ "track_changes": 1
+}

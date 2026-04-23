@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "published",
+  "route",
+  "section_meta",
+  "meta_title",
+  "meta_description",
+  "og_type",
+  "schema_type",
+  "focus_keyword",
+  "section_content",
+  "page_title",
+  "page_subtitle",
+  "section_faqs",
+  "faq_items"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route"
+  },
+  {
+   "fieldname": "section_meta",
+   "fieldtype": "Section Break",
+   "label": "SEO / Meta"
+  },
+  {
+   "fieldname": "meta_title",
+   "fieldtype": "Data",
+   "label": "Meta Title"
+  },
+  {
+   "fieldname": "meta_description",
+   "fieldtype": "Small Text",
+   "label": "Meta Description"
+  },
+  {
+   "fieldname": "og_type",
+   "fieldtype": "Data",
+   "label": "OG Type"
+  },
+  {
+   "fieldname": "schema_type",
+   "fieldtype": "Data",
+   "label": "Schema Type"
+  },
+  {
+   "fieldname": "focus_keyword",
+   "fieldtype": "Data",
+   "label": "Focus Keyword"
+  },
+  {
+   "fieldname": "section_content",
+   "fieldtype": "Section Break",
+   "label": "Page Content"
+  },
+  {
+   "fieldname": "page_title",
+   "fieldtype": "Data",
+   "label": "Page Title"
+  },
+  {
+   "fieldname": "page_subtitle",
+   "fieldtype": "Small Text",
+   "label": "Page Subtitle"
+  },
+  {
+   "fieldname": "section_faqs",
+   "fieldtype": "Section Break",
+   "label": "FAQ Items"
+  },
+  {
+   "fieldname": "faq_items",
+   "fieldtype": "Table",
+   "label": "FAQ Items",
+   "options": "XF FAQ Item"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF FAQ Page",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Xfloor CMS Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

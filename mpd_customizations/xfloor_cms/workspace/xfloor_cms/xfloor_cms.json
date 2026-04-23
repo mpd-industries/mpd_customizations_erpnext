@@ -1,0 +1,256 @@
+{
+ "charts": [],
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Site Settings\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Home Page\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Product Systems\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Industries\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Website Leads\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Applicator Applications\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Testimonials\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gallery\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>CMS Content</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Site & Pages\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Catalogue\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Social Proof\",\"col\":4}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Inbox</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Leads & Applications\",\"col\":4}}]",
+ "creation": "2026-04-23 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "globe",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Xfloor CMS",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Site & Pages",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Site Settings",
+   "link_count": 0,
+   "link_to": "XF Site Settings",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Home Page",
+   "link_count": 0,
+   "link_to": "XF Home Page",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "About Page",
+   "link_count": 0,
+   "link_to": "XF About Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Applicator Page",
+   "link_count": 0,
+   "link_to": "XF Applicator Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Contact Page",
+   "link_count": 0,
+   "link_to": "XF Contact Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "FAQ Page",
+   "link_count": 0,
+   "link_to": "XF FAQ Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Catalogue",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Product Systems",
+   "link_count": 0,
+   "link_to": "XF Product System",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Industry Profiles",
+   "link_count": 0,
+   "link_to": "XF Industry Profile",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Social Proof",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Testimonials",
+   "link_count": 0,
+   "link_to": "XF Testimonial",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gallery Items",
+   "link_count": 0,
+   "link_to": "XF Gallery Item",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Leads & Applications",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Website Leads",
+   "link_count": 0,
+   "link_to": "XF Website Lead",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Applicator Applications",
+   "link_count": 0,
+   "link_to": "XF Applicator Application",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "Xfloor CMS",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Xfloor CMS Manager"
+  }
+ ],
+ "sequence_id": 20.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "label": "Site Settings",
+   "link_to": "XF Site Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Home Page",
+   "link_to": "XF Home Page",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "label": "Product Systems",
+   "link_to": "XF Product System",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "label": "Industries",
+   "link_to": "XF Industry Profile",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "",
+   "format": "{} New",
+   "label": "Website Leads",
+   "link_to": "XF Website Lead",
+   "stats_filter": "{\"status\": \"New\"}",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "",
+   "format": "{} New",
+   "label": "Applicator Applications",
+   "link_to": "XF Applicator Application",
+   "stats_filter": "{\"status\": \"New\"}",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Testimonials",
+   "link_to": "XF Testimonial",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Gallery",
+   "link_to": "XF Gallery Item",
+   "type": "DocType"
+  }
+ ],
+ "title": "Xfloor CMS"
+}

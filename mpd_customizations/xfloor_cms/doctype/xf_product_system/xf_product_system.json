@@ -1,0 +1,232 @@
+{
+ "actions": [],
+ "autoname": "field:system_code",
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "system_code",
+  "system_name",
+  "subtitle",
+  "icon",
+  "chemistry_type",
+  "hero_image",
+  "short_description",
+  "tags",
+  "requirements_tags",
+  "sort_order",
+  "published",
+  "route",
+  "section_seo",
+  "meta_title",
+  "meta_description",
+  "og_title",
+  "og_description",
+  "og_image",
+  "og_type",
+  "schema_type",
+  "canonical_url",
+  "no_index",
+  "section_specs",
+  "product_specs",
+  "section_benefits",
+  "product_benefits",
+  "section_steps",
+  "system_steps"
+ ],
+ "fields": [
+  {
+   "fieldname": "system_code",
+   "fieldtype": "Data",
+   "label": "System Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "system_name",
+   "fieldtype": "Data",
+   "label": "System Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "subtitle",
+   "fieldtype": "Data",
+   "label": "Subtitle"
+  },
+  {
+   "fieldname": "icon",
+   "fieldtype": "Data",
+   "label": "Icon",
+   "description": "String key e.g. epoxy, pu, esd, hygienic, dielectric"
+  },
+  {
+   "fieldname": "chemistry_type",
+   "fieldtype": "Select",
+   "label": "Chemistry Type",
+   "options": "\nEpoxy\nPU\nESD\nHygienic\nDielectric",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "hero_image",
+   "fieldtype": "Attach Image",
+   "label": "Hero Image"
+  },
+  {
+   "fieldname": "short_description",
+   "fieldtype": "Small Text",
+   "label": "Short Description"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "Data",
+   "label": "Tags",
+   "description": "Comma-separated"
+  },
+  {
+   "fieldname": "requirements_tags",
+   "fieldtype": "Data",
+   "label": "Requirements Tags",
+   "description": "Comma-separated"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order"
+  },
+  {
+   "default": "1",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route",
+   "description": "e.g. /products/epoxy-ultra-build-201"
+  },
+  {
+   "fieldname": "section_seo",
+   "fieldtype": "Section Break",
+   "label": "SEO / Meta",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "meta_title",
+   "fieldtype": "Data",
+   "label": "Meta Title"
+  },
+  {
+   "fieldname": "meta_description",
+   "fieldtype": "Small Text",
+   "label": "Meta Description"
+  },
+  {
+   "fieldname": "og_title",
+   "fieldtype": "Data",
+   "label": "OG Title"
+  },
+  {
+   "fieldname": "og_description",
+   "fieldtype": "Small Text",
+   "label": "OG Description"
+  },
+  {
+   "fieldname": "og_image",
+   "fieldtype": "Attach Image",
+   "label": "OG Image"
+  },
+  {
+   "fieldname": "og_type",
+   "fieldtype": "Data",
+   "label": "OG Type"
+  },
+  {
+   "fieldname": "schema_type",
+   "fieldtype": "Data",
+   "label": "Schema Type"
+  },
+  {
+   "fieldname": "canonical_url",
+   "fieldtype": "Data",
+   "label": "Canonical URL"
+  },
+  {
+   "default": "0",
+   "fieldname": "no_index",
+   "fieldtype": "Check",
+   "label": "No Index"
+  },
+  {
+   "fieldname": "section_specs",
+   "fieldtype": "Section Break",
+   "label": "Product Specs"
+  },
+  {
+   "fieldname": "product_specs",
+   "fieldtype": "Table",
+   "label": "Product Specs",
+   "options": "XF Product Spec"
+  },
+  {
+   "fieldname": "section_benefits",
+   "fieldtype": "Section Break",
+   "label": "Product Benefits"
+  },
+  {
+   "fieldname": "product_benefits",
+   "fieldtype": "Table",
+   "label": "Product Benefits",
+   "options": "XF Product Benefit"
+  },
+  {
+   "fieldname": "section_steps",
+   "fieldtype": "Section Break",
+   "label": "System Steps"
+  },
+  {
+   "fieldname": "system_steps",
+   "fieldtype": "Table",
+   "label": "System Steps",
+   "options": "XF System Step"
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF Product System",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Xfloor CMS Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "sort_order",
+ "sort_order": "ASC",
+ "title_field": "system_name",
+ "track_changes": 1
+}

@@ -1,0 +1,88 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "author",
+  "role_and_company",
+  "quote",
+  "system_used",
+  "star_rating",
+  "published"
+ ],
+ "fields": [
+  {
+   "fieldname": "author",
+   "fieldtype": "Data",
+   "label": "Author",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "role_and_company",
+   "fieldtype": "Data",
+   "label": "Role and Company",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "quote",
+   "fieldtype": "Text",
+   "label": "Quote"
+  },
+  {
+   "fieldname": "system_used",
+   "fieldtype": "Link",
+   "label": "System Used",
+   "options": "XF Product System"
+  },
+  {
+   "fieldname": "star_rating",
+   "fieldtype": "Int",
+   "label": "Star Rating",
+   "in_list_view": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published",
+   "in_list_view": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF Testimonial",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Xfloor CMS Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "author",
+ "track_changes": 1
+}

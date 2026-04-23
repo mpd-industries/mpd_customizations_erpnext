@@ -1,0 +1,133 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-04-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "lead_name",
+  "phone",
+  "city",
+  "industry",
+  "status",
+  "section_project",
+  "message",
+  "project_area_sqm",
+  "linked_product_system",
+  "section_meta",
+  "source_form",
+  "source_page_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "lead_name",
+   "fieldtype": "Data",
+   "label": "Name",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone / WhatsApp",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Data",
+   "label": "City",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "industry",
+   "fieldtype": "Select",
+   "label": "Industry",
+   "options": "\nAutomotive\nFood Processing\nPharmaceuticals\nElectronics/ESD\nWarehousing\nOther",
+   "in_list_view": 1
+  },
+  {
+   "default": "New",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "New\nContacted\nQualified\nClosed",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_project",
+   "fieldtype": "Section Break",
+   "label": "Project Details"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Text",
+   "label": "Message / Project Details"
+  },
+  {
+   "fieldname": "project_area_sqm",
+   "fieldtype": "Float",
+   "label": "Project Area (m²)"
+  },
+  {
+   "fieldname": "linked_product_system",
+   "fieldtype": "Link",
+   "label": "Linked Product System",
+   "options": "XF Product System"
+  },
+  {
+   "fieldname": "section_meta",
+   "fieldtype": "Section Break",
+   "label": "Source",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "source_form",
+   "fieldtype": "Select",
+   "label": "Source Form",
+   "options": "\ncontact\nmini\npage"
+  },
+  {
+   "fieldname": "source_page_url",
+   "fieldtype": "Data",
+   "label": "Source Page URL"
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Xfloor CMS",
+ "name": "XF Website Lead",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Xfloor CMS Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "role": "Website User"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "title_field": "lead_name",
+ "track_changes": 0
+}
