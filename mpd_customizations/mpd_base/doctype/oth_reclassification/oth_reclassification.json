@@ -1,0 +1,143 @@
+{
+ "actions": [],
+ "autoname": "OTH-RCL-.YYYY.-.####",
+ "creation": "2026-05-04 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "status",
+  "col_break_meta",
+  "analyzed_on",
+  "section_summary",
+  "ai_summary",
+  "section_items",
+  "items",
+  "section_suggestions",
+  "suggestions",
+  "section_new_prefixes",
+  "new_prefixes",
+  "section_new_groups",
+  "new_item_groups"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nAnalyzing\nReviewed\nApplied"
+  },
+  {
+   "fieldname": "col_break_meta",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "analyzed_on",
+   "fieldtype": "Datetime",
+   "label": "Analyzed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_summary",
+   "fieldtype": "Section Break",
+   "label": "AI Summary"
+  },
+  {
+   "fieldname": "ai_summary",
+   "fieldtype": "Text",
+   "label": "AI Summary",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "OTH Items Loaded"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "OTH Reclassification Item"
+  },
+  {
+   "fieldname": "section_suggestions",
+   "fieldtype": "Section Break",
+   "label": "Item Suggestions"
+  },
+  {
+   "fieldname": "suggestions",
+   "fieldtype": "Table",
+   "label": "Item Suggestions",
+   "options": "OTH Reclassification Suggestion"
+  },
+  {
+   "fieldname": "section_new_prefixes",
+   "fieldtype": "Section Break",
+   "label": "Suggested New Prefixes"
+  },
+  {
+   "fieldname": "new_prefixes",
+   "fieldtype": "Table",
+   "label": "New Prefix Suggestions",
+   "options": "OTH New Prefix Suggestion"
+  },
+  {
+   "fieldname": "section_new_groups",
+   "fieldtype": "Section Break",
+   "label": "Suggested New Item Groups"
+  },
+  {
+   "fieldname": "new_item_groups",
+   "fieldtype": "Table",
+   "label": "New Item Group Suggestions",
+   "options": "OTH New Item Group Suggestion"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-04 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "mpd_base",
+ "name": "OTH Reclassification",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Master Approver",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}

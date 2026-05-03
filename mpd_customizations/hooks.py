@@ -1,4 +1,5 @@
 app_name = "mpd_customizations"
+commands = ["mpd_customizations.commands"]
 app_title = "Mpd Customizations"
 app_publisher = "mpdindustries"
 app_description = "Customizations For MPD Industries"
@@ -144,7 +145,8 @@ doctype_js = {
 
 doc_events = {
 	"Item": {
-		"on_trash": "mpd_customizations.mpd_base.item_ai.item_hooks.on_trash"
+		"before_save": "mpd_customizations.mpd_base.item_ai.item_hooks.before_save",
+		"on_trash":    "mpd_customizations.mpd_base.item_ai.item_hooks.on_trash",
 	}
 }
 
@@ -171,7 +173,7 @@ fixtures = [
 scheduler_events = {
     "cron": {
         "*/15 * * * *": [
-            "mpd_customizations.meeting_notes.action_extraction.pipeline.reset_stuck_jobs"
+            "mpd_customizations.action_extraction.pipeline.reset_stuck_jobs"
         ]
     }
 }

@@ -3,17 +3,31 @@ import os
 import frappe
 
 from mpd_customizations.setup.item_classification_prompt import ITEM_CLASSIFICATION_SYSTEM_PROMPT
+from mpd_customizations.setup.oth_reclassification_prompt import OTH_RECLASSIFICATION_SYSTEM_PROMPT
 
 
 def seed_llm_fixtures():
-    """OpenRouter provider + item_classification + meeting_note_extraction tasks. Idempotent."""
+    """OpenRouter provider + item_classification + meeting_note_extraction + oth_reclassification tasks. Idempotent."""
     if not frappe.db.exists("DocType", "LLM Provider"):
         return
     _seed_openrouter_provider()
     _seed_item_classification_config()
     _seed_meeting_note_extraction_config()
+    _seed_oth_reclassification_config()
     frappe.db.commit()
-    print("Seeded LLM fixtures (OpenRouter + item_classification + meeting_note_extraction)")
+    print("Seeded LLM fixtures (OpenRouter + item_classification + meeting_note_extraction + oth_reclassification)")
+
+
+def sync_oth_reclassification_config():
+    """Update the oth_reclassification AI Task Config with the latest prompt and max_tokens."""
+    if not frappe.db.exists("AI Task Config", "oth_reclassification"):
+        return
+    doc = frappe.get_doc("AI Task Config", "oth_reclassification")
+    doc.system_prompt = OTH_RECLASSIFICATION_SYSTEM_PROMPT
+    doc.max_tokens = 16000
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    print("Synced oth_reclassification config (prompt + max_tokens=16000)")
 
 
 def sync_item_classification_system_prompt_from_code():
@@ -60,6 +74,36 @@ def _seed_item_classification_config():
             {"parameter_key": "confidence_threshold", "parameter_value": "0.85"},
             {"parameter_key": "max_candidates", "parameter_value": "5"},
         ],
+    })
+    doc.insert(ignore_permissions=True)
+
+
+def _seed_oth_reclassification_config():
+    if frappe.db.exists("AI Task Config", "oth_reclassification"):
+        return
+    if not frappe.db.exists("LLM Provider", "OpenRouter"):
+        return
+
+    model = (
+        frappe.conf.get("openrouter_model")
+        or "openrouter/google/gemini-2.5-flash-preview"
+    )
+
+    doc = frappe.get_doc({
+        "doctype":      "AI Task Config",
+        "name":         "oth_reclassification",
+        "task_key":     "oth_reclassification",
+        "task_label":   "OTH Item Reclassification",
+        "description":  (
+            "Batch-analyses OTH-prefixed items and suggests new prefixes, "
+            "item groups, and cleaned names."
+        ),
+        "llm_provider": "OpenRouter",
+        "model":        model,
+        "temperature":  0.1,
+        "max_tokens":   16000,
+        "system_prompt": OTH_RECLASSIFICATION_SYSTEM_PROMPT,
+        "is_active":    1,
     })
     doc.insert(ignore_permissions=True)
 
