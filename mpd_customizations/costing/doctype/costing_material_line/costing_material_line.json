@@ -1,0 +1,165 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2026-05-05 21:31:13.949503",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item",
+  "item_name",
+  "qty_per_kg_output",
+  "uom",
+  "col_break1",
+  "supplier",
+  "city",
+  "rate_source_type",
+  "rate_source_ref",
+  "rate_freshness",
+  "col_break2",
+  "original_rate",
+  "effective_rate",
+  "is_overridden",
+  "amount_per_kg",
+  "section_break",
+  "supplier_credit_days",
+  "net_financed_days",
+  "financing_cost_per_kg",
+  "lead_time_days",
+  "confidence_score"
+ ],
+ "fields": [
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item"
+  },
+  {
+   "fetch_from": "item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qty_per_kg_output",
+   "fieldtype": "Float",
+   "label": "Qty per kg Output"
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM"
+  },
+  {
+   "fieldname": "col_break1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Link",
+   "label": "City",
+   "options": "City"
+  },
+  {
+   "default": "Material Rate",
+   "fieldname": "rate_source_type",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "options": "DocType"
+  },
+  {
+   "fieldname": "rate_source_ref",
+   "fieldtype": "Dynamic Link",
+   "label": "Source Ref",
+   "options": "rate_source_type"
+  },
+  {
+   "fieldname": "rate_freshness",
+   "fieldtype": "Data",
+   "label": "Rate Freshness"
+  },
+  {
+   "fieldname": "col_break2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "original_rate",
+   "fieldtype": "Currency",
+   "label": "Original Rate (\u20b9)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "effective_rate",
+   "fieldtype": "Currency",
+   "label": "Effective Rate (\u20b9)"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_overridden",
+   "fieldtype": "Check",
+   "label": "Is Overridden"
+  },
+  {
+   "fieldname": "amount_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount/kg (\u20b9)"
+  },
+  {
+   "fieldname": "section_break",
+   "fieldtype": "Section Break",
+   "label": "Financing & Terms"
+  },
+  {
+   "fieldname": "supplier_credit_days",
+   "fieldtype": "Int",
+   "label": "Credit Days"
+  },
+  {
+   "fieldname": "net_financed_days",
+   "fieldtype": "Int",
+   "label": "Financed Days"
+  },
+  {
+   "fieldname": "financing_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Fin Cost/kg (\u20b9)"
+  },
+  {
+   "fieldname": "lead_time_days",
+   "fieldtype": "Int",
+   "label": "Lead Time"
+  },
+  {
+   "fieldname": "confidence_score",
+   "fieldtype": "Float",
+   "label": "Confidence Score"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-05 21:42:59.406801",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Material Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

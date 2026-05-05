@@ -1,0 +1,41 @@
+[
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Role",
+  "home_page": null,
+  "is_custom": 0,
+  "modified": "2026-05-05 21:43:22.103558",
+  "name": "Costing User",
+  "restrict_to_domain": null,
+  "role_name": "Costing User",
+  "two_factor_auth": 0
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Role",
+  "home_page": null,
+  "is_custom": 0,
+  "modified": "2026-05-05 21:43:22.108559",
+  "name": "Costing Approver",
+  "restrict_to_domain": null,
+  "role_name": "Costing Approver",
+  "two_factor_auth": 0
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Role",
+  "home_page": null,
+  "is_custom": 0,
+  "modified": "2026-05-05 21:43:22.112211",
+  "name": "Rate Manager",
+  "restrict_to_domain": null,
+  "role_name": "Rate Manager",
+  "two_factor_auth": 0
+ }
+]

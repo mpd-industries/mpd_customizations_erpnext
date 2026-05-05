@@ -140,34 +140,20 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Material Rate": {
+		"after_insert": "mpd_customizations.api.costing.on_material_rate_created"
+	}
+}
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"mpd_customizations.tasks.all"
-# 	],
-# 	"daily": [
-# 		"mpd_customizations.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"mpd_customizations.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"mpd_customizations.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"mpd_customizations.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"daily": [
+		"mpd_customizations.costing.services.rate_validity_monitor.run_rate_validity_check"
+	]
+}
 
 # Testing
 # -------
@@ -249,4 +235,11 @@ app_license = "mit"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
+
+fixtures = [
+	{"dt": "Custom Field", "filters": [["module", "=", "Costing"]]},
+	{"dt": "Role", "filters": [["name", "in", ["Costing User", "Costing Approver", "Rate Manager"]]]},
+	"Costing Configuration",
+	{"dt": "Workspace", "filters": [["name", "=", "Costing"]]}
+]
 

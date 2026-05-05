@@ -1,0 +1,26 @@
+frappe.ui.form.on('Costing Request', {
+    refresh: function(frm) {
+        if (!frm.is_new()) {
+            frm.add_custom_button(__('Evaluate Costing'), function() {
+                frappe.call({
+                    method: 'mpd_customizations.api.costing.evaluate_costing',
+                    args: {
+                        request_name: frm.doc.name,
+                        trigger: "manual"
+                    },
+                    freeze: true,
+                    freeze_message: __('Running Costing Engine...'),
+                    callback: function(r) {
+                        if (r.message && r.message.status === 'success') {
+                            frappe.show_alert({
+                                message: __('Evaluation completed successfully'),
+                                indicator: 'green'
+                            });
+                            frm.reload_doc();
+                        }
+                    }
+                });
+            }).addClass('btn-primary');
+        }
+    }
+});

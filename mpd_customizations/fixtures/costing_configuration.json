@@ -1,0 +1,17 @@
+[
+ {
+  "actual_cost_of_capital_pct": 9.0,
+  "auto_exclusion_threshold_pct": 15.0,
+  "default_valid_to": "End of Month",
+  "default_valid_to_days": 30,
+  "docstatus": 0,
+  "doctype": "Costing Configuration",
+  "engine_version": "1.0.0",
+  "formulation_switch_threshold_pct": 0.0,
+  "modified": "2026-05-05 18:32:34.576260",
+  "name": "Costing Configuration",
+  "production_days": 30,
+  "rate_expiry_warning_days": 30,
+  "supplier_financing_rate_pct": 12.0
+ }
+]

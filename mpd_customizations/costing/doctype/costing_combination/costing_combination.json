@@ -1,0 +1,189 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2026-05-05 21:31:13.899712",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "costing_request",
+  "bom",
+  "formulation_id",
+  "is_preferred",
+  "is_selected",
+  "col_break1",
+  "status",
+  "rank",
+  "delta_pct",
+  "section_break",
+  "rm_cost_per_kg",
+  "financing_cost_per_kg",
+  "col_break2",
+  "processing_cost_per_kg",
+  "additional_charges_per_kg",
+  "outward_freight_per_kg",
+  "col_break3",
+  "total_cost_per_kg",
+  "material_lines_section",
+  "material_lines",
+  "meta_section",
+  "processing_charge_ref",
+  "missing_items",
+  "expired_items",
+  "evaluated_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "costing_request",
+   "fieldtype": "Link",
+   "label": "Costing Request",
+   "options": "Costing Request",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bom",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "BOM",
+   "options": "BOM",
+   "reqd": 1
+  },
+  {
+   "fieldname": "formulation_id",
+   "fieldtype": "Data",
+   "label": "Formulation ID",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_preferred",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Preferred"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_selected",
+   "fieldtype": "Check",
+   "label": "Selected for Quotation"
+  },
+  {
+   "fieldname": "col_break1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Ready to Quote\nIndicative \u2014 Rates Expired\nIndicative \u2014 Rates Missing\nExcluded \u2014 Too Expensive\nExcluded \u2014 Internal Rule"
+  },
+  {
+   "fieldname": "rank",
+   "fieldtype": "Int",
+   "label": "Cost Rank"
+  },
+  {
+   "fieldname": "delta_pct",
+   "fieldtype": "Percent",
+   "label": "% from Cheapest"
+  },
+  {
+   "fieldname": "section_break",
+   "fieldtype": "Section Break",
+   "label": "Cost Breakdown"
+  },
+  {
+   "fieldname": "rm_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "RM Cost (\u20b9)"
+  },
+  {
+   "fieldname": "financing_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Financing Cost (\u20b9)"
+  },
+  {
+   "fieldname": "col_break2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "processing_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Processing Cost (\u20b9)"
+  },
+  {
+   "fieldname": "additional_charges_per_kg",
+   "fieldtype": "Currency",
+   "label": "Additional Charges (\u20b9)"
+  },
+  {
+   "fieldname": "outward_freight_per_kg",
+   "fieldtype": "Currency",
+   "label": "Outward Freight (\u20b9)"
+  },
+  {
+   "fieldname": "col_break3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_cost_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total Cost (\u20b9)"
+  },
+  {
+   "fieldname": "material_lines_section",
+   "fieldtype": "Section Break",
+   "label": "Material Breakdown"
+  },
+  {
+   "fieldname": "material_lines",
+   "fieldtype": "Table",
+   "label": "Materials",
+   "options": "Costing Material Line"
+  },
+  {
+   "fieldname": "meta_section",
+   "fieldtype": "Section Break",
+   "label": "Metadata"
+  },
+  {
+   "fieldname": "processing_charge_ref",
+   "fieldtype": "Link",
+   "label": "Processing Charge Ref",
+   "options": "Processing Charge"
+  },
+  {
+   "fieldname": "missing_items",
+   "fieldtype": "Small Text",
+   "label": "Missing Items"
+  },
+  {
+   "fieldname": "expired_items",
+   "fieldtype": "Small Text",
+   "label": "Expired Items"
+  },
+  {
+   "fieldname": "evaluated_on",
+   "fieldtype": "Datetime",
+   "label": "Evaluated On"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-05 23:36:47.935194",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Combination",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

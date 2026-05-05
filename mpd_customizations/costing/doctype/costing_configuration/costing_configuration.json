@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-05-05 21:31:14.246577",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "engine_version",
+  "section_break_production",
+  "production_days",
+  "section_break_rates",
+  "supplier_financing_rate_pct",
+  "actual_cost_of_capital_pct",
+  "section_break_formulation",
+  "auto_exclusion_threshold_pct",
+  "formulation_switch_threshold_pct",
+  "section_break_validity",
+  "default_valid_to",
+  "default_valid_to_days",
+  "rate_expiry_warning_days"
+ ],
+ "fields": [
+  {
+   "default": "1.0.0",
+   "fieldname": "engine_version",
+   "fieldtype": "Data",
+   "label": "Engine Version"
+  },
+  {
+   "fieldname": "section_break_production",
+   "fieldtype": "Section Break",
+   "label": "Production Parameters"
+  },
+  {
+   "default": "30",
+   "fieldname": "production_days",
+   "fieldtype": "Int",
+   "label": "Production Days"
+  },
+  {
+   "fieldname": "section_break_rates",
+   "fieldtype": "Section Break",
+   "label": "Interest Rates"
+  },
+  {
+   "default": "12",
+   "fieldname": "supplier_financing_rate_pct",
+   "fieldtype": "Float",
+   "label": "Supplier Financing Rate % pa"
+  },
+  {
+   "default": "9",
+   "fieldname": "actual_cost_of_capital_pct",
+   "fieldtype": "Float",
+   "label": "Actual Cost of Capital % pa",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "section_break_formulation",
+   "fieldtype": "Section Break",
+   "label": "Formulation Selection"
+  },
+  {
+   "default": "15",
+   "fieldname": "auto_exclusion_threshold_pct",
+   "fieldtype": "Float",
+   "label": "Auto Exclusion Threshold %"
+  },
+  {
+   "default": "5",
+   "fieldname": "formulation_switch_threshold_pct",
+   "fieldtype": "Float",
+   "label": "Formulation Switch Alert Threshold %"
+  },
+  {
+   "fieldname": "section_break_validity",
+   "fieldtype": "Section Break",
+   "label": "Rate Validity"
+  },
+  {
+   "default": "End of Month",
+   "fieldname": "default_valid_to",
+   "fieldtype": "Select",
+   "label": "Default Valid To",
+   "options": "End of Month\nEnd of Quarter\nCustom Days"
+  },
+  {
+   "default": "30",
+   "depends_on": "eval:doc.default_valid_to=='Custom Days'",
+   "fieldname": "default_valid_to_days",
+   "fieldtype": "Int",
+   "label": "Default Valid To Days"
+  },
+  {
+   "default": "30",
+   "fieldname": "rate_expiry_warning_days",
+   "fieldtype": "Int",
+   "label": "Rate Expiry Warning Days"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-05-05 21:31:14.246577",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Configuration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Costing User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Costing Approver",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Rate Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
