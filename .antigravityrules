@@ -1,0 +1,48 @@
+# MPD Costing Engine — AI Development Rules
+
+You are assisting in the development of the MPD Costing Engine within the `mpd_customizations` Frappe app. 
+Adherence to these rules is mandatory for all code generation and modifications.
+
+## 1. Architectural Integrity (Critical)
+- **Services Layer First**: ALL business logic and calculations MUST reside in the `services/` directory.
+- **Thin Controllers**: DocType controllers (`doctype_name.py`) should only handle validation and delegation to services.
+- **Thin APIs**: API endpoints (`api/costing.py`) should only handle permission checks, parameter validation, and delegation.
+- **Thin JavaScript**: JavaScript (`doctype_name.js`) handles UI/UX only (display, toggling, rendering panels). NO business logic.
+- **Testability**: Service functions should be pure and independently testable. Avoid Frappe imports in `cost_calculator.py` where possible.
+
+## 2. Frappe v16 Best Practices
+- **ORM Over SQL**: Use `frappe.db.get_all`, `frappe.db.get_value`, etc. DO NOT use `frappe.db.sql` unless the ORM cannot handle the query.
+- **Bulk Operations**: DO NOT call `frappe.get_doc` inside loops. Use bulk queries to fetch data in one go and process in memory.
+- **No Deprecated APIs**: Use only Frappe v16+ compliant methods. Avoid `frappe._dict` where standard dicts/dataclasses suffice.
+- **No Server Scripts**: All logic must be in Python files within the app. Database-stored Server Scripts are forbidden.
+- **Implicit Commits**: Never call `frappe.db.commit()` explicitly.
+- **Fixtures**: All custom fields, roles, and configurations must be delivered as fixtures in the `fixtures/` directory.
+
+## 3. Module Specifics (Costing Module)
+- **Namespace**: All new logic belongs to the `costing` module inside `mpd_customizations`.
+- **Naming Conventions**:
+  - Material Rate: `MR-.YYYY.-.#####`
+  - Processing Charge: `PC-.YYYY.-.#####`
+  - Costing Request: `CR-.YYYY.-.#####`
+  - Costing Combination: `CC-.YYYY.-.#####`
+  - Costing Material Line: `CML-.YYYY.-.#####`
+- **Data Lifecycle**: `Costing Combination` and `Costing Material Line` are ephemeral; they are purged and rewritten by the `CostingEngine` on every evaluation.
+
+## 4. Security & Permissions
+- **Layered Data**: Internal earnings (Layer 3) must ONLY be accessible to `Costing Approver` and `System Manager` roles.
+- **Role Validation**: Every whitelisted API must explicitly check for the required role using `frappe.has_permission` or similar.
+
+## 5. Development Workflow
+- **No Placeholders**: Do not use "to be implemented" comments. Implement the full logic as per the architecture.
+- **Error Handling**: Catch specific exceptions (e.g., `RateConflictError`) and return structured JSON. No tracebacks in the UI.
+- **Migration**: Always assume `bench migrate` will be run. Ensure `hooks.py` and `modules.txt` are updated appropriately.
+
+## 6. What NOT To Do (Section 17 Checklist)
+- [ ] No logic in Server Scripts.
+- [ ] No `frappe.db.sql` where ORM suffices.
+- [ ] No `frappe.get_doc` in loops.
+- [ ] No `doc.save()` for computed fields on related docs (use `frappe.db.set_value`).
+- [ ] No business logic in controllers, API endpoints, or JS.
+- [ ] No manual deletion of combinations/material lines (use engine cascade).
+- [ ] No modification of ERPNext core DocTypes.
+- [ ] No positional arguments in `frappe.db.get_all`.
