@@ -1,0 +1,23 @@
+[
+  {
+    "doctype": "Role",
+    "name": "Costing User",
+    "role_name": "Costing User",
+    "desk_access": 1,
+    "is_custom": 1
+  },
+  {
+    "doctype": "Role",
+    "name": "Costing Approver",
+    "role_name": "Costing Approver",
+    "desk_access": 1,
+    "is_custom": 1
+  },
+  {
+    "doctype": "Role",
+    "name": "Rate Manager",
+    "role_name": "Rate Manager",
+    "desk_access": 1,
+    "is_custom": 1
+  }
+]

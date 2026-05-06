@@ -1,0 +1,301 @@
+{
+ "actions": [],
+ "autoname": "CR-.YYYY.-.#####",
+ "creation": "2024-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_product",
+  "item",
+  "item_name",
+  "solids_content_pct",
+  "col_break_product",
+  "processor",
+  "processor_name",
+  "section_break_parameters",
+  "production_days",
+  "fetched_production_days",
+  "col_break_params",
+  "supplier_financing_rate_pct",
+  "fetched_supplier_financing_rate_pct",
+  "section_break_processing",
+  "processing_lines",
+  "section_break_rates",
+  "rate_lines",
+  "section_break_previous",
+  "preferred_bom",
+  "previous_costing_ref",
+  "section_break_additional",
+  "additional_charges",
+  "section_break_state",
+  "mode",
+  "selected_combination",
+  "confirmed_ex_factory_cost_per_kg",
+  "last_evaluated_on",
+  "engine_version_used",
+  "formulation_switch_alert",
+  "section_break_panels",
+  "combinations_html",
+  "cost_breakdown_html",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_product",
+   "fieldtype": "Section Break",
+   "label": "Product"
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Product",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Product Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "solids_content_pct",
+   "fieldtype": "Float",
+   "label": "Solids Content %",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col_break_product",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "processor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Processor",
+   "options": "Processor",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "processor.processor_name",
+   "fieldname": "processor_name",
+   "fieldtype": "Data",
+   "label": "Processor Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_parameters",
+   "fieldtype": "Section Break",
+   "label": "Parameters"
+  },
+  {
+   "fieldname": "production_days",
+   "fieldtype": "Int",
+   "label": "Production Days",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fetched_production_days",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Fetched Production Days"
+  },
+  {
+   "fieldname": "col_break_params",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "supplier_financing_rate_pct",
+   "fieldtype": "Float",
+   "label": "Supplier Financing Rate % pa",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fetched_supplier_financing_rate_pct",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Fetched Supplier Financing Rate"
+  },
+  {
+   "fieldname": "section_break_previous",
+   "fieldtype": "Section Break",
+   "label": "Previous Costing"
+  },
+  {
+   "fieldname": "preferred_bom",
+   "fieldtype": "Link",
+   "label": "Preferred Formulation",
+   "options": "BOM"
+  },
+  {
+   "fieldname": "previous_costing_ref",
+   "fieldtype": "Link",
+   "label": "Pre-filled From",
+   "options": "Costing Request",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_additional",
+   "fieldtype": "Section Break",
+   "label": "Additional Charges"
+  },
+  {
+   "fieldname": "additional_charges",
+   "fieldtype": "Table",
+   "label": "Additional Charges",
+   "options": "Costing Additional Charge"
+  },
+  {
+   "fieldname": "section_break_rates",
+   "fieldtype": "Section Break",
+   "label": "Rates"
+  },
+  {
+   "fieldname": "rate_lines",
+   "fieldtype": "Table",
+   "label": "Material Rates",
+   "options": "Costing Rate Line"
+  },
+  {
+   "fieldname": "section_break_processing",
+   "fieldtype": "Section Break",
+   "label": "Processing"
+  },
+  {
+   "fieldname": "processing_lines",
+   "fieldtype": "Table",
+   "label": "Processing Charge",
+   "options": "Costing Processing Line"
+  },
+  {
+   "fieldname": "section_break_state",
+   "fieldtype": "Section Break",
+   "label": "State"
+  },
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "options": "Exploring\nAwaiting Rates\nPartially Costed\nReady to Quote\nPending Approval\nApproved\nRejected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "selected_combination",
+   "fieldtype": "Link",
+   "label": "Selected Formulation",
+   "options": "Costing Combination",
+   "read_only": 1
+  },
+  {
+   "fieldname": "confirmed_ex_factory_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Confirmed Ex-Factory Cost per kg",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_evaluated_on",
+   "fieldtype": "Datetime",
+   "label": "Last Evaluated On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "engine_version_used",
+   "fieldtype": "Data",
+   "label": "Engine Version Used",
+   "read_only": 1
+  },
+  {
+   "fieldname": "formulation_switch_alert",
+   "fieldtype": "Small Text",
+   "label": "Formulation Alert",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_panels",
+   "fieldtype": "Section Break",
+   "label": "Panels"
+  },
+  {
+   "fieldname": "combinations_html",
+   "fieldtype": "HTML",
+   "label": "Formulation Comparison"
+  },
+  {
+   "fieldname": "cost_breakdown_html",
+   "fieldtype": "HTML",
+   "label": "Cost Breakdown"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Costing Request",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-05-06 12:35:18.346013",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Request",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Approver",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Rate Manager",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

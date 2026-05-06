@@ -1,0 +1,179 @@
+{
+ "actions": [],
+ "autoname": "CC-.YYYY.-.#####",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "costing_request",
+  "bom",
+  "formulation_id",
+  "is_preferred",
+  "section_break_costs",
+  "rm_cost_per_kg",
+  "financing_cost_per_kg",
+  "processing_cost_per_kg",
+  "additional_charges_per_kg",
+  "outward_freight_per_kg",
+  "total_cost_per_kg",
+  "col_break_costs",
+  "rank",
+  "delta_pct",
+  "status",
+  "is_selected",
+  "section_break_refs",
+  "processing_charge_ref",
+  "missing_items",
+  "expired_items",
+  "evaluated_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "costing_request",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Costing Request",
+   "options": "Costing Request",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bom",
+   "fieldtype": "Link",
+   "label": "BOM",
+   "options": "BOM",
+   "reqd": 1
+  },
+  {
+   "fieldname": "formulation_id",
+   "fieldtype": "Data",
+   "label": "Formulation ID"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_preferred",
+   "fieldtype": "Check",
+   "label": "Is Preferred"
+  },
+  {
+   "fieldname": "section_break_costs",
+   "fieldtype": "Section Break",
+   "label": "Cost Breakdown per kg"
+  },
+  {
+   "fieldname": "rm_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "RM Cost per kg"
+  },
+  {
+   "fieldname": "financing_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Financing Cost per kg"
+  },
+  {
+   "fieldname": "processing_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Processing Cost per kg"
+  },
+  {
+   "fieldname": "additional_charges_per_kg",
+   "fieldtype": "Currency",
+   "label": "Additional Charges per kg"
+  },
+  {
+   "fieldname": "outward_freight_per_kg",
+   "fieldtype": "Currency",
+   "label": "Outward Freight per kg"
+  },
+  {
+   "fieldname": "total_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Total Cost per kg"
+  },
+  {
+   "fieldname": "col_break_costs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rank",
+   "fieldtype": "Int",
+   "label": "Rank"
+  },
+  {
+   "fieldname": "delta_pct",
+   "fieldtype": "Float",
+   "label": "Delta % vs Cheapest"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nReady to Quote\nIndicative — Rates Expired\nIndicative — Rates Missing\nExcluded — Too Expensive"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_selected",
+   "fieldtype": "Check",
+   "label": "Selected"
+  },
+  {
+   "fieldname": "section_break_refs",
+   "fieldtype": "Section Break",
+   "label": "References"
+  },
+  {
+   "fieldname": "processing_charge_ref",
+   "fieldtype": "Data",
+   "label": "Processing Charge Used"
+  },
+  {
+   "fieldname": "missing_items",
+   "fieldtype": "Small Text",
+   "label": "Missing Rate Items"
+  },
+  {
+   "fieldname": "expired_items",
+   "fieldtype": "Small Text",
+   "label": "Expired Rate Items"
+  },
+  {
+   "fieldname": "evaluated_on",
+   "fieldtype": "Datetime",
+   "label": "Evaluated On"
+  }
+ ],
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Combination",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Costing User"
+  },
+  {
+   "read": 1,
+   "role": "Costing Approver"
+  },
+  {
+   "read": 1,
+   "role": "Rate Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

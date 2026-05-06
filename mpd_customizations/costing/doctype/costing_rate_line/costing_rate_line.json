@@ -1,0 +1,117 @@
+{
+ "actions": [],
+ "creation": "2024-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "item",
+  "item_name",
+  "uom",
+  "city",
+  "supplier",
+  "rate_source_ref",
+  "fetched_rate",
+  "fetched_supplier_credit_days",
+  "rate_freshness",
+  "working_rate",
+  "working_supplier_credit_days",
+  "override_reason"
+ ],
+ "fields": [
+  {
+   "columns": 4,
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Link",
+   "label": "City",
+   "options": "City",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Winning Supplier",
+   "options": "Supplier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate_source_ref",
+   "fieldtype": "Link",
+   "label": "Rate Source",
+   "options": "Material Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fetched_rate",
+   "fieldtype": "Currency",
+   "label": "Official Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fetched_supplier_credit_days",
+   "fieldtype": "Int",
+   "label": "Official Credit Days",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate_freshness",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Freshness",
+   "options": "\nCurrent\nExpired\nMissing",
+   "read_only": 1
+  },
+  {
+   "fieldname": "working_rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate to Use"
+  },
+  {
+   "fieldname": "working_supplier_credit_days",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Credit Days"
+  },
+  {
+   "fieldname": "override_reason",
+   "fieldtype": "Small Text",
+   "label": "Override Reason"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-06 12:22:36.192703",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Rate Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

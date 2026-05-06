@@ -19,5 +19,27 @@
   "insert_after": "md_description",
   "read_only": 1,
   "no_copy": 1
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-custom_solids_content_pct",
+  "dt": "Item",
+  "fieldname": "custom_solids_content_pct",
+  "fieldtype": "Float",
+  "label": "Solids Content %",
+  "insert_after": "description",
+  "module": "Costing",
+  "is_custom_field": 1
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "BOM-custom_formulation_id",
+  "dt": "BOM",
+  "fieldname": "custom_formulation_id",
+  "fieldtype": "Data",
+  "label": "Formulation ID",
+  "insert_after": "item",
+  "module": "Costing",
+  "is_custom_field": 1
  }
 ]

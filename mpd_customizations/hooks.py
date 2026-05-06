@@ -147,7 +147,10 @@ doc_events = {
 	"Item": {
 		"before_save": "mpd_customizations.mpd_base.item_ai.item_hooks.before_save",
 		"on_trash":    "mpd_customizations.mpd_base.item_ai.item_hooks.on_trash",
-	}
+	},
+	"Material Rate": {
+		"on_submit": "mpd_customizations.costing.api.costing.on_material_rate_submitted",
+	},
 }
 
 # doc_events = {
@@ -165,6 +168,10 @@ fixtures = [
     {"dt": "Custom Field", "filters": [["dt", "in", ["Task"]]]},
     {"dt": "Property Setter", "filters": [["doc_type", "=", "Task"], ["field_name", "=", "description"]]},
     {"dt": "Role", "filters": [["name", "in", ["Xfloor CMS Manager"]]]},
+    # Costing module fixtures
+    {"dt": "Custom Field", "filters": [["module", "=", "Costing"]]},
+    {"dt": "Role", "filters": [["name", "in", ["Costing User", "Costing Approver", "Rate Manager"]]]},
+    {"dt": "Costing Configuration"},
 ]
 
 # Scheduled Tasks
@@ -175,7 +182,10 @@ scheduler_events = {
         "*/15 * * * *": [
             "mpd_customizations.action_extraction.pipeline.reset_stuck_jobs"
         ]
-    }
+    },
+    "daily": [
+        "mpd_customizations.costing.services.rate_validity_monitor.run_rate_validity_check"
+    ],
 }
 
 # Testing
