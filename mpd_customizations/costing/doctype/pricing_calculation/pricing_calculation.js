@@ -230,6 +230,117 @@ function _render_action_bar(frm) {
 			});
 		}, __("Decision"));
 	}
+
+	if (frm.doc.docstatus === 0) {
+		const _rate_ov = (frm.doc.rate_lines || []).filter(rl =>
+			Math.round((rl.working_rate || 0) * 100) / 100 !==
+			Math.round((rl.fetched_rate || 0) * 100) / 100
+		);
+		const _proc_ov = (frm.doc.processing_lines || []).filter(pl =>
+			pl.fetched_charge_per_kg &&
+			Math.round((pl.working_charge_per_kg || 0) * 100) / 100 !==
+			Math.round((pl.fetched_charge_per_kg || 0) * 100) / 100
+		);
+		if (_rate_ov.length + _proc_ov.length > 0) {
+			frm.add_custom_button(
+				`⚠ Overrides (${_rate_ov.length + _proc_ov.length})`,
+				() => _show_overrides_dialog(frm)
+			);
+		}
+	}
+}
+
+// ─── Overrides dialog ────────────────────────────────────────────────────────
+
+function _show_overrides_dialog(frm) {
+	const rate_ov = (frm.doc.rate_lines || []).filter(rl =>
+		Math.round((rl.working_rate || 0) * 100) / 100 !==
+		Math.round((rl.fetched_rate || 0) * 100) / 100
+	);
+	const proc_ov = (frm.doc.processing_lines || []).filter(pl =>
+		pl.fetched_charge_per_kg &&
+		Math.round((pl.working_charge_per_kg || 0) * 100) / 100 !==
+		Math.round((pl.fetched_charge_per_kg || 0) * 100) / 100
+	);
+
+	const make_row = (label, fetched, working, reason, attrs) => {
+		const delta = fetched ? ((working - fetched) / fetched * 100).toFixed(1) : "—";
+		const up = (working || 0) > (fetched || 0);
+		return `<tr>
+			<td>${frappe.utils.escape_html(label)}</td>
+			<td class="text-right">₹${(fetched || 0).toFixed(2)}</td>
+			<td class="text-right">₹${(working || 0).toFixed(2)}</td>
+			<td class="text-right font-weight-bold" style="color:${up ? "#c62828" : "#2e7d32"}">
+				${up ? "↑" : "↓"}${Math.abs(parseFloat(delta)).toFixed(1)}%
+			</td>
+			<td class="text-muted small">${frappe.utils.escape_html(reason || "")}</td>
+			<td><button class="btn btn-xs btn-default" ${attrs}>${__("Revert")}</button></td>
+		</tr>`;
+	};
+
+	const rows =
+		rate_ov.map(rl => make_row(
+			rl.item_name || rl.item,
+			rl.fetched_rate, rl.working_rate,
+			rl.override_reason,
+			`data-revert-item="${frappe.utils.escape_html(rl.item)}"`
+		)).join("") +
+		proc_ov.map(pl => make_row(
+			pl.processor || __("Processing"),
+			pl.fetched_charge_per_kg, pl.working_charge_per_kg,
+			pl.override_reason,
+			`data-revert-processing="1"`
+		)).join("");
+
+	const html = `
+		<table class="table table-sm table-bordered mb-0">
+			<thead class="thead-light">
+				<tr>
+					<th>${__("Item / Charge")}</th>
+					<th class="text-right">${__("Market")}</th>
+					<th class="text-right">${__("Working")}</th>
+					<th class="text-right">Δ</th>
+					<th>${__("Reason")}</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>${rows}</tbody>
+		</table>`;
+
+	const d = new frappe.ui.Dialog({
+		title: __(`Active Overrides (${rate_ov.length + proc_ov.length})`),
+		fields: [{ fieldtype: "HTML", fieldname: "content" }],
+		primary_action_label: __("Revert All"),
+		primary_action() {
+			frappe.call({
+				method: `${API}.revert_all_overrides`,
+				args: { pricing_calculation_name: frm.doc.name },
+				callback() { d.hide(); frm.reload_doc(); },
+			});
+		},
+	});
+
+	const $w = d.fields_dict.content.$wrapper;
+	$w.html(html);
+
+	$w.on("click", "[data-revert-item]", function () {
+		const item = $(this).data("revert-item");
+		frappe.call({
+			method: `${API}.revert_rate_override`,
+			args: { pricing_calculation_name: frm.doc.name, item },
+			callback() { d.hide(); frm.reload_doc(); },
+		});
+	});
+
+	$w.on("click", "[data-revert-processing]", function () {
+		frappe.call({
+			method: `${API}.revert_all_overrides`,
+			args: { pricing_calculation_name: frm.doc.name },
+			callback() { d.hide(); frm.reload_doc(); },
+		});
+	});
+
+	d.show();
 }
 
 // ─── Combination cards ───────────────────────────────────────────────────────
