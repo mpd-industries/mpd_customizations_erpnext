@@ -6,7 +6,7 @@ const API = "mpd_customizations.costing.api.costing";
 let _config_production_days = null;
 let _config_financing_rate = null;
 let _pending_fetch_result = null;
-let _recompute_timer = null;
+let _evaluate_timer = null;
 const _auto_evaluated = new Set();  // tracks which PC names have been synced this session
 
 // ─── Initialisation ─────────────────────────────────────────────────────────
@@ -78,24 +78,24 @@ frappe.ui.form.on("Pricing Calculation", {
 
 	production_days(frm) {
 		_apply_amber_indicators(frm);
-		_schedule_recompute(frm);
+		_schedule_evaluate(frm);
 	},
 
 	supplier_financing_rate_pct(frm) {
 		_apply_amber_indicators(frm);
-		_schedule_recompute(frm);
+		_schedule_evaluate(frm);
 	},
 
 	solids_content_pct(frm) {
-		_schedule_recompute(frm);
+		_schedule_evaluate(frm);
 	},
 
 	preferred_bom(frm) {
-		_schedule_recompute(frm);
+		_schedule_evaluate(frm);
 	},
 
 	additional_charges_remove(frm) {
-		_schedule_recompute(frm);
+		_schedule_evaluate(frm);
 	},
 });
 
@@ -120,8 +120,8 @@ frappe.ui.form.on("Costing Rate Line", {
 // ─── Costing Additional Charge child table ───────────────────────────────────
 
 frappe.ui.form.on("Costing Additional Charge", {
-	rate(frm) { _schedule_recompute(frm); },
-	basis(frm) { _schedule_recompute(frm); },
+	rate(frm) { _schedule_evaluate(frm); },
+	basis(frm) { _schedule_evaluate(frm); },
 });
 
 function _on_rate_line_change(frm, cdt, cdn) {
@@ -145,12 +145,7 @@ function _on_rate_line_change(frm, cdt, cdn) {
 			working_supplier_credit_days: row.working_supplier_credit_days || 0,
 			reason: row.override_reason || "",
 		},
-		callback(r) {
-			if (r.message) {
-				if (r.message.modified) frm.doc.modified = r.message.modified;
-				_render_combinations(frm, r.message.combinations);
-			}
-		},
+		callback() { frm.reload_doc(); },
 	});
 }
 
@@ -172,32 +167,18 @@ function _do_evaluate(frm) {
 	});
 }
 
-// ─── Reactive recompute (no rate fetch) ──────────────────────────────────────
+// ─── Reactive recompute ───────────────────────────────────────────────────────
 
-function _schedule_recompute(frm) {
+function _schedule_evaluate(frm) {
 	if (frm.doc.__islocal) return;
-	clearTimeout(_recompute_timer);
-	_recompute_timer = setTimeout(() => {
+	clearTimeout(_evaluate_timer);
+	_evaluate_timer = setTimeout(() => {
 		if (frm.is_dirty()) {
-			frm.save().then(() => _do_recompute(frm));
+			frm.save().then(() => _do_evaluate(frm));
 		} else {
-			_do_recompute(frm);
+			_do_evaluate(frm);
 		}
 	}, 600);
-}
-
-function _do_recompute(frm) {
-	frappe.call({
-		method: `${API}.recompute_combinations`,
-		args: { pricing_calculation_name: frm.doc.name },
-		callback(r) {
-			if (r.message) {
-				if (r.message.modified) frm.doc.modified = r.message.modified;
-				_render_combinations(frm, r.message.combinations);
-				if (frm.doc.selected_combination) _load_and_render_breakdown(frm);
-			}
-		},
-	});
 }
 
 // ─── Request breadcrumb ──────────────────────────────────────────────────────

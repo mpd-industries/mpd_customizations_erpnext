@@ -77,16 +77,26 @@ class CostingEngine:
 			scrap_items_map.setdefault(si["parent"], []).append(si)
 
 		# Build map of previous approved PC's RM costs per BOM for delta display
+		# Also derive preferred_bom from the previously selected combination
 		prev_rm_costs = {}
+		preferred_bom_override = None
 		if doc.pricing_request:
 			prev_pc_name = frappe.db.get_value("Pricing Request", doc.pricing_request, "previous_pricing_ref")
 			if prev_pc_name:
 				prev_combos = frappe.get_all(
 					"Costing Combination",
 					filters={"pricing_calculation": prev_pc_name},
-					fields=["bom", "rm_cost_per_kg"],
+					fields=["bom", "rm_cost_per_kg", "is_selected"],
 				)
 				prev_rm_costs = {c.bom: c.rm_cost_per_kg for c in prev_combos}
+				selected = next((c for c in prev_combos if c.is_selected), None)
+				if selected:
+					preferred_bom_override = selected.bom
+
+		preferred_bom = preferred_bom_override or doc.preferred_bom
+		if preferred_bom_override and preferred_bom_override != doc.preferred_bom:
+			frappe.db.set_value("Pricing Calculation", pricing_calculation_name, "preferred_bom", preferred_bom_override)
+			doc.preferred_bom = preferred_bom_override
 
 		rate_lines_map = {rl.item: rl for rl in (doc.rate_lines or [])}
 		scrap_lines_map = {sl.item: sl for sl in (doc.scrap_lines or [])}
@@ -213,7 +223,7 @@ class CostingEngine:
 			})
 
 		selector = FormulationSelector(self._config)
-		selection = selector.select(combination_results, doc.preferred_bom)
+		selection = selector.select(combination_results, preferred_bom)
 
 		previously_selected_bom = None
 		if doc.selected_combination:

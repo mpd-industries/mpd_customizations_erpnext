@@ -3,28 +3,19 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from mpd_customizations.costing.services.config import get_config
-from mpd_customizations.costing.services.cost_calculator import (
-	compute_additional_charge_amount,
-	compute_financing_cost_for_line,
-	compute_internal_earnings,
-	compute_processing_cost,
-	compute_rm_line_amount,
-	compute_total_cost,
-)
-from mpd_customizations.costing.services.formulation_selector import FormulationSelector
+from mpd_customizations.costing.services.cost_calculator import compute_internal_earnings
 from mpd_customizations.costing.services.rate_source_registry import get_default_registry
 
 
 @frappe.whitelist()
 def evaluate(pricing_calculation_name: str, trigger: str = "manual"):
 	frappe.has_permission("Pricing Calculation", "write", throw=True)
+	return _run_evaluate(pricing_calculation_name, trigger)
 
-	config = get_config()
-	registry = get_default_registry()
 
+def _run_evaluate(pricing_calculation_name: str, trigger: str = "override"):
 	from mpd_customizations.costing.services.costing_engine import CostingEngine
-	engine = CostingEngine(registry, config)
-	return engine.evaluate(pricing_calculation_name, trigger)
+	return CostingEngine(get_default_registry(), get_config()).evaluate(pricing_calculation_name, trigger)
 
 
 @frappe.whitelist()
@@ -117,7 +108,7 @@ def apply_rate_override(
 			break
 
 	doc.save(ignore_permissions=True)
-	return _recompute_combinations(doc)
+	return _run_evaluate(pricing_calculation_name)
 
 
 @frappe.whitelist()
@@ -139,7 +130,7 @@ def apply_processing_override(
 		pl.override_reason = reason
 
 	doc.save(ignore_permissions=True)
-	return _recompute_combinations(doc)
+	return _run_evaluate(pricing_calculation_name)
 
 
 @frappe.whitelist()
@@ -155,18 +146,13 @@ def revert_rate_override(pricing_calculation_name: str, item: str):
 			break
 
 	doc.save(ignore_permissions=True)
-	return _recompute_combinations(doc)
+	return _run_evaluate(pricing_calculation_name)
 
 
 @frappe.whitelist()
 def recompute_combinations(pricing_calculation_name: str):
 	frappe.has_permission("Pricing Calculation", "write", throw=True)
-	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
-	result = _recompute_combinations(doc)
-	result["modified"] = frappe.utils.cstr(
-		frappe.db.get_value("Pricing Calculation", pricing_calculation_name, "modified")
-	)
-	return result
+	return _run_evaluate(pricing_calculation_name)
 
 
 @frappe.whitelist()
@@ -187,7 +173,7 @@ def revert_all_overrides(pricing_calculation_name: str):
 		pl.override_reason = ""
 
 	doc.save(ignore_permissions=True)
-	return _recompute_combinations(doc)
+	return _run_evaluate(pricing_calculation_name)
 
 
 @frappe.whitelist()
@@ -498,164 +484,3 @@ def fetch_processing_charge(pricing_calculation_name: str):
 	doc.save(ignore_permissions=True)
 	return {"charge_per_kg": pc["charge_per_kg"], "ref": pc["name"]}
 
-
-def _recompute_combinations(doc) -> dict:
-	"""After an override update, recompute all combination costs and re-rank."""
-	config = get_config()
-	production_days = doc.production_days or 30
-	financing_rate = doc.supplier_financing_rate_pct or 12.0
-	solids = doc.solids_content_pct or 0
-	rate_lines_map = {rl.item: rl for rl in (doc.rate_lines or [])}
-	scrap_lines_map = {sl.item: sl for sl in (doc.scrap_lines or [])}
-	processing_line = doc.processing_lines[0] if doc.processing_lines else None
-
-	additional_charges_per_kg = sum(
-		compute_additional_charge_amount(c.rate or 0, c.basis, solids)
-		for c in (doc.additional_charges or [])
-	)
-
-	combos = frappe.get_all(
-		"Costing Combination",
-		filters={"pricing_calculation": doc.name},
-		fields=["name", "bom"],
-	)
-
-	combination_totals = []
-	for combo in combos:
-		material_lines = frappe.get_all(
-			"Costing Material Line",
-			filters={"combination": combo.name},
-			fields=["item", "item_name", "qty_per_kg_output", "rate_freshness", "net_financed_days", "is_scrap"],
-		)
-
-		rm_cost = 0.0
-		financing_cost = 0.0
-		missing_items = []
-		expired_items = []
-
-		for ml in material_lines:
-			is_scrap = ml.get("is_scrap")
-			qty = ml.qty_per_kg_output or 0
-
-			if is_scrap:
-				sl = scrap_lines_map.get(ml.item)
-				scrap_rate = (sl.rate_per_kg or 0) if sl else 0.0
-				amount = -1 * compute_rm_line_amount(qty, scrap_rate)
-				working_rate = scrap_rate
-				credit_days = 0
-				freshness = "Current"
-				net_financed = 0
-				fin = 0.0
-			else:
-				rl = rate_lines_map.get(ml.item)
-				working_rate = (rl.working_rate or 0) if rl else 0.0
-				credit_days = (rl.working_supplier_credit_days or 0) if rl else 0
-				freshness = (rl.rate_freshness or "Missing") if rl else "Missing"
-				net_financed = max(0, production_days - 60)
-				amount = compute_rm_line_amount(qty, working_rate)
-				fin = compute_financing_cost_for_line(amount, production_days, 60, financing_rate)
-
-			rm_cost += amount
-			financing_cost += fin
-
-			frappe.db.set_value(
-				"Costing Material Line",
-				{"combination": combo.name, "item": ml.item},
-				{
-					"working_rate": working_rate,
-					"working_supplier_credit_days": credit_days,
-					"net_financed_days": net_financed,
-					"amount_per_kg": amount,
-					"financing_cost_per_kg": fin,
-					"equalized_amount_per_kg": amount,
-					"rate_freshness": freshness,
-				},
-			)
-
-			if not ml.get("is_scrap"):
-				if freshness == "Missing":
-					missing_items.append(ml.item)
-				elif freshness == "Expired":
-					expired_items.append(ml.item)
-
-		processing_cost = 0.0
-		outward_freight = 0.0
-		if processing_line:
-			processing_cost = compute_processing_cost(solids, processing_line.working_charge_per_kg or 0)
-			if not processing_line.working_includes_outward_freight:
-				outward_freight = processing_line.working_freight_per_unit or 0
-
-		total = compute_total_cost(rm_cost, financing_cost, processing_cost, additional_charges_per_kg, outward_freight)
-
-		if missing_items:
-			status = "Indicative — Rates Missing"
-		elif expired_items:
-			status = "Indicative — Rates Expired"
-		else:
-			status = "Ready to Quote"
-
-		combination_totals.append({
-			"name": combo.name,
-			"bom": combo.bom,
-			"rm_cost_per_kg": rm_cost,
-			"financing_cost_per_kg": financing_cost,
-			"processing_cost_per_kg": processing_cost,
-			"additional_charges_per_kg": additional_charges_per_kg,
-			"outward_freight_per_kg": outward_freight,
-			"total_cost_per_kg": total,
-			"status": status,
-			"missing_items": ", ".join(missing_items),
-			"expired_items": ", ".join(expired_items),
-		})
-
-	selector = FormulationSelector(config)
-	selection = selector.select(combination_totals, doc.preferred_bom)
-
-	for combo_data in combination_totals:
-		frappe.db.set_value(
-			"Costing Combination",
-			combo_data["name"],
-			{
-				"rm_cost_per_kg": combo_data["rm_cost_per_kg"],
-				"financing_cost_per_kg": combo_data["financing_cost_per_kg"],
-				"processing_cost_per_kg": combo_data["processing_cost_per_kg"],
-				"additional_charges_per_kg": combo_data["additional_charges_per_kg"],
-				"outward_freight_per_kg": combo_data["outward_freight_per_kg"],
-				"total_cost_per_kg": combo_data["total_cost_per_kg"],
-				"status": combo_data["status"],
-				"rank": combo_data.get("rank") or 0,
-				"delta_pct": combo_data.get("delta_pct") or 0,
-				"missing_items": combo_data["missing_items"],
-				"expired_items": combo_data["expired_items"],
-			},
-		)
-
-	if doc.selected_combination:
-		selected = next((c for c in combination_totals if c["name"] == doc.selected_combination), None)
-		if selected:
-			frappe.db.set_value(
-				"Pricing Calculation",
-				doc.name,
-				"confirmed_ex_factory_cost_per_kg",
-				selected["total_cost_per_kg"],
-			)
-			# Sync to Pricing Request
-			if doc.pricing_request:
-				qty = frappe.db.get_value("Pricing Request", doc.pricing_request, "quantity_kg") or 0
-				frappe.db.set_value("Pricing Request", doc.pricing_request, {
-					"confirmed_price_per_kg": selected["total_cost_per_kg"],
-					"total_price": qty * selected["total_cost_per_kg"],
-				})
-
-	frappe.db.set_value(
-		"Pricing Calculation",
-		doc.name,
-		"formulation_switch_alert",
-		selection.switch_alert or "",
-	)
-
-	return {
-		"combinations": combination_totals,
-		"switch_alert": selection.switch_alert,
-		"modified": frappe.utils.cstr(doc.modified),
-	}

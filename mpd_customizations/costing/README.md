@@ -358,7 +358,7 @@ The PC form behaves like a spreadsheet — changes auto-propagate without any ma
 
 ### On parameter change (debounced)
 
-Changing any of the following schedules a lightweight `recompute_combinations` call (600ms debounce, saves first if dirty):
+Changing any of the following schedules a full `evaluate` call (600ms debounce, saves first if dirty):
 
 - `production_days`
 - `supplier_financing_rate_pct`
@@ -367,11 +367,9 @@ Changing any of the following schedules a lightweight `recompute_combinations` c
 - Any `additional_charges` row (rate or basis)
 - Removing an additional charge row
 
-`recompute_combinations` does not re-fetch rates — it uses the existing `rate_lines` working rates and re-runs the cost math across all combinations.
-
 ### On rate line override
 
-Editing `working_rate` or `working_supplier_credit_days` in the rate grid immediately calls `apply_rate_override`, which saves the override to the PC and recomputes combinations. The override is preserved through subsequent evaluations (unless explicitly reverted).
+Editing `working_rate` or `working_supplier_credit_days` in the rate grid immediately calls `apply_rate_override`, which saves the override to the PC, runs a full evaluate (with `preserve_overrides=True` so manual overrides are kept), and reloads the form. The override is preserved through subsequent evaluations (unless explicitly reverted).
 
 ### On Material Rate submitted (webhook)
 
