@@ -88,6 +88,10 @@ class RateFetcher:
 			existing.supplier = opt.supplier
 			existing.rate_source_ref = opt.rate_source_ref
 			existing.city = city
+			existing.last_working_rate = opt.prev_rate
+			existing.market_rate_count = opt.market_rate_count
+			existing.market_rate_avg = opt.market_rate_avg
+			existing.rate_valid_to = opt.rate_valid_to or ""
 
 		# Pass 2: drop rows for items no longer in BOM
 		doc.rate_lines = [rl for rl in doc.rate_lines if rl.item in unique_items_set]
@@ -110,6 +114,10 @@ class RateFetcher:
 				"rate_freshness": opt.rate_freshness,
 				"working_rate": eq_rate,
 				"working_supplier_credit_days": opt.supplier_credit_days,
+				"last_working_rate": opt.prev_rate,
+				"market_rate_count": opt.market_rate_count,
+				"market_rate_avg": opt.market_rate_avg,
+				"rate_valid_to": opt.rate_valid_to or "",
 			})
 
 		# ── Scrap / Byproduct lines sync ────────────────────────────────────────────

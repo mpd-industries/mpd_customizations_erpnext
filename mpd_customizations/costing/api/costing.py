@@ -35,7 +35,8 @@ def get_combinations(pricing_calculation_name: str):
 		"Costing Combination",
 		filters={"pricing_calculation": pricing_calculation_name},
 		fields=[
-			"name", "bom", "formulation_id", "rank", "delta_pct", "status",
+			"name", "bom", "formulation_id", "formulation_description", "prev_rm_cost_per_kg",
+			"rank", "delta_pct", "status",
 			"is_preferred", "is_selected", "rm_cost_per_kg", "financing_cost_per_kg",
 			"processing_cost_per_kg", "additional_charges_per_kg", "outward_freight_per_kg",
 			"total_cost_per_kg", "missing_items", "expired_items",
@@ -158,6 +159,17 @@ def revert_rate_override(pricing_calculation_name: str, item: str):
 
 
 @frappe.whitelist()
+def recompute_combinations(pricing_calculation_name: str):
+	frappe.has_permission("Pricing Calculation", "write", throw=True)
+	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
+	result = _recompute_combinations(doc)
+	result["modified"] = frappe.utils.cstr(
+		frappe.db.get_value("Pricing Calculation", pricing_calculation_name, "modified")
+	)
+	return result
+
+
+@frappe.whitelist()
 def revert_all_overrides(pricing_calculation_name: str):
 	frappe.has_permission("Pricing Calculation", "write", throw=True)
 
@@ -207,7 +219,7 @@ def create_pending_rates(pricing_calculation_name: str):
 	for item in items_needing_rates:
 		existing = frappe.db.exists(
 			"Material Rate",
-			{"item": item, "city": doc.city, "pricing_calculation": pricing_calculation_name, "docstatus": 0},
+			{"item": item, "city": doc.city, "docstatus": 0},
 		)
 		if not existing:
 			frappe.get_doc({
@@ -232,7 +244,7 @@ def _get_bom_items_without_current_rate(product_item: str, city: str) -> list:
 	today = frappe.utils.today()
 	boms = frappe.get_all(
 		"BOM",
-		filters={"item": product_item, "is_active": 1, "docstatus": 1},
+		filters={"item": product_item},
 		fields=["name"],
 	)
 	if not boms:
@@ -383,28 +395,108 @@ def auto_expire_rate(rate_name: str, new_valid_to: str):
 
 
 def on_material_rate_submitted(doc, method):
-	"""Hook: fires on_submit of Material Rate. Notify Pricing Calculation owners."""
-	# Notify owners of open Pricing Calculations awaiting this rate
+	"""Hook: fires on_submit of Material Rate. Synchronously re-evaluate all affected PCs."""
+	from mpd_customizations.costing.services.config import get_config
+	from mpd_customizations.costing.services.rate_source_registry import get_default_registry
+	from mpd_customizations.costing.services.costing_engine import CostingEngine
+
 	open_calcs = frappe.get_all(
 		"Pricing Calculation",
 		filters={"mode": ["in", ["Awaiting Rates", "Ready for Working"]]},
-		fields=["name", "owner", "pricing_request"],
+		fields=["name", "owner"],
 	)
-
 	if not open_calcs:
 		return
 
 	for pc in open_calcs:
-		has_missing = frappe.db.exists(
+		has_relevant = frappe.db.exists(
 			"Costing Rate Line",
 			{"parent": pc.name, "item": doc.item, "rate_freshness": ["in", ["Missing", "Expired"]]},
 		)
-		if has_missing:
-			frappe.publish_realtime(
-				"eval_js",
-				f"frappe.show_alert({{message: 'New rate for {doc.item_name or doc.item} — re-evaluate {pc.name}', indicator: 'green'}})",
-				user=pc.owner,
-			)
+		if not has_relevant:
+			continue
+		try:
+			CostingEngine(get_default_registry(), get_config()).evaluate(pc.name, "auto")
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"Auto-evaluate failed for {pc.name}")
+			continue
+		frappe.publish_realtime(
+			"eval_js",
+			f"if(cur_frm&&cur_frm.doctype==='Pricing Calculation'&&cur_frm.docname==='{pc.name}'){{cur_frm.reload_doc();frappe.show_alert({{message:'Rates updated — calculation refreshed',indicator:'green'}});}}",
+			user=pc.owner,
+		)
+
+
+@frappe.whitelist()
+def approve_pricing_calculation(pricing_calculation_name: str):
+	if not set(frappe.get_roles()) & {"Costing Approver", "System Manager"}:
+		frappe.throw(_("Only Costing Approvers can approve."), frappe.PermissionError)
+
+	pc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
+	pc.mode = "Approved"
+	pc.submit()  # sets docstatus=1, fires before_submit validation
+
+	if pc.pricing_request:
+		frappe.db.set_value("Pricing Request", pc.pricing_request, "status", "Approved")
+		pr_docstatus = frappe.db.get_value("Pricing Request", pc.pricing_request, "docstatus")
+		if pr_docstatus == 0:
+			frappe.db.set_value("Pricing Request", pc.pricing_request, "docstatus", 1)
+
+	return {"success": True}
+
+
+@frappe.whitelist()
+def reject_pricing_calculation(pricing_calculation_name: str):
+	if not set(frappe.get_roles()) & {"Costing Approver", "System Manager"}:
+		frappe.throw(_("Only Costing Approvers can reject."), frappe.PermissionError)
+
+	pc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
+	frappe.db.set_value("Pricing Calculation", pricing_calculation_name, "mode", "Rejected")
+
+	if pc.pricing_request:
+		frappe.db.set_value("Pricing Request", pc.pricing_request, "status", "Rejected")
+
+	return {"success": True}
+
+
+@frappe.whitelist()
+def fetch_processing_charge(pricing_calculation_name: str):
+	frappe.has_permission("Pricing Calculation", "write", throw=True)
+
+	from mpd_customizations.costing.services.rate_fetcher import _get_processing_charge
+
+	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
+	if not doc.processor or not doc.item:
+		return None
+
+	pc = _get_processing_charge(doc.processor, doc.item, now_datetime())
+	if not pc:
+		return None
+
+	existing_pl = doc.processing_lines[0] if doc.processing_lines else None
+	if existing_pl:
+		existing_pl.fetched_charge_per_kg = pc["charge_per_kg"]
+		existing_pl.fetched_freight_per_unit = pc.get("fg_freight_per_unit") or 0
+		existing_pl.fetched_includes_outward_freight = pc.get("includes_outward_freight")
+		existing_pl.working_charge_per_kg = pc["charge_per_kg"]
+		existing_pl.working_freight_per_unit = pc.get("fg_freight_per_unit") or 0
+		existing_pl.working_includes_outward_freight = pc.get("includes_outward_freight")
+		existing_pl.processing_charge_ref = pc["name"]
+		existing_pl.processor = doc.processor
+	else:
+		doc.append("processing_lines", {
+			"processor": doc.processor,
+			"processing_charge_ref": pc["name"],
+			"fetched_charge_per_kg": pc["charge_per_kg"],
+			"fetched_freight_per_unit": pc.get("fg_freight_per_unit") or 0,
+			"fetched_includes_outward_freight": pc.get("includes_outward_freight"),
+			"working_charge_per_kg": pc["charge_per_kg"],
+			"working_freight_per_unit": pc.get("fg_freight_per_unit") or 0,
+			"working_includes_outward_freight": pc.get("includes_outward_freight"),
+		})
+
+	doc.save(ignore_permissions=True)
+	return {"charge_per_kg": pc["charge_per_kg"], "ref": pc["name"]}
 
 
 def _recompute_combinations(doc) -> dict:
@@ -517,9 +609,7 @@ def _recompute_combinations(doc) -> dict:
 		})
 
 	selector = FormulationSelector(config)
-	selection = selector.select(
-		[dict(c) for c in combination_totals], doc.preferred_bom
-	)
+	selection = selector.select(combination_totals, doc.preferred_bom)
 
 	for combo_data in combination_totals:
 		frappe.db.set_value(
@@ -533,8 +623,8 @@ def _recompute_combinations(doc) -> dict:
 				"outward_freight_per_kg": combo_data["outward_freight_per_kg"],
 				"total_cost_per_kg": combo_data["total_cost_per_kg"],
 				"status": combo_data["status"],
-				"rank": combo_data.get("rank") or 1,
-				"delta_pct": combo_data.get("delta_pct", 0),
+				"rank": combo_data.get("rank") or 0,
+				"delta_pct": combo_data.get("delta_pct") or 0,
 				"missing_items": combo_data["missing_items"],
 				"expired_items": combo_data["expired_items"],
 			},

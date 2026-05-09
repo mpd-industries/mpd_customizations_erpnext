@@ -6,11 +6,13 @@ const API = "mpd_customizations.costing.api.costing";
 let _config_production_days = null;
 let _config_financing_rate = null;
 let _pending_fetch_result = null;
+let _recompute_timer = null;
+const _auto_evaluated = new Set();  // tracks which PC names have been synced this session
 
 // ─── Initialisation ─────────────────────────────────────────────────────────
 
 frappe.ui.form.on("Pricing Calculation", {
-	onload(frm) {
+	onload(_frm) {
 		frappe.db.get_doc("Costing Configuration", "Costing Configuration").then(cfg => {
 			_config_production_days = cfg.production_days;
 			_config_financing_rate = cfg.supplier_financing_rate_pct;
@@ -29,12 +31,13 @@ frappe.ui.form.on("Pricing Calculation", {
 			);
 		}
 
-		if (frm.doc.mode === "Ready to Quote" && frappe.user.has_role("Costing Approver")) {
+		if ((frm.doc.mode === "Ready to Quote" || frm.doc.mode === "Approved") && frappe.user.has_role("Costing Approver")) {
 			_render_approval_banner(frm);
 		}
 
 		_load_and_render_combinations(frm);
-		if (frm.doc.selected_combination) {
+		// Breakdown panel only shown for draft docs — submitted docs get full snapshot in combinations_html
+		if (frm.doc.selected_combination && frm.doc.docstatus === 0) {
 			_load_and_render_breakdown(frm);
 		}
 
@@ -42,30 +45,83 @@ frappe.ui.form.on("Pricing Calculation", {
 			_show_rate_summary(frm, _pending_fetch_result);
 			_pending_fetch_result = null;
 		}
+
+		// Auto-fetch fresh rates once per session when the form first opens (draft only)
+		if (!frm.doc.__islocal && frm.doc.docstatus === 0 && !_auto_evaluated.has(frm.doc.name)) {
+			_auto_evaluated.add(frm.doc.name);
+			_do_evaluate(frm);
+		}
 	},
 
 	// ─── Parameter fields ────────────────────────────────────────────────────────
 
+	processor(frm) {
+		if (!frm.doc.processor || !frm.doc.item || frm.doc.__islocal) return;
+		const do_fetch = () => frappe.call({
+			method: `${API}.fetch_processing_charge`,
+			args: { pricing_calculation_name: frm.doc.name },
+			callback(r) {
+				if (r.message) {
+					frappe.show_alert({ message: __("Processing charge loaded"), indicator: "green" });
+					frm.reload_doc();
+				} else {
+					frappe.show_alert({ message: __("No processing charge found for this processor"), indicator: "orange" });
+				}
+			},
+		});
+		if (frm.is_dirty()) {
+			frm.save().then(do_fetch);
+		} else {
+			do_fetch();
+		}
+	},
+
 	production_days(frm) {
 		_apply_amber_indicators(frm);
-		_show_re_eval_banner(frm);
+		_schedule_recompute(frm);
 	},
 
 	supplier_financing_rate_pct(frm) {
 		_apply_amber_indicators(frm);
-		_show_re_eval_banner(frm);
+		_schedule_recompute(frm);
+	},
+
+	solids_content_pct(frm) {
+		_schedule_recompute(frm);
+	},
+
+	preferred_bom(frm) {
+		_schedule_recompute(frm);
+	},
+
+	additional_charges_remove(frm) {
+		_schedule_recompute(frm);
 	},
 });
 
 // ─── Costing Rate Line child table ──────────────────────────────────────────
 
 frappe.ui.form.on("Costing Rate Line", {
+	form_render(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (!row.rate_valid_to) return;
+		const days_left = frappe.datetime.get_diff(row.rate_valid_to, frappe.datetime.get_today());
+		const $row = frm.fields_dict.rate_lines.grid.get_row(cdn).$row;
+		$row.toggleClass("bg-amber-50", days_left >= 0 && days_left <= 30);
+	},
 	working_rate(frm, cdt, cdn) {
 		_on_rate_line_change(frm, cdt, cdn);
 	},
 	working_supplier_credit_days(frm, cdt, cdn) {
 		_on_rate_line_change(frm, cdt, cdn);
 	},
+});
+
+// ─── Costing Additional Charge child table ───────────────────────────────────
+
+frappe.ui.form.on("Costing Additional Charge", {
+	rate(frm) { _schedule_recompute(frm); },
+	basis(frm) { _schedule_recompute(frm); },
 });
 
 function _on_rate_line_change(frm, cdt, cdn) {
@@ -98,12 +154,57 @@ function _on_rate_line_change(frm, cdt, cdn) {
 	});
 }
 
+// ─── Auto-evaluation ─────────────────────────────────────────────────────────
+
+function _do_evaluate(frm) {
+	// Silent full rate-fetch — called once per session on form open
+	frappe.call({
+		method: `${API}.evaluate`,
+		args: { pricing_calculation_name: frm.doc.name, trigger: "preserve" },
+		callback(r) {
+			if (r.message && r.message.fetch_result) {
+				_pending_fetch_result = r.message.fetch_result;
+			}
+			// reload_doc is safe here — _auto_evaluated already has this name,
+			// so the next refresh will not trigger another evaluate
+			frm.reload_doc();
+		},
+	});
+}
+
+// ─── Reactive recompute (no rate fetch) ──────────────────────────────────────
+
+function _schedule_recompute(frm) {
+	if (frm.doc.__islocal) return;
+	clearTimeout(_recompute_timer);
+	_recompute_timer = setTimeout(() => {
+		if (frm.is_dirty()) {
+			frm.save().then(() => _do_recompute(frm));
+		} else {
+			_do_recompute(frm);
+		}
+	}, 600);
+}
+
+function _do_recompute(frm) {
+	frappe.call({
+		method: `${API}.recompute_combinations`,
+		args: { pricing_calculation_name: frm.doc.name },
+		callback(r) {
+			if (r.message) {
+				if (r.message.modified) frm.doc.modified = r.message.modified;
+				_render_combinations(frm, r.message.combinations);
+				if (frm.doc.selected_combination) _load_and_render_breakdown(frm);
+			}
+		},
+	});
+}
+
 // ─── Request breadcrumb ──────────────────────────────────────────────────────
 
 function _render_request_breadcrumb(frm) {
 	if (!frm.doc.pricing_request) return;
 
-	// Fetch priority from linked PR to show at top
 	frappe.db.get_value("Pricing Request", frm.doc.pricing_request, ["priority", "status", "quantity_kg", "product_name"]).then(r => {
 		if (!r.message) return;
 		const pr = r.message;
@@ -121,89 +222,33 @@ function _render_request_breadcrumb(frm) {
 // ─── Action bar ─────────────────────────────────────────────────────────────
 
 function _render_action_bar(frm) {
-	frm.add_custom_button(__("Get Rates"), () => _on_get_rates(frm));
+	if (frm.doc.mode === "Ready to Quote" && frappe.user.has_role("Costing Approver")) {
+		frm.add_custom_button(__("Approve"), () => {
+			frappe.call({
+				method: `${API}.approve_pricing_calculation`,
+				args: { pricing_calculation_name: frm.doc.name },
+				callback(r) {
+					if (r.message) {
+						frappe.show_alert({ message: __("Approved — pricing request fulfilled"), indicator: "green" });
+						frm.reload_doc();
+					}
+				},
+			});
+		}, __("Decision"));
 
-	if (frm.doc.last_evaluated_on &&
-		(frm.doc.mode === "Awaiting Rates" || frm.doc.mode === "Ready for Working")) {
-		frm.add_custom_button(__("Create Pending Rates"), () => _on_create_pending_rates(frm));
+		frm.add_custom_button(__("Reject"), () => {
+			frappe.call({
+				method: `${API}.reject_pricing_calculation`,
+				args: { pricing_calculation_name: frm.doc.name },
+				callback(r) {
+					if (r.message) {
+						frappe.show_alert({ message: __("Rejected"), indicator: "red" });
+						frm.reload_doc();
+					}
+				},
+			});
+		}, __("Decision"));
 	}
-}
-
-// ─── Get Rates ───────────────────────────────────────────────────────────────
-
-function _on_get_rates(frm) {
-	const run = () => {
-		const overridden_lines = (frm.doc.rate_lines || []).filter(rl =>
-			Math.round((rl.working_rate || 0) * 100) / 100 !==
-			Math.round((rl.fetched_rate || 0) * 100) / 100
-		);
-		if (overridden_lines.length > 0) {
-			_show_override_dialog(frm, overridden_lines);
-		} else {
-			_do_evaluate(frm, true);
-		}
-	};
-
-	if (frm.doc.__islocal || frm.is_dirty()) {
-		frm.save().then(run);
-	} else {
-		run();
-	}
-}
-
-function _show_override_dialog(frm, overridden_lines) {
-	const table = overridden_lines.map(rl =>
-		`<tr>
-			<td>${rl.item_name || rl.item}</td>
-			<td>₹${(rl.fetched_rate || 0).toFixed(2)}</td>
-			<td>₹${(rl.working_rate || 0).toFixed(2)}</td>
-		</tr>`
-	).join("");
-
-	const msg = `
-		<p>${__("You have overridden the following rates:")}</p>
-		<table class="table table-condensed">
-			<thead><tr><th>${__("Item")}</th><th>${__("Official")}</th><th>${__("Your Value")}</th></tr></thead>
-			<tbody>${table}</tbody>
-		</table>
-		<p>${__("What would you like to do?")}</p>
-	`;
-
-	const d = new frappe.ui.Dialog({
-		title: __("Rate Overrides Exist"),
-		fields: [{ fieldtype: "HTML", fieldname: "html", options: msg }],
-		primary_action_label: __("Keep My Overrides"),
-		primary_action() {
-			d.hide();
-			_do_evaluate(frm, true);
-		},
-		secondary_action_label: __("Reset to Official"),
-		secondary_action() {
-			d.hide();
-			_do_evaluate(frm, false);
-		},
-	});
-	d.show();
-}
-
-function _do_evaluate(frm, preserve_overrides) {
-	frm.fields_dict.combinations_html.$wrapper.html(
-		`<div class="text-muted p-4">${__("Evaluating formulations…")}</div>`
-	);
-	frm.disable_save();
-
-	frappe.call({
-		method: `${API}.evaluate`,
-		args: { pricing_calculation_name: frm.doc.name, trigger: preserve_overrides ? "preserve" : "reset" },
-		callback(r) {
-			frm.enable_save();
-			if (r.message && r.message.fetch_result) {
-				_pending_fetch_result = r.message.fetch_result;
-			}
-			frm.reload_doc();
-		},
-		error() { frm.enable_save(); },
-	});
 }
 
 // ─── Combination cards ───────────────────────────────────────────────────────
@@ -222,138 +267,343 @@ function _render_combinations(frm, combinations) {
 	const $wrapper = frm.fields_dict.combinations_html.$wrapper;
 	$wrapper.empty();
 
+	const is_submitted = frm.doc.docstatus === 1;
+
 	if (!combinations || !combinations.length) {
-		$wrapper.html(`<div class="text-muted p-4">${__("No combinations yet. Click Get Rates.")}</div>`);
+		$wrapper.html(`<div class="text-muted p-4">${__("Evaluating formulations…")}</div>`);
 		return;
 	}
 
-	const alert = frm.doc.formulation_switch_alert;
-	if (alert) {
-		const cheapest = combinations.find(c => c.rank === 1);
-		const preferred = combinations.find(c => c.is_preferred);
+	// Approved read-only banner
+	if (is_submitted) {
 		$wrapper.append(`
-			<div class="alert alert-warning mb-3 p-3 border border-warning rounded">
-				<strong>⚠ ${__("FORMULATION SWITCH RECOMMENDED")}</strong><br>
-				${frappe.utils.escape_html(alert)}
-				<div class="mt-2">
-					${cheapest ? `<button class="btn btn-sm btn-primary mr-2" onclick="pcSwitchFormulation('${frm.doc.name}', '${cheapest.name}')">${__("Switch to")} ${cheapest.formulation_id || cheapest.bom}</button>` : ""}
-					${preferred ? `<button class="btn btn-sm btn-secondary" onclick="pcKeepFormulation()">${__("Keep")} ${preferred.formulation_id || preferred.bom}</button>` : ""}
-				</div>
+			<div class="p-2 mb-2 border rounded small font-weight-bold text-success" style="background:#e8f5e9;border-color:#a5d6a7!important;">
+				✓ ${__("APPROVED — Locked. This costing cannot be modified.")}
 			</div>
 		`);
 	}
 
-	const included = combinations.filter(c => c.status !== "Excluded — Too Expensive");
-	const excluded = combinations.filter(c => c.status === "Excluded — Too Expensive");
-	const rows = [...included, ...excluded].map(combo => _render_combination_row(frm, combo)).join("");
+	// Switch alert (draft/working only)
+	if (!is_submitted && frm.doc.formulation_switch_alert) {
+		const cheapest = combinations.find(c => c.rank === 1);
+		const preferred = combinations.find(c => c.is_preferred);
+		$wrapper.append(`
+			<div class="alert alert-warning mb-2 p-2 border border-warning rounded small">
+				<strong>⚠ ${__("Formulation switch recommended")}</strong> — ${frappe.utils.escape_html(frm.doc.formulation_switch_alert)}
+				<span class="ml-2">
+					${cheapest ? `<button class="btn btn-xs btn-primary" onclick="pcSwitchFormulation('${frm.doc.name}', '${cheapest.name}')">${__("Switch")}</button>` : ""}
+					${preferred ? `<button class="btn btn-xs btn-secondary ml-1" onclick="pcKeepFormulation()">${__("Keep current")}</button>` : ""}
+				</span>
+			</div>
+		`);
+	}
+
+	const has_prev = combinations.some(c => (c.prev_rm_cost_per_kg || 0) > 0);
+
+	// Table header
+	const select_col_header = is_submitted ? "" : `<th style="width:100px"></th>`;
+	const prev_col_header = has_prev ? `<th class="text-right" style="width:110px">${__("Prev RM/kg")}</th>` : "";
+
+	const rows = [...combinations]
+		.sort((a, b) => (a.rank || 99) - (b.rank || 99))
+		.map(combo => {
+			const is_selected = combo.is_selected;
+			const is_excluded = combo.status === "Excluded — Too Expensive";
+			const is_cheapest = combo.rank === 1 && !is_excluded;
+			const is_prev = combo.is_preferred;
+
+			// Row background — priority: selected > cheapest+prev > cheapest > prev > plain
+			let row_bg = "";
+			if (is_selected)              row_bg = "background:#e3f2fd;";
+			else if (is_cheapest && is_prev) row_bg = "background:#c8e6c9;";
+			else if (is_cheapest)          row_bg = "background:#e8f5e9;";
+			else if (is_prev)              row_bg = "background:#fff8e1;";
+
+			// Badges in Formulation ID cell
+			const badges = [];
+			if (is_selected)              badges.push(`<span class="badge badge-primary ml-1">✓ ${__("Selected")}</span>`);
+			if (is_cheapest && is_prev)   badges.push(`<span class="badge badge-success ml-1">★ ${__("Cheapest + Previously Used")}</span>`);
+			else if (is_cheapest)         badges.push(`<span class="badge badge-success ml-1">★ ${__("Cheapest")}</span>`);
+			else if (is_prev)             badges.push(`<span class="badge" style="background:#f9a825;color:#fff;" class="ml-1">★ ${__("Previously Used")}</span>`);
+
+			const status_badge = {
+				"Ready to Quote":              `<span class="badge badge-success">${__("Ready")}</span>`,
+				"Indicative — Rates Expired":  `<span class="badge badge-warning">${__("Rates Expired")}</span>`,
+				"Indicative — Rates Missing":  `<span class="badge badge-danger">${__("Rates Missing")}</span>`,
+				"Excluded — Too Expensive":    `<span class="badge badge-secondary">${__("Too Expensive")} +${(combo.delta_pct || 0).toFixed(1)}%</span>`,
+			}[combo.status] || `<span class="badge badge-light">${combo.status}</span>`;
+
+			const desc = combo.formulation_description
+				? frappe.utils.escape_html(combo.formulation_description)
+				: `<span class="text-muted">—</span>`;
+
+			// Prev RM cost cell with delta
+			let prev_cell = "";
+			if (has_prev) {
+				const prev = combo.prev_rm_cost_per_kg || 0;
+				if (prev > 0) {
+					const current = combo.rm_cost_per_kg || 0;
+					const delta = prev > 0 ? ((current - prev) / prev) * 100 : 0;
+					const dir = delta >= 0 ? "↑" : "↓";
+					const color = delta > 0 ? "color:#c62828;" : "color:#2e7d32;";
+					prev_cell = `<td class="text-right small">
+						₹${prev.toFixed(2)}<br>
+						<span style="${color}">${dir}${Math.abs(delta).toFixed(1)}%</span>
+					</td>`;
+				} else {
+					prev_cell = `<td class="text-right text-muted small">—</td>`;
+				}
+			}
+
+			const action_cell = is_submitted ? "" : `<td>
+				${is_selected
+					? `<button class="btn btn-sm btn-success" disabled>✓ ${__("Selected")}</button>`
+					: `<button class="btn btn-sm btn-outline-primary" onclick="pcSelectCombination('${frm.doc.name}', '${combo.name}')">${__("Select")}</button>`
+				}
+			</td>`;
+
+			return `<tr style="${row_bg}">
+				<td class="font-weight-bold">${frappe.utils.escape_html(combo.formulation_id || combo.bom)}${badges.join("")}</td>
+				<td class="text-muted small">${desc}</td>
+				<td class="text-right">₹${(combo.rm_cost_per_kg || 0).toFixed(2)}</td>
+				${prev_cell}
+				<td class="text-right font-weight-bold">₹${(combo.total_cost_per_kg || 0).toFixed(2)}</td>
+				<td>${status_badge}</td>
+				${action_cell}
+			</tr>`;
+		}).join("");
 
 	$wrapper.append(`
-		<table class="table table-sm table-bordered mb-0" style="table-layout:fixed">
+		<table class="table table-sm table-bordered mb-2">
 			<thead class="thead-light">
 				<tr>
-					<th style="width:36px"></th>
 					<th>${__("Formulation")}</th>
-					<th style="width:180px">${__("Status")}</th>
-					<th class="text-right" style="width:90px">${__("RM")}</th>
-					<th class="text-right" style="width:90px">${__("Fin.")}</th>
-					<th class="text-right" style="width:90px">${__("Proc.")}</th>
-					<th class="text-right" style="width:90px">${__("Other")}</th>
-					<th class="text-right" style="width:100px"><strong>${__("Total/kg")}</strong></th>
-					<th style="width:110px"></th>
+					<th>${__("Description")}</th>
+					<th class="text-right" style="width:100px">${__("RM Cost/kg")}</th>
+					${prev_col_header}
+					<th class="text-right" style="width:110px">${__("Total/kg")}</th>
+					<th style="width:145px">${__("Status")}</th>
+					${select_col_header}
 				</tr>
 			</thead>
 			<tbody>${rows}</tbody>
 		</table>
 	`);
+
+	// Legend
+	const legend_items = [
+		`<span class="mr-3"><span style="display:inline-block;width:12px;height:12px;background:#c8e6c9;border:1px solid #aaa;vertical-align:middle;" class="mr-1"></span>${__("Cheapest + Previously Used")}</span>`,
+		`<span class="mr-3"><span style="display:inline-block;width:12px;height:12px;background:#e8f5e9;border:1px solid #aaa;vertical-align:middle;" class="mr-1"></span>${__("Cheapest")}</span>`,
+		`<span class="mr-3"><span style="display:inline-block;width:12px;height:12px;background:#fff8e1;border:1px solid #aaa;vertical-align:middle;" class="mr-1"></span>${__("Previously Used")}</span>`,
+		`<span class="mr-3"><span style="display:inline-block;width:12px;height:12px;background:#e3f2fd;border:1px solid #aaa;vertical-align:middle;" class="mr-1"></span>${__("Selected")}</span>`,
+	];
+	$wrapper.append(`<div class="small text-muted mb-2">${legend_items.join("")}</div>`);
+
+	// Common costs footer
+	const ref = combinations[0];
+	if (ref) {
+		const proc = ref.processing_cost_per_kg || 0;
+		const add = ref.additional_charges_per_kg || 0;
+		const freight = ref.outward_freight_per_kg || 0;
+		const fin = ref.financing_cost_per_kg || 0;
+		$wrapper.append(`
+			<div class="p-2 bg-light border rounded small text-muted mb-2">
+				<strong class="text-dark">${__("Common to all formulations")}:</strong>
+				&nbsp;${__("Financing")} ₹${fin.toFixed(2)}/kg
+				· ${__("Processing")} ₹${proc.toFixed(2)}/kg
+				· ${__("Additional charges")} ₹${add.toFixed(2)}/kg
+				· ${__("Outward freight")} ₹${freight.toFixed(2)}/kg
+			</div>
+		`);
+	}
+
+	// Overrides summary — draft/working only
+	if (!is_submitted) {
+		const overrides = (frm.doc.rate_lines || []).filter(rl =>
+			Math.round((rl.working_rate || 0) * 100) / 100 !==
+			Math.round((rl.fetched_rate || 0) * 100) / 100
+		);
+		if (overrides.length) {
+			const override_spans = overrides.map(rl => {
+				const diff_pct = rl.fetched_rate
+					? (((rl.working_rate - rl.fetched_rate) / rl.fetched_rate) * 100).toFixed(1)
+					: "—";
+				const dir = (rl.working_rate || 0) > (rl.fetched_rate || 0) ? "↑" : "↓";
+				return `<span class="mr-3">${frappe.utils.escape_html(rl.item_name || rl.item)}: ₹${(rl.fetched_rate || 0).toFixed(2)} → ₹${(rl.working_rate || 0).toFixed(2)} <strong>${dir}${Math.abs(parseFloat(diff_pct)).toFixed(1)}%</strong></span>`;
+			}).join("");
+			$wrapper.append(`
+				<div class="p-2 border rounded small" style="background:#fff8e1;border-color:#ffc107!important;">
+					<strong>⚠ ${overrides.length} rate override${overrides.length > 1 ? "s" : ""} active:</strong>
+					<div class="mt-1">${override_spans}</div>
+				</div>
+			`);
+		}
+	}
+
+	// Submitted: load and append the full approved cost snapshot
+	if (is_submitted && frm.doc.selected_combination) {
+		frappe.call({
+			method: `${API}.get_cost_breakdown`,
+			args: { pricing_calculation_name: frm.doc.name },
+			callback(r) {
+				if (r.message) _render_approved_cost_snapshot(frm, r.message, $wrapper);
+			},
+		});
+	}
 }
 
-function _render_combination_row(frm, combo) {
-	const is_excluded = combo.status === "Excluded — Too Expensive";
-	const is_selected = combo.is_selected;
-	const detail_id = `combo-detail-${combo.name.replace(/[^a-z0-9]/gi, "")}`;
-	const other = (combo.additional_charges_per_kg || 0) + (combo.outward_freight_per_kg || 0);
+// ─── Approved cost snapshot (rendered inside combinations_html when submitted) ──
 
-	const status_color = {
-		"Ready to Quote": "success",
-		"Indicative — Rates Expired": "warning",
-		"Indicative — Rates Missing": "danger",
-		"Excluded — Too Expensive": "secondary",
-	}[combo.status] || "secondary";
+function _render_approved_cost_snapshot(frm, data, $wrapper) {
+	const l = data.layer1;
+	if (!l) return;
 
-	const badges = [
-		combo.is_preferred ? `<span class="badge badge-info">★</span>` : "",
-		combo.rank && !is_excluded ? `<span class="badge badge-light border">#${combo.rank}</span>` : "",
-		is_excluded ? `<span class="badge badge-secondary">+${(combo.delta_pct || 0).toFixed(1)}%</span>` : "",
-	].filter(Boolean).join(" ");
-
-	const row_class = is_selected
-		? "table-primary"
-		: is_excluded ? "text-muted" : "";
-
-	const action_btn = is_excluded
-		? `<button class="btn btn-sm btn-outline-secondary btn-block" onclick="pcIncludeCombination('${combo.name}')">${__("Include")}</button>`
-		: is_selected
-			? `<button class="btn btn-sm btn-success btn-block" disabled>✓ ${__("Selected")}</button>`
-			: `<button class="btn btn-sm btn-outline-primary btn-block" onclick="pcSelectCombination('${frm.doc.name}', '${combo.name}')">${__("Select")}</button>`;
-
-	// Expanded ingredient detail rows
-	const ml_rows = (combo.material_lines || []).map(ml => {
+	// ── RM Materials table ────────────────────────────────────────────────────
+	const sorted_ml = [...(l.material_lines || [])].sort(
+		(a, b) => Math.abs(b.amount_per_kg || 0) - Math.abs(a.amount_per_kg || 0)
+	);
+	const ml_rows = sorted_ml.map(ml => {
 		const is_scrap = ml.is_scrap;
-		const amount = is_scrap
+		const amount_fmt = is_scrap
 			? `<span class="text-success">−₹${Math.abs(ml.amount_per_kg || 0).toFixed(2)}</span>`
 			: `₹${(ml.amount_per_kg || 0).toFixed(2)}`;
-		return `
-			<tr class="${is_scrap ? "table-success" : ""}">
-				<td colspan="2">${ml.item_name || ml.item}${is_scrap ? ' <em class="text-muted small">(byproduct)</em>' : ""}</td>
-				<td class="text-right text-muted small">${(ml.qty_per_kg_output || 0).toFixed(4)} × ₹${(ml.working_rate || 0).toFixed(2)}</td>
-				<td class="text-right" colspan="2">${is_scrap ? "" : (ml.supplier || "—") + " " + (ml.working_supplier_credit_days || 0) + "d"}</td>
-				<td class="text-right">${amount}/kg</td>
-				<td class="text-right text-muted small">+₹${(ml.financing_cost_per_kg || 0).toFixed(3)} fin.</td>
-				<td colspan="2"></td>
-			</tr>`;
+		const overridden = !is_scrap && ml.is_overridden;
+		const override_note = overridden
+			? ` <span class="text-warning" title="Override active">⚠</span>`
+			: "";
+		return `<tr class="${is_scrap ? "table-success" : ""}">
+			<td>${frappe.utils.escape_html(ml.item_name || ml.item)}${override_note}${is_scrap ? ' <em class="text-muted small">(scrap credit)</em>' : ""}</td>
+			<td class="text-right text-muted small">${(ml.qty_per_kg_output || 0).toFixed(4)}</td>
+			<td class="text-right">₹${(ml.working_rate || 0).toFixed(2)}</td>
+			<td class="text-right font-weight-bold">${amount_fmt}/kg</td>
+		</tr>`;
 	}).join("");
 
-	const breakdown_row = `
-		<tr class="table-light small">
-			<td></td>
-			<td colspan="2" class="text-muted pl-3">
-				<em>${__("RM")} ₹${(combo.rm_cost_per_kg || 0).toFixed(2)}
-				+ ${__("Fin.")} ₹${(combo.financing_cost_per_kg || 0).toFixed(2)}
-				+ ${__("Proc.")} ₹${(combo.processing_cost_per_kg || 0).toFixed(2)}
-				+ ${__("Other")} ₹${other.toFixed(2)}
-				= <strong>₹${(combo.total_cost_per_kg || 0).toFixed(2)}/kg</strong></em>
-			</td>
-			<td colspan="6"></td>
-		</tr>
-		${ml_rows}`;
+	// ── Additional charges rows ───────────────────────────────────────────────
+	const add_rows = (l.additional_charges || []).map(c =>
+		`<tr>
+			<td>${frappe.utils.escape_html(c.description)} <span class="text-muted small">(${c.basis})</span></td>
+			<td colspan="2"></td>
+			<td class="text-right">₹${(c.amount_per_kg || 0).toFixed(2)}/kg</td>
+		</tr>`
+	).join("");
 
-	return `
-		<tr class="${row_class}" style="${is_excluded ? "opacity:0.65" : ""}">
-			<td class="text-center">
-				<button class="btn btn-link btn-sm p-0 combo-expand-btn" style="font-size:11px;line-height:1"
-					data-detail="${detail_id}" onclick="pcToggleDetail(this)">▶</button>
-			</td>
-			<td><strong>${combo.formulation_id || combo.bom}</strong> ${badges}</td>
-			<td><span class="text-${status_color} small">${combo.status}</span></td>
-			<td class="text-right">₹${(combo.rm_cost_per_kg || 0).toFixed(2)}</td>
-			<td class="text-right text-muted">₹${(combo.financing_cost_per_kg || 0).toFixed(2)}</td>
-			<td class="text-right text-muted">₹${(combo.processing_cost_per_kg || 0).toFixed(2)}</td>
-			<td class="text-right text-muted">₹${other.toFixed(2)}</td>
-			<td class="text-right"><strong>₹${(combo.total_cost_per_kg || 0).toFixed(2)}</strong></td>
-			<td>${action_btn}</td>
-		</tr>
-		<tr id="${detail_id}" style="display:none" class="bg-light">
-			${breakdown_row}
-		</tr>`;
+	// ── Variable costs summary block ──────────────────────────────────────────
+	const proc_detail = l.solids_content_pct && l.processing_cost_per_kg
+		? `${l.solids_content_pct}% solids × ₹${(l.processing_cost_per_kg / (l.solids_content_pct / 100) || 0).toFixed(2)}/kg`
+		: "";
+
+	// ── Rate overrides audit table ────────────────────────────────────────────
+	const rate_overrides = (frm.doc.rate_lines || []).filter(rl =>
+		rl.fetched_rate && Math.round((rl.working_rate || 0) * 100) / 100 !== Math.round(rl.fetched_rate * 100) / 100
+	);
+	const proc_overrides = (frm.doc.processing_lines || []).filter(pl =>
+		pl.fetched_charge_per_kg && Math.round((pl.working_charge_per_kg || 0) * 100) / 100 !== Math.round(pl.fetched_charge_per_kg * 100) / 100
+	);
+
+	let overrides_html = "";
+	if (rate_overrides.length || proc_overrides.length) {
+		const rate_override_rows = rate_overrides.map(rl => {
+			const diff_pct = ((rl.working_rate - rl.fetched_rate) / rl.fetched_rate * 100).toFixed(1);
+			const up = rl.working_rate > rl.fetched_rate;
+			return `<tr>
+				<td>${frappe.utils.escape_html(rl.item_name || rl.item)}</td>
+				<td>${__("Material Rate")}</td>
+				<td class="text-right">₹${(rl.fetched_rate || 0).toFixed(2)}</td>
+				<td class="text-right">₹${(rl.working_rate || 0).toFixed(2)}</td>
+				<td class="text-right font-weight-bold" style="color:${up ? "#c62828" : "#2e7d32"}">
+					${up ? "↑" : "↓"}${Math.abs(parseFloat(diff_pct)).toFixed(1)}%
+				</td>
+				<td class="text-muted small">${frappe.utils.escape_html(rl.override_reason || "")}</td>
+			</tr>`;
+		}).join("");
+
+		const proc_override_rows = proc_overrides.map(pl => {
+			const diff_pct = ((pl.working_charge_per_kg - pl.fetched_charge_per_kg) / pl.fetched_charge_per_kg * 100).toFixed(1);
+			const up = pl.working_charge_per_kg > pl.fetched_charge_per_kg;
+			return `<tr>
+				<td>${frappe.utils.escape_html(pl.processor || __("Processing"))}</td>
+				<td>${__("Processing Charge")}</td>
+				<td class="text-right">₹${(pl.fetched_charge_per_kg || 0).toFixed(2)}</td>
+				<td class="text-right">₹${(pl.working_charge_per_kg || 0).toFixed(2)}</td>
+				<td class="text-right font-weight-bold" style="color:${up ? "#c62828" : "#2e7d32"}">
+					${up ? "↑" : "↓"}${Math.abs(parseFloat(diff_pct)).toFixed(1)}%
+				</td>
+				<td class="text-muted small">${frappe.utils.escape_html(pl.override_reason || "")}</td>
+			</tr>`;
+		}).join("");
+
+		overrides_html = `
+			<div class="font-weight-bold mt-3 mb-1 pt-2 border-top">${__("Rate Overrides")} (${rate_overrides.length + proc_overrides.length})</div>
+			<table class="table table-sm table-bordered mb-0">
+				<thead class="thead-light">
+					<tr>
+						<th>${__("Item / Charge")}</th>
+						<th>${__("Type")}</th>
+						<th class="text-right">${__("Market Rate")}</th>
+						<th class="text-right">${__("Used Rate")}</th>
+						<th class="text-right">${__("Change")}</th>
+						<th>${__("Reason")}</th>
+					</tr>
+				</thead>
+				<tbody>${rate_override_rows}${proc_override_rows}</tbody>
+			</table>`;
+	} else {
+		overrides_html = `<div class="text-muted small mt-2 pt-2 border-top">✓ ${__("No rate overrides — all market rates used as-is.")}</div>`;
+	}
+
+	$wrapper.append(`
+		<div class="border rounded p-3 mt-3" style="background:#fafafa;">
+			<div class="font-weight-bold mb-2" style="font-size:1.05em;">
+				━━ ${__("APPROVED COST SNAPSHOT")} — ${frappe.utils.escape_html(l.formulation_id || l.bom)} ━━
+			</div>
+
+			<div class="font-weight-bold mb-1">${__("Raw Materials")}</div>
+			<table class="table table-sm table-bordered mb-2">
+				<thead class="thead-light">
+					<tr>
+						<th>${__("Ingredient")}</th>
+						<th class="text-right" style="width:90px">${__("Qty/kg out")}</th>
+						<th class="text-right" style="width:100px">${__("Rate used")}</th>
+						<th class="text-right" style="width:110px">${__("Amount/kg")}</th>
+					</tr>
+				</thead>
+				<tbody>${ml_rows}</tbody>
+				<tfoot>
+					<tr class="thead-light">
+						<td colspan="3" class="text-right font-weight-bold">${__("RM Cost")}</td>
+						<td class="text-right font-weight-bold">₹${(l.rm_cost_per_kg || 0).toFixed(2)}/kg</td>
+					</tr>
+				</tfoot>
+			</table>
+
+			<div class="font-weight-bold mb-1">${__("Variable Costs")}</div>
+			<table class="table table-sm table-bordered mb-2">
+				<tbody>
+					<tr>
+						<td>${__("RM Financing")} <span class="text-muted small">(${l.supplier_financing_rate_pct}% pa, ${Math.max(0, l.production_days - 60)}d beyond 60d)</span></td>
+						<td class="text-right" style="width:130px">₹${(l.financing_cost_per_kg || 0).toFixed(2)}/kg</td>
+					</tr>
+					<tr>
+						<td>${__("Processing")}${proc_detail ? ` <span class="text-muted small">(${proc_detail})</span>` : ""}</td>
+						<td class="text-right">₹${(l.processing_cost_per_kg || 0).toFixed(2)}/kg</td>
+					</tr>
+					${add_rows}
+					<tr>
+						<td>${__("Outward Freight")}</td>
+						<td class="text-right">₹${(l.outward_freight_per_kg || 0).toFixed(2)}/kg</td>
+					</tr>
+					<tr class="thead-light">
+						<td class="font-weight-bold">${__("CONFIRMED EX-FACTORY COST")}</td>
+						<td class="text-right font-weight-bold" style="font-size:1.1em;">₹${(l.total_cost_per_kg || 0).toFixed(2)}/kg</td>
+					</tr>
+				</tbody>
+			</table>
+
+			${overrides_html}
+		</div>
+	`);
 }
-
-window.pcToggleDetail = function(btn) {
-	const id = btn.getAttribute("data-detail");
-	const row = document.getElementById(id);
-	const hidden = row.style.display === "none";
-	row.style.display = hidden ? "table-row" : "none";
-	btn.textContent = hidden ? "▼" : "▶";
-};
 
 window.pcSelectCombination = function(pc_name, combo_name) {
 	frappe.call({
@@ -374,12 +624,6 @@ window.pcSwitchFormulation = function(pc_name, combo_name) {
 
 window.pcKeepFormulation = function() {
 	frappe.show_alert({ message: __("Keeping current formulation"), indicator: "blue" });
-};
-
-window.pcIncludeCombination = function(combo_name) {
-	frappe.db.set_value("Costing Combination", combo_name, "status", "Ready to Quote").then(() => {
-		cur_frm.reload_doc();
-	});
 };
 
 // ─── Cost Breakdown ──────────────────────────────────────────────────────────
@@ -433,25 +677,6 @@ function _render_cost_breakdown(frm, data) {
 		`<div class="ml-3">${c.description} (${c.basis}) — ₹${(c.amount_per_kg || 0).toFixed(2)}/kg</div>`
 	).join("");
 
-	let layer3_html = "";
-	if (data.layer3) {
-		const l3 = data.layer3;
-		const spread_rows = (l3.rm_spread_breakdown || []).map(s =>
-			`<div class="ml-3 text-muted">
-				${s.item_name || s.item}: ₹${(s.amount_per_kg || 0).toFixed(2)} × (${s.net_financed_days}d/365) × ${l3.spread_pct}%
-				= ₹${(s.spread_per_kg || 0).toFixed(4)}/kg
-			</div>`
-		).join("");
-
-		layer3_html = `
-			<hr>
-			<div class="text-center font-weight-bold text-danger mb-2">══ INTERNAL EARNINGS ANALYSIS — CONFIDENTIAL ══</div>
-			<div>RM Financing Spread: charged at ${l3.supplier_financing_rate_pct}% pa, actual cost ${l3.actual_cost_of_capital_pct}% pa, spread = ${l3.spread_pct}% pa</div>
-			${spread_rows}
-			<div class="font-weight-bold mt-1">RM Spread per kg: ₹${(l3.rm_spread_per_kg || 0).toFixed(4)}/kg</div>
-		`;
-	}
-
 	$wrapper.html(`
 		<div class="p-3 border rounded">
 			<div class="text-center font-weight-bold mb-3">
@@ -468,34 +693,8 @@ function _render_cost_breakdown(frm, data) {
 			<div class="font-weight-bold mt-2">OUTWARD FREIGHT: ₹${(l.outward_freight_per_kg || 0).toFixed(2)}/kg</div>
 			<hr>
 			<div class="font-weight-bold text-primary">CONFIRMED EX-FACTORY COST: ₹${(l.total_cost_per_kg || 0).toFixed(2)}/kg</div>
-			${layer3_html}
 		</div>
 	`);
-}
-
-// ─── Create Pending Rates ────────────────────────────────────────────────────
-
-function _on_create_pending_rates(frm) {
-	frappe.call({
-		method: `${API}.create_pending_rates`,
-		args: { pricing_calculation_name: frm.doc.name },
-		callback(r) {
-			if (r.message) {
-				const count = r.message.created_count;
-				frappe.show_alert({
-					message: __("{0} pending rate request(s) created", [count]),
-					indicator: count > 0 ? "green" : "blue",
-				});
-				if (count > 0) {
-					frm.dashboard.add_comment(
-						__(`${count} pending rate(s) created for purchase team. <a href="/app/material-rate?docstatus=0">View them</a>.`),
-						"blue",
-						true
-					);
-				}
-			}
-		},
-	});
 }
 
 // ─── MD approval banner ──────────────────────────────────────────────────────
@@ -557,15 +756,5 @@ function _apply_amber_indicators(frm) {
 	if (_config_financing_rate !== null) {
 		const changed = (frm.doc.supplier_financing_rate_pct || 0) !== _config_financing_rate;
 		frm.get_field("supplier_financing_rate_pct").$wrapper.toggleClass("has-warning", changed);
-	}
-}
-
-function _show_re_eval_banner(frm) {
-	if (frm.doc.last_evaluated_on) {
-		frm.dashboard.add_comment(
-			__("Parameters changed since last evaluation. Click Get Rates to re-evaluate."),
-			"orange",
-			true
-		);
 	}
 }

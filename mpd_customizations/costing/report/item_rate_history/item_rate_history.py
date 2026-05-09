@@ -51,7 +51,7 @@ def _get_data(filters):
 			"name", "item", "item_name", "city", "supplier", "rate_type",
 			"ex_works_rate", "freight_per_unit", "delivered_rate",
 			"credit_days", "lead_time_days", "valid_from", "valid_to",
-			"is_active",
+			"docstatus",
 		],
 		order_by="valid_from desc",
 	)
@@ -59,8 +59,10 @@ def _get_data(filters):
 	today_dt = getdate(today())
 	result = []
 	for r in records:
-		if not r.is_active:
+		if r.docstatus == 0:
 			status = "Pending"
+		elif r.docstatus == 2:
+			status = "Cancelled"
 		elif r.valid_to is None or getdate(r.valid_to) >= today_dt:
 			status = "Current"
 		else:
@@ -103,7 +105,7 @@ def get_filters():
 			"fieldname": "status",
 			"label": "Status",
 			"fieldtype": "Select",
-			"options": "\nAll\nCurrent\nExpired\nPending",
+			"options": "\nAll\nCurrent\nExpired\nPending\nCancelled",
 		},
 		{
 			"fieldname": "from_date",

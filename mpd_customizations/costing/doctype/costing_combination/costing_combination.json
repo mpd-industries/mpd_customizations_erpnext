@@ -8,6 +8,8 @@
   "pricing_calculation",
   "bom",
   "formulation_id",
+  "formulation_description",
+  "prev_rm_cost_per_kg",
   "is_preferred",
   "section_break_costs",
   "rm_cost_per_kg",
@@ -47,6 +49,16 @@
    "fieldname": "formulation_id",
    "fieldtype": "Data",
    "label": "Formulation ID"
+  },
+  {
+   "fieldname": "formulation_description",
+   "fieldtype": "Small Text",
+   "label": "Formulation Description"
+  },
+  {
+   "fieldname": "prev_rm_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Prev RM Cost per kg"
   },
   {
    "default": "0",

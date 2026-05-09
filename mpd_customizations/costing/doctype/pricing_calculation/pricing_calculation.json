@@ -34,6 +34,7 @@
   "mode",
   "selected_combination",
   "confirmed_ex_factory_cost_per_kg",
+  "valid_until",
   "last_evaluated_on",
   "engine_version_used",
   "formulation_switch_alert",
@@ -205,7 +206,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Mode",
-   "options": "Draft\nAwaiting Rates\nReady for Working\nReady to Quote",
+   "options": "Draft\nAwaiting Rates\nReady for Working\nReady to Quote\nApproved\nRejected",
    "read_only": 1
   },
   {
@@ -220,6 +221,12 @@
    "fieldtype": "Currency",
    "label": "Confirmed Ex-Factory Cost per kg",
    "read_only": 1
+  },
+  {
+   "fieldname": "valid_until",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Quote Valid Until"
   },
   {
    "fieldname": "last_evaluated_on",
@@ -262,8 +269,10 @@
  "name": "Pricing Calculation",
  "naming_rule": "Expression",
  "owner": "Administrator",
+ "is_submittable": 1,
  "permissions": [
   {
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -273,6 +282,7 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
@@ -293,7 +303,8 @@
    "read": 1,
    "report": 1,
    "role": "Costing Approver",
-   "share": 1
+   "share": 1,
+   "submit": 1
   },
   {
    "read": 1,

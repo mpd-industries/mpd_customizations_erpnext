@@ -3,8 +3,6 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now_datetime, add_to_date, get_last_day, getdate
 
-from mpd_customizations.costing import RateConflictError
-
 
 class MaterialRate(Document):
 	def validate(self):
@@ -81,12 +79,9 @@ class MaterialRate(Document):
 			this_to_cmp = this_to if this_to else far_future
 
 			if ex_from < this_to_cmp and ex_to_cmp > this_from:
-				if self.flags.get("auto_expire_confirmed"):
-					from datetime import timedelta
-					new_valid_to = getdate(self.valid_from) - timedelta(days=1)
-					frappe.db.set_value("Material Rate", existing.name, "valid_to", new_valid_to)
-				else:
-					raise RateConflictError(existing.name, existing.valid_from, existing.valid_to)
+				from datetime import timedelta
+				new_valid_to = getdate(self.valid_from) - timedelta(days=1)
+				frappe.db.set_value("Material Rate", existing.name, "valid_to", new_valid_to)
 
 
 def _notify_open_costing_requests(doc):
@@ -100,24 +95,4 @@ def _notify_open_costing_requests(doc):
 			"name": ["!=", doc.name],
 		})
 
-	open_calcs = frappe.get_all(
-		"Pricing Calculation",
-		filters={"mode": ["in", ["Awaiting Rates", "Ready for Working"]]},
-		fields=["name", "owner"],
-	)
-
-	if not open_calcs:
-		return
-
-	city = doc.city
-	for pc in open_calcs:
-		has_missing = frappe.db.exists(
-			"Costing Rate Line",
-			{"parent": pc.name, "item": doc.item, "rate_freshness": ["in", ["Missing", "Expired"]]},
-		)
-		if has_missing:
-			frappe.publish_realtime(
-				"eval_js",
-				f"frappe.show_alert({{message: 'New rate available for {doc.item_name or doc.item} — re-evaluate {pc.name}', indicator: 'green'}})",
-				user=pc.owner,
-			)
+	# Notification and re-evaluation are handled by on_material_rate_submitted in api/costing.py

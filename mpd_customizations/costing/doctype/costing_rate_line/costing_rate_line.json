@@ -15,7 +15,11 @@
   "fetched_supplier_credit_days",
   "rate_freshness",
   "working_rate",
+  "last_working_rate",
   "working_supplier_credit_days",
+  "market_rate_count",
+  "market_rate_avg",
+  "rate_valid_to",
   "override_reason"
  ],
  "fields": [
@@ -89,7 +93,7 @@
    "fieldname": "working_rate",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Rate to Use"
+   "label": "Rate"
   },
   {
    "fieldname": "working_supplier_credit_days",
@@ -101,11 +105,39 @@
    "fieldname": "override_reason",
    "fieldtype": "Small Text",
    "label": "Override Reason"
+  },
+  {
+   "fieldname": "last_working_rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Previous Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "market_rate_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "# Live Quotes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "market_rate_avg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Avg Market Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate_valid_to",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Rate Expires",
+   "read_only": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-05-07 03:30:39.627145",
+ "modified": "2026-05-09 11:47:42.356386",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Costing Rate Line",

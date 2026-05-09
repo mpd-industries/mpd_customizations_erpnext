@@ -19,3 +19,7 @@ class RateOption:
 	second_best_supplier: Optional[str] = None
 	second_best_rate: float = 0.0
 	rate_60d_equivalent: float = 0.0
+	prev_rate: float = 0.0
+	market_rate_count: int = 0
+	market_rate_avg: float = 0.0
+	rate_valid_to: Optional[str] = None

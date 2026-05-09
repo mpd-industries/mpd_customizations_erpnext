@@ -53,7 +53,7 @@ class CostingEngine:
 		boms = frappe.get_all(
 			"BOM",
 			filters={"item": doc.item},
-			fields=["name", "item", "quantity", "custom_formulation_id"],
+			fields=["name", "item", "quantity", "custom_formulation_id", "custom_formulation_description"],
 		)
 
 		bom_names = [b["name"] for b in boms]
@@ -75,6 +75,18 @@ class CostingEngine:
 		scrap_items_map: Dict[str, list] = {}
 		for si in all_scrap_items:
 			scrap_items_map.setdefault(si["parent"], []).append(si)
+
+		# Build map of previous approved PC's RM costs per BOM for delta display
+		prev_rm_costs = {}
+		if doc.pricing_request:
+			prev_pc_name = frappe.db.get_value("Pricing Request", doc.pricing_request, "previous_pricing_ref")
+			if prev_pc_name:
+				prev_combos = frappe.get_all(
+					"Costing Combination",
+					filters={"pricing_calculation": prev_pc_name},
+					fields=["bom", "rm_cost_per_kg"],
+				)
+				prev_rm_costs = {c.bom: c.rm_cost_per_kg for c in prev_combos}
 
 		rate_lines_map = {rl.item: rl for rl in (doc.rate_lines or [])}
 		scrap_lines_map = {sl.item: sl for sl in (doc.scrap_lines or [])}
@@ -185,6 +197,8 @@ class CostingEngine:
 			combination_results.append({
 				"bom": bom["name"],
 				"formulation_id": bom["custom_formulation_id"] or "",
+				"formulation_description": bom.get("custom_formulation_description") or "",
+				"prev_rm_cost_per_kg": prev_rm_costs.get(bom["name"], 0) or 0,
 				"rm_cost_per_kg": rm_cost,
 				"financing_cost_per_kg": financing_cost,
 				"processing_cost_per_kg": processing_cost,
@@ -218,6 +232,8 @@ class CostingEngine:
 				"pricing_calculation": pricing_calculation_name,
 				"bom": combo["bom"],
 				"formulation_id": combo["formulation_id"],
+				"formulation_description": combo.get("formulation_description") or "",
+				"prev_rm_cost_per_kg": combo.get("prev_rm_cost_per_kg", 0),
 				"is_preferred": combo.get("is_preferred", 0),
 				"rm_cost_per_kg": combo["rm_cost_per_kg"],
 				"financing_cost_per_kg": combo["financing_cost_per_kg"],
@@ -225,8 +241,8 @@ class CostingEngine:
 				"additional_charges_per_kg": combo["additional_charges_per_kg"],
 				"outward_freight_per_kg": combo["outward_freight_per_kg"],
 				"total_cost_per_kg": combo["total_cost_per_kg"],
-				"rank": combo.get("rank") or 1,
-				"delta_pct": combo.get("delta_pct", 0),
+				"rank": combo.get("rank") or 0,
+				"delta_pct": combo.get("delta_pct") or 0,
 				"status": combo["status"],
 				"is_selected": 0,
 				"processing_charge_ref": combo["processing_charge_ref"],
@@ -321,7 +337,7 @@ def _update_pending_rate_items(doc, fetch_result, mode: str):
 		"requested_on": ["is", "set"],
 	})
 
-	if mode != "Awaiting Rates":
+	if mode not in ("Awaiting Rates", "Ready for Working"):
 		return
 
 	priority = "Normal"
@@ -333,11 +349,13 @@ def _update_pending_rate_items(doc, fetch_result, mode: str):
 		priority = pr_values.get("priority") or "Normal"
 		product = pr_values.get("product") or ""
 
-	for item_code in fetch_result.missing_items:
+	items_to_request = list(fetch_result.missing_items)
+	items_to_request += [i for i in fetch_result.expired_items if i not in items_to_request]
+
+	for item_code in items_to_request:
 		existing = frappe.db.exists("Material Rate", {
 			"item": item_code,
 			"city": doc.city,
-			"pricing_calculation": doc.name,
 			"docstatus": 0,
 		})
 		if not existing:
@@ -362,6 +380,8 @@ def _combination_to_dict(cc, results) -> Dict:
 		"name": cc.name,
 		"bom": cc.bom,
 		"formulation_id": cc.formulation_id,
+		"formulation_description": cc.formulation_description,
+		"prev_rm_cost_per_kg": cc.prev_rm_cost_per_kg,
 		"rank": cc.rank,
 		"delta_pct": cc.delta_pct,
 		"status": cc.status,

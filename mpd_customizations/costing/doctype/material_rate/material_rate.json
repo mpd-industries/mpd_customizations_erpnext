@@ -99,7 +99,6 @@
   {
    "fieldname": "delivered_rate",
    "fieldtype": "Currency",
-   "in_list_view": 1,
    "label": "Delivered Rate (\u20b9)"
   },
   {
@@ -184,6 +183,7 @@
   {
    "fieldname": "pricing_request",
    "fieldtype": "Link",
+   "in_filter": 1,
    "in_list_view": 1,
    "label": "Pricing Request",
    "options": "Pricing Request"
@@ -215,7 +215,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-09 00:51:38.797218",
+ "modified": "2026-05-09 11:31:35.559317",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Material Rate",

@@ -1,11 +1,16 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import add_days, today
 
 from mpd_customizations.costing.services.cost_calculator import compute_additional_charge_amount
 
 
 class PricingCalculation(Document):
+	def before_insert(self):
+		if not self.valid_until:
+			self.valid_until = add_days(today(), 7)
+
 	def validate(self):
 		if self.solids_content_pct is not None:
 			if not (0 < self.solids_content_pct < 100):
@@ -29,6 +34,10 @@ class PricingCalculation(Document):
 			charge.amount_per_kg = compute_additional_charge_amount(
 				charge.rate or 0, charge.basis, solids
 			)
+
+	def before_submit(self):
+		if self.mode != "Approved":
+			frappe.throw(_("Cannot submit — Pricing Calculation must be in Approved mode first."))
 
 	def on_trash(self):
 		frappe.db.delete("Costing Material Line", {"pricing_calculation": self.name})
