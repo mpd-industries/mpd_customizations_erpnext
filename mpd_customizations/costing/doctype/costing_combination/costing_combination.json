@@ -5,7 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "costing_request",
+  "pricing_calculation",
   "bom",
   "formulation_id",
   "is_preferred",
@@ -29,11 +29,11 @@
  ],
  "fields": [
   {
-   "fieldname": "costing_request",
+   "fieldname": "pricing_calculation",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Costing Request",
-   "options": "Costing Request",
+   "label": "Pricing Calculation",
+   "options": "Pricing Calculation",
    "reqd": 1
   },
   {

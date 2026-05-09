@@ -10,6 +10,7 @@
   "section_break_rates",
   "supplier_financing_rate_pct",
   "actual_cost_of_capital_pct",
+  "credit_benefit_rate_pct",
   "section_break_formulation",
   "auto_exclusion_threshold_pct",
   "formulation_switch_threshold_pct",
@@ -53,6 +54,12 @@
    "fieldtype": "Float",
    "label": "Actual Cost of Capital % pa",
    "permlevel": 1
+  },
+  {
+   "default": "8",
+   "fieldname": "credit_benefit_rate_pct",
+   "fieldtype": "Float",
+   "label": "Credit Benefit Rate % pa (>60d)"
   },
   {
    "fieldname": "section_break_formulation",

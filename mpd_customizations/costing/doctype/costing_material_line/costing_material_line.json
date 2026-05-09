@@ -5,7 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "costing_request",
+  "pricing_calculation",
   "combination",
   "item",
   "item_name",
@@ -19,15 +19,17 @@
   "net_financed_days",
   "amount_per_kg",
   "financing_cost_per_kg",
-  "confidence_score"
+  "equalized_amount_per_kg",
+  "confidence_score",
+  "is_scrap"
  ],
  "fields": [
   {
-   "fieldname": "costing_request",
+   "fieldname": "pricing_calculation",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Costing Request",
-   "options": "Costing Request",
+   "label": "Pricing Calculation",
+   "options": "Pricing Calculation",
    "reqd": 1
   },
   {
@@ -106,9 +108,22 @@
    "label": "Financing Cost per kg"
   },
   {
+   "fieldname": "equalized_amount_per_kg",
+   "fieldtype": "Currency",
+   "label": "Amount @ 60d Credit",
+   "read_only": 1
+  },
+  {
    "fieldname": "confidence_score",
    "fieldtype": "Float",
    "label": "Confidence Score"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_scrap",
+   "fieldtype": "Check",
+   "label": "Scrap Item",
+   "read_only": 1
   }
  ],
  "links": [],

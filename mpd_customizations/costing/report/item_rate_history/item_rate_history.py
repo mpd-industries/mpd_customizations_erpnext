@@ -24,7 +24,6 @@ def _get_columns():
 		{"fieldname": "valid_from", "label": "Valid From", "fieldtype": "Datetime", "width": 140},
 		{"fieldname": "valid_to", "label": "Valid To", "fieldtype": "Datetime", "width": 140},
 		{"fieldname": "status", "label": "Status", "fieldtype": "Data", "width": 90},
-		{"fieldname": "costing_request", "label": "Costing Request", "fieldtype": "Link", "options": "Costing Request", "width": 140},
 		{"fieldname": "name", "label": "Document", "fieldtype": "Link", "options": "Material Rate", "width": 140},
 	]
 
@@ -52,7 +51,7 @@ def _get_data(filters):
 			"name", "item", "item_name", "city", "supplier", "rate_type",
 			"ex_works_rate", "freight_per_unit", "delivered_rate",
 			"credit_days", "lead_time_days", "valid_from", "valid_to",
-			"is_active", "costing_request",
+			"is_active",
 		],
 		order_by="valid_from desc",
 	)

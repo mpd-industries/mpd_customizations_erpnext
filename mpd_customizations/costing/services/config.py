@@ -9,6 +9,7 @@ class CostingConfig:
 	production_days: int
 	supplier_financing_rate_pct: float
 	actual_cost_of_capital_pct: float
+	credit_benefit_rate_pct: float
 	auto_exclusion_threshold_pct: float
 	formulation_switch_threshold_pct: float
 	default_valid_to: str
@@ -26,6 +27,7 @@ def get_config() -> CostingConfig:
 		production_days=doc.production_days or 30,
 		supplier_financing_rate_pct=doc.supplier_financing_rate_pct or 12.0,
 		actual_cost_of_capital_pct=doc.actual_cost_of_capital_pct or 9.0,
+		credit_benefit_rate_pct=doc.credit_benefit_rate_pct or 8.0,
 		auto_exclusion_threshold_pct=doc.auto_exclusion_threshold_pct or 15.0,
 		formulation_switch_threshold_pct=doc.formulation_switch_threshold_pct or 5.0,
 		default_valid_to=doc.default_valid_to or "End of Month",

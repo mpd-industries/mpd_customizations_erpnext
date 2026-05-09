@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Costing Request\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Material Rate\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Processing Charge\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Rate History\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Costing</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Costing\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Rates\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pricing Request\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pricing Calculation\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Material Rate\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Rate History\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Costing</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Costing\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Rates\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
  "creation": "2024-01-01 00:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -24,11 +24,33 @@
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Costing Request",
+   "label": "Pricing Request",
    "link_count": 0,
-   "link_to": "Costing Request",
+   "link_to": "Pricing Request",
    "link_type": "DocType",
    "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Pricing Calculation",
+   "link_count": 0,
+   "link_to": "Pricing Calculation",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Pending Rates",
+   "link_count": 0,
+   "link_to": "Material Rate",
+   "link_type": "DocType",
+   "onboard": 0,
    "type": "Link"
   },
   {
@@ -150,8 +172,14 @@
  "shortcuts": [
   {
    "color": "Blue",
-   "label": "Costing Request",
-   "link_to": "Costing Request",
+   "label": "Pricing Request",
+   "link_to": "Pricing Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "label": "Pricing Calculation",
+   "link_to": "Pricing Calculation",
    "type": "DocType"
   },
   {

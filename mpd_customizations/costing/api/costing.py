@@ -15,30 +15,25 @@ from mpd_customizations.costing.services.formulation_selector import Formulation
 from mpd_customizations.costing.services.rate_source_registry import get_default_registry
 
 
-def _require_role(*roles):
-	if not frappe.has_permission("Costing Request", "read"):
-		frappe.throw(_("Not permitted"), frappe.PermissionError)
-
-
 @frappe.whitelist()
-def evaluate(costing_request_name: str, trigger: str = "manual"):
-	frappe.has_permission("Costing Request", "write", throw=True)
+def evaluate(pricing_calculation_name: str, trigger: str = "manual"):
+	frappe.has_permission("Pricing Calculation", "write", throw=True)
 
 	config = get_config()
 	registry = get_default_registry()
 
 	from mpd_customizations.costing.services.costing_engine import CostingEngine
 	engine = CostingEngine(registry, config)
-	return engine.evaluate(costing_request_name, trigger)
+	return engine.evaluate(pricing_calculation_name, trigger)
 
 
 @frappe.whitelist()
-def get_combinations(costing_request_name: str):
-	frappe.has_permission("Costing Request", "read", throw=True)
+def get_combinations(pricing_calculation_name: str):
+	frappe.has_permission("Pricing Calculation", "read", throw=True)
 
 	combos = frappe.get_all(
 		"Costing Combination",
-		filters={"costing_request": costing_request_name},
+		filters={"pricing_calculation": pricing_calculation_name},
 		fields=[
 			"name", "bom", "formulation_id", "rank", "delta_pct", "status",
 			"is_preferred", "is_selected", "rm_cost_per_kg", "financing_cost_per_kg",
@@ -56,7 +51,8 @@ def get_combinations(costing_request_name: str):
 				"combination", "item", "item_name", "uom", "qty_per_kg_output",
 				"supplier", "city", "rate_freshness", "working_rate",
 				"working_supplier_credit_days", "net_financed_days",
-				"amount_per_kg", "financing_cost_per_kg", "confidence_score",
+				"amount_per_kg", "financing_cost_per_kg", "equalized_amount_per_kg",
+				"is_scrap", "confidence_score",
 			],
 		)
 		ml_map = {}
@@ -70,38 +66,48 @@ def get_combinations(costing_request_name: str):
 
 
 @frappe.whitelist()
-def select_combination(costing_request_name: str, combination_name: str):
-	frappe.has_permission("Costing Request", "write", throw=True)
+def select_combination(pricing_calculation_name: str, combination_name: str):
+	frappe.has_permission("Pricing Calculation", "write", throw=True)
 
-	frappe.db.set_value("Costing Combination", {"costing_request": costing_request_name}, "is_selected", 0)
+	frappe.db.set_value("Costing Combination", {"pricing_calculation": pricing_calculation_name}, "is_selected", 0)
 	combo = frappe.get_doc("Costing Combination", combination_name)
 	frappe.db.set_value("Costing Combination", combination_name, "is_selected", 1)
 
-	doc = frappe.get_doc("Costing Request", costing_request_name)
+	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 	new_mode = "Ready to Quote" if combo.status in ("Ready to Quote", "Indicative — Rates Expired") else doc.mode
 	frappe.db.set_value(
-		"Costing Request",
-		costing_request_name,
+		"Pricing Calculation",
+		pricing_calculation_name,
 		{
 			"selected_combination": combination_name,
 			"confirmed_ex_factory_cost_per_kg": combo.total_cost_per_kg,
 			"mode": new_mode,
 		},
 	)
+
+	# Sync to Pricing Request
+	if doc.pricing_request:
+		qty = frappe.db.get_value("Pricing Request", doc.pricing_request, "quantity_kg") or 0
+		frappe.db.set_value("Pricing Request", doc.pricing_request, {
+			"status": new_mode,
+			"confirmed_price_per_kg": combo.total_cost_per_kg,
+			"total_price": qty * combo.total_cost_per_kg,
+		})
+
 	return {"confirmed_ex_factory_cost_per_kg": combo.total_cost_per_kg, "mode": new_mode}
 
 
 @frappe.whitelist()
 def apply_rate_override(
-	costing_request_name: str,
+	pricing_calculation_name: str,
 	item: str,
 	working_rate: float,
 	working_supplier_credit_days: int,
 	reason: str = "",
 ):
-	frappe.has_permission("Costing Request", "write", throw=True)
+	frappe.has_permission("Pricing Calculation", "write", throw=True)
 
-	doc = frappe.get_doc("Costing Request", costing_request_name)
+	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 	for rl in doc.rate_lines:
 		if rl.item == item:
 			rl.working_rate = float(working_rate)
@@ -115,15 +121,15 @@ def apply_rate_override(
 
 @frappe.whitelist()
 def apply_processing_override(
-	costing_request_name: str,
+	pricing_calculation_name: str,
 	working_charge_per_kg: float,
 	working_freight_per_unit: float,
 	working_includes_outward_freight: int,
 	reason: str = "",
 ):
-	frappe.has_permission("Costing Request", "write", throw=True)
+	frappe.has_permission("Pricing Calculation", "write", throw=True)
 
-	doc = frappe.get_doc("Costing Request", costing_request_name)
+	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 	if doc.processing_lines:
 		pl = doc.processing_lines[0]
 		pl.working_charge_per_kg = float(working_charge_per_kg)
@@ -136,10 +142,10 @@ def apply_processing_override(
 
 
 @frappe.whitelist()
-def revert_rate_override(costing_request_name: str, item: str):
-	frappe.has_permission("Costing Request", "write", throw=True)
+def revert_rate_override(pricing_calculation_name: str, item: str):
+	frappe.has_permission("Pricing Calculation", "write", throw=True)
 
-	doc = frappe.get_doc("Costing Request", costing_request_name)
+	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 	for rl in doc.rate_lines:
 		if rl.item == item:
 			rl.working_rate = rl.fetched_rate
@@ -152,10 +158,10 @@ def revert_rate_override(costing_request_name: str, item: str):
 
 
 @frappe.whitelist()
-def revert_all_overrides(costing_request_name: str):
-	frappe.has_permission("Costing Request", "write", throw=True)
+def revert_all_overrides(pricing_calculation_name: str):
+	frappe.has_permission("Pricing Calculation", "write", throw=True)
 
-	doc = frappe.get_doc("Costing Request", costing_request_name)
+	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 	for rl in doc.rate_lines:
 		rl.working_rate = rl.fetched_rate
 		rl.working_supplier_credit_days = rl.fetched_supplier_credit_days
@@ -173,67 +179,99 @@ def revert_all_overrides(costing_request_name: str):
 
 
 @frappe.whitelist()
-def create_pending_rates(costing_request_name: str):
-	frappe.has_permission("Costing Request", "write", throw=True)
+def create_pending_rates(pricing_calculation_name: str):
+	frappe.has_permission("Pricing Calculation", "write", throw=True)
 
-	doc = frappe.get_doc("Costing Request", costing_request_name)
-	city = frappe.db.get_value("Processor", doc.processor, "city")
-	created = []
+	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
+	priority = "Normal"
+	product = ""
+	if doc.pricing_request:
+		pr_values = frappe.db.get_value(
+			"Pricing Request", doc.pricing_request, ["priority", "product"], as_dict=True
+		) or {}
+		priority = pr_values.get("priority") or "Normal"
+		product = pr_values.get("product") or ""
 
-	for rl in doc.rate_lines:
-		if rl.rate_freshness in ("Missing", "Expired"):
-			existing_pending = frappe.db.exists(
+	if doc.rate_lines:
+		items_needing_rates = [
+			rl.item for rl in doc.rate_lines
+			if rl.rate_freshness in ("Missing", "Expired")
+		]
+	else:
+		items_needing_rates = _get_bom_items_without_current_rate(doc.item, doc.city)
+
+	if not frappe.db.has_column("Material Rate", "pricing_calculation"):
+		return {"created_count": 0, "error": "Run bench migrate first to add new fields to Material Rate"}
+
+	created = 0
+	for item in items_needing_rates:
+		existing = frappe.db.exists(
+			"Material Rate",
+			{"item": item, "city": doc.city, "pricing_calculation": pricing_calculation_name, "docstatus": 0},
+		)
+		if not existing:
+			frappe.get_doc({
+				"doctype": "Material Rate",
+				"item": item,
+				"city": doc.city,
+				"pricing_calculation": pricing_calculation_name,
+				"pricing_request": doc.pricing_request or "",
+				"product": product,
+				"priority": priority,
+				"requested_on": now_datetime(),
+				"uom": frappe.db.get_value("Item", item, "stock_uom") or "Kg",
+				"rate_type": "All-In Delivered",
+				"valid_from": frappe.utils.today(),
+			}).insert(ignore_permissions=True)
+			created += 1
+
+	return {"created_count": created}
+
+
+def _get_bom_items_without_current_rate(product_item: str, city: str) -> list:
+	today = frappe.utils.today()
+	boms = frappe.get_all(
+		"BOM",
+		filters={"item": product_item, "is_active": 1, "docstatus": 1},
+		fields=["name"],
+	)
+	if not boms:
+		return []
+
+	seen = set()
+	result = []
+	for bom in boms:
+		bom_items = frappe.get_all(
+			"BOM Item",
+			filters={"parent": bom.name},
+			fields=["item_code"],
+		)
+		for bi in bom_items:
+			item_code = bi.item_code
+			if item_code in seen:
+				continue
+			seen.add(item_code)
+			has_rate = frappe.db.exists(
 				"Material Rate",
-				{"item": rl.item, "city": city, "docstatus": 0},
-			)
-			if not existing_pending:
-				mr = frappe.get_doc({
-					"doctype": "Material Rate",
-					"item": rl.item,
+				{
+					"item": item_code,
 					"city": city,
-					"rate_type": "All-In Delivered",
-					"valid_from": frappe.utils.today(),
-					"uom": rl.uom or "Kg",
-					"credit_days": 0,
-				})
-				mr.insert(ignore_permissions=True)
-				created.append(mr.name)
+					"docstatus": 1,
+					"valid_from": ["<=", today],
+					"valid_to": [">=", today],
+				},
+			)
+			if not has_rate:
+				result.append(item_code)
 
-	return {"created_count": len(created), "names": created}
-
-
-@frappe.whitelist()
-def get_previous_costing(item: str):
-	frappe.has_permission("Costing Request", "read", throw=True)
-
-	cr = frappe.get_all(
-		"Costing Request",
-		filters={"item": item, "mode": "Approved", "docstatus": 1},
-		fields=[
-			"name", "preferred_bom", "production_days", "supplier_financing_rate_pct",
-			"confirmed_ex_factory_cost_per_kg",
-		],
-		order_by="modified desc",
-		limit=1,
-	)
-	if not cr:
-		return None
-
-	prev = cr[0]
-	additional_charges = frappe.get_all(
-		"Costing Additional Charge",
-		filters={"parent": prev.name},
-		fields=["description", "basis", "rate"],
-	)
-	prev["additional_charges"] = additional_charges
-	return prev
+	return result
 
 
 @frappe.whitelist()
-def get_cost_breakdown(costing_request_name: str):
-	frappe.has_permission("Costing Request", "read", throw=True)
+def get_cost_breakdown(pricing_calculation_name: str):
+	frappe.has_permission("Pricing Calculation", "read", throw=True)
 
-	doc = frappe.get_doc("Costing Request", costing_request_name)
+	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 	if not doc.selected_combination:
 		return {}
 
@@ -242,9 +280,10 @@ def get_cost_breakdown(costing_request_name: str):
 		"Costing Material Line",
 		filters={"combination": doc.selected_combination},
 		fields=[
-			"item", "item_name", "uom", "qty_per_kg_output", "supplier",
+			"item", "item_name", "uom", "qty_per_kg_output", "supplier", "city",
 			"rate_freshness", "working_rate", "working_supplier_credit_days",
 			"net_financed_days", "amount_per_kg", "financing_cost_per_kg",
+			"equalized_amount_per_kg", "is_scrap",
 		],
 	)
 
@@ -252,8 +291,10 @@ def get_cost_breakdown(costing_request_name: str):
 	for ml in material_lines:
 		rl = rate_lines_map.get(ml.item)
 		ml["fetched_rate"] = rl.fetched_rate if rl else None
-		ml["is_overridden"] = (
-			round(rl.working_rate or 0, 2) != round(rl.fetched_rate or 0, 2) if rl else False
+		ml["rate_source_ref"] = rl.rate_source_ref if rl else None
+		ml["is_overridden"] = bool(
+			rl and rl.fetched_rate and
+			round(rl.working_rate or 0, 2) != round(rl.fetched_rate, 2)
 		)
 
 	layer1 = {
@@ -278,7 +319,6 @@ def get_cost_breakdown(costing_request_name: str):
 
 	result = {"layer1": layer1}
 
-	# Layer 3 — only for Costing Approver and System Manager
 	if set(frappe.get_roles(frappe.session.user)) & {"Costing Approver", "System Manager"}:
 		config = get_config()
 		ml_dicts = [
@@ -306,9 +346,6 @@ def check_rate_conflict(
 ):
 	if not frappe.has_permission("Material Rate", "write"):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
-
-	from frappe.utils import get_datetime
-	from mpd_customizations.costing.services.rate_source_registry import get_default_registry
 
 	filters = {"item": item, "supplier": supplier, "city": city, "docstatus": 1}
 	if exclude_name:
@@ -346,31 +383,27 @@ def auto_expire_rate(rate_name: str, new_valid_to: str):
 
 
 def on_material_rate_submitted(doc, method):
-	"""Hook: fires on_submit of Material Rate. Notify CR owners where this fills a gap."""
-	open_requests = frappe.get_all(
-		"Costing Request",
-		filters={"mode": ["in", ["Exploring", "Awaiting Rates", "Partially Costed"]], "docstatus": 0},
-		fields=["name", "owner"],
+	"""Hook: fires on_submit of Material Rate. Notify Pricing Calculation owners."""
+	# Notify owners of open Pricing Calculations awaiting this rate
+	open_calcs = frappe.get_all(
+		"Pricing Calculation",
+		filters={"mode": ["in", ["Awaiting Rates", "Ready for Working"]]},
+		fields=["name", "owner", "pricing_request"],
 	)
 
-	if not open_requests:
+	if not open_calcs:
 		return
 
-	city = doc.city
-	for cr in open_requests:
+	for pc in open_calcs:
 		has_missing = frappe.db.exists(
 			"Costing Rate Line",
-			{"parent": cr.name, "item": doc.item, "rate_freshness": ["in", ["Missing", "Expired"]]},
+			{"parent": pc.name, "item": doc.item, "rate_freshness": ["in", ["Missing", "Expired"]]},
 		)
 		if has_missing:
-			frappe.sendmail(
-				recipients=[cr.owner],
-				subject=f"New rate added for {doc.item_name or doc.item} — {city}",
-				message=(
-					f"A new rate for <b>{doc.item_name or doc.item}</b> in {city} has been added "
-					f"by {frappe.session.user}.<br>You may now re-evaluate "
-					f"<a href='/app/costing-request/{cr.name}'>{cr.name}</a>."
-				),
+			frappe.publish_realtime(
+				"eval_js",
+				f"frappe.show_alert({{message: 'New rate for {doc.item_name or doc.item} — re-evaluate {pc.name}', indicator: 'green'}})",
+				user=pc.owner,
 			)
 
 
@@ -381,6 +414,7 @@ def _recompute_combinations(doc) -> dict:
 	financing_rate = doc.supplier_financing_rate_pct or 12.0
 	solids = doc.solids_content_pct or 0
 	rate_lines_map = {rl.item: rl for rl in (doc.rate_lines or [])}
+	scrap_lines_map = {sl.item: sl for sl in (doc.scrap_lines or [])}
 	processing_line = doc.processing_lines[0] if doc.processing_lines else None
 
 	additional_charges_per_kg = sum(
@@ -390,7 +424,7 @@ def _recompute_combinations(doc) -> dict:
 
 	combos = frappe.get_all(
 		"Costing Combination",
-		filters={"costing_request": doc.name},
+		filters={"pricing_calculation": doc.name},
 		fields=["name", "bom"],
 	)
 
@@ -399,7 +433,7 @@ def _recompute_combinations(doc) -> dict:
 		material_lines = frappe.get_all(
 			"Costing Material Line",
 			filters={"combination": combo.name},
-			fields=["item", "item_name", "qty_per_kg_output", "rate_freshness", "net_financed_days"],
+			fields=["item", "item_name", "qty_per_kg_output", "rate_freshness", "net_financed_days", "is_scrap"],
 		)
 
 		rm_cost = 0.0
@@ -408,14 +442,27 @@ def _recompute_combinations(doc) -> dict:
 		expired_items = []
 
 		for ml in material_lines:
-			rl = rate_lines_map.get(ml.item)
-			working_rate = (rl.working_rate or 0) if rl else 0.0
-			credit_days = (rl.working_supplier_credit_days or 0) if rl else 0
-			freshness = (rl.rate_freshness or "Missing") if rl else "Missing"
-			net_financed = max(0, production_days - credit_days)
+			is_scrap = ml.get("is_scrap")
+			qty = ml.qty_per_kg_output or 0
 
-			amount = compute_rm_line_amount(ml.qty_per_kg_output or 0, working_rate)
-			fin = compute_financing_cost_for_line(amount, production_days, credit_days, financing_rate)
+			if is_scrap:
+				sl = scrap_lines_map.get(ml.item)
+				scrap_rate = (sl.rate_per_kg or 0) if sl else 0.0
+				amount = -1 * compute_rm_line_amount(qty, scrap_rate)
+				working_rate = scrap_rate
+				credit_days = 0
+				freshness = "Current"
+				net_financed = 0
+				fin = 0.0
+			else:
+				rl = rate_lines_map.get(ml.item)
+				working_rate = (rl.working_rate or 0) if rl else 0.0
+				credit_days = (rl.working_supplier_credit_days or 0) if rl else 0
+				freshness = (rl.rate_freshness or "Missing") if rl else "Missing"
+				net_financed = max(0, production_days - 60)
+				amount = compute_rm_line_amount(qty, working_rate)
+				fin = compute_financing_cost_for_line(amount, production_days, 60, financing_rate)
+
 			rm_cost += amount
 			financing_cost += fin
 
@@ -428,14 +475,16 @@ def _recompute_combinations(doc) -> dict:
 					"net_financed_days": net_financed,
 					"amount_per_kg": amount,
 					"financing_cost_per_kg": fin,
+					"equalized_amount_per_kg": amount,
 					"rate_freshness": freshness,
 				},
 			)
 
-			if freshness == "Missing":
-				missing_items.append(ml.item)
-			elif freshness == "Expired":
-				expired_items.append(ml.item)
+			if not ml.get("is_scrap"):
+				if freshness == "Missing":
+					missing_items.append(ml.item)
+				elif freshness == "Expired":
+					expired_items.append(ml.item)
 
 		processing_cost = 0.0
 		outward_freight = 0.0
@@ -495,14 +544,21 @@ def _recompute_combinations(doc) -> dict:
 		selected = next((c for c in combination_totals if c["name"] == doc.selected_combination), None)
 		if selected:
 			frappe.db.set_value(
-				"Costing Request",
+				"Pricing Calculation",
 				doc.name,
 				"confirmed_ex_factory_cost_per_kg",
 				selected["total_cost_per_kg"],
 			)
+			# Sync to Pricing Request
+			if doc.pricing_request:
+				qty = frappe.db.get_value("Pricing Request", doc.pricing_request, "quantity_kg") or 0
+				frappe.db.set_value("Pricing Request", doc.pricing_request, {
+					"confirmed_price_per_kg": selected["total_cost_per_kg"],
+					"total_price": qty * selected["total_cost_per_kg"],
+				})
 
 	frappe.db.set_value(
-		"Costing Request",
+		"Pricing Calculation",
 		doc.name,
 		"formulation_switch_alert",
 		selection.switch_alert or "",
@@ -511,4 +567,5 @@ def _recompute_combinations(doc) -> dict:
 	return {
 		"combinations": combination_totals,
 		"switch_alert": selection.switch_alert,
+		"modified": frappe.utils.cstr(doc.modified),
 	}

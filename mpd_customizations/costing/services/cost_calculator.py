@@ -32,6 +32,21 @@ def compute_additional_charge_amount(rate: float, basis: str, solids_content_pct
 	raise ValueError(f"Unrecognised basis: {basis!r}")
 
 
+def compute_equalized_rate(
+	working_rate: float,
+	credit_days: int,
+	financing_rate_pct: float,
+	benefit_rate_pct: float = 8.0,
+	baseline_credit: int = 60,
+) -> float:
+	"""Normalize rate to a 60-day credit baseline for fair comparison.
+	Suppliers giving <60d: rate adjusted up at financing_rate_pct.
+	Suppliers giving >60d: rate adjusted down at benefit_rate_pct."""
+	gap = baseline_credit - (credit_days or 0)
+	rate = financing_rate_pct if gap > 0 else benefit_rate_pct
+	return working_rate + working_rate * (gap / 365) * (rate / 100)
+
+
 def compute_total_cost(
 	rm_cost: float,
 	financing_cost: float,

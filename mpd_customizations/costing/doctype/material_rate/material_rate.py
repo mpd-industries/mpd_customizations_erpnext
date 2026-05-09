@@ -35,6 +35,18 @@ class MaterialRate(Document):
 	def before_save(self):
 		if self.rate_type == "Ex-Works + Freight":
 			self.delivered_rate = (self.ex_works_rate or 0) + (self.freight_per_unit or 0)
+		self._compute_60d_equivalent()
+
+	def _compute_60d_equivalent(self):
+		from mpd_customizations.costing.services.config import get_config
+		from mpd_customizations.costing.services.cost_calculator import compute_equalized_rate
+		config = get_config()
+		self.rate_60d_equivalent = compute_equalized_rate(
+			self.delivered_rate or 0,
+			self.credit_days or 0,
+			config.supplier_financing_rate_pct,
+			config.credit_benefit_rate_pct,
+		)
 
 	def on_submit(self):
 		self._check_overlap()
@@ -78,24 +90,34 @@ class MaterialRate(Document):
 
 
 def _notify_open_costing_requests(doc):
-	open_requests = frappe.get_all(
-		"Costing Request",
-		filters={"mode": ["in", ["Exploring", "Awaiting Rates", "Partially Costed"]], "docstatus": 0},
+	# Clear other pending-request drafts for same item+city
+	if frappe.db.has_column("Material Rate", "requested_on"):
+		frappe.db.delete("Material Rate", {
+			"item": doc.item,
+			"city": doc.city,
+			"docstatus": 0,
+			"requested_on": ["is", "set"],
+			"name": ["!=", doc.name],
+		})
+
+	open_calcs = frappe.get_all(
+		"Pricing Calculation",
+		filters={"mode": ["in", ["Awaiting Rates", "Ready for Working"]]},
 		fields=["name", "owner"],
 	)
 
-	if not open_requests:
+	if not open_calcs:
 		return
 
 	city = doc.city
-	for cr in open_requests:
+	for pc in open_calcs:
 		has_missing = frappe.db.exists(
 			"Costing Rate Line",
-			{"parent": cr.name, "item": doc.item, "city": city, "rate_freshness": ["in", ["Missing", "Expired"]]},
+			{"parent": pc.name, "item": doc.item, "rate_freshness": ["in", ["Missing", "Expired"]]},
 		)
 		if has_missing:
 			frappe.publish_realtime(
 				"eval_js",
-				f"frappe.show_alert({{message: 'New rate available for {doc.item_name or doc.item} — re-evaluate costing {cr.name}', indicator: 'green'}})",
-				user=cr.owner,
+				f"frappe.show_alert({{message: 'New rate available for {doc.item_name or doc.item} — re-evaluate {pc.name}', indicator: 'green'}})",
+				user=pc.owner,
 			)

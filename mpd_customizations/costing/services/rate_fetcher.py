@@ -23,9 +23,9 @@ class RateFetcher:
 		result = FetchResult()
 		pricing_dt = now_datetime()
 
-		city = frappe.db.get_value("Processor", doc.processor, "city")
+		city = doc.city
 		if not city:
-			frappe.throw(frappe._("Processor {0} has no city set.").format(doc.processor))
+			frappe.throw(frappe._("City is required on this document."))
 
 		boms = frappe.get_all(
 			"BOM",
@@ -42,8 +42,15 @@ class RateFetcher:
 			filters={"parent": ["in", bom_names]},
 			fields=["parent", "item_code", "item_name", "qty", "uom"],
 		)
+		bom_scrap_items = frappe.get_all(
+			"BOM Scrap Item",
+			filters={"parent": ["in", bom_names]},
+			fields=["item_code", "item_name", "stock_uom"],
+		)
 
-		unique_items = list({bi["item_code"] for bi in bom_items})
+		# Scrap/byproducts are managed separately — exclude from Material Rate lookup
+		scrap_item_codes = {si["item_code"] for si in bom_scrap_items}
+		unique_items = list({bi["item_code"] for bi in bom_items} - scrap_item_codes)
 		unique_items_set = set(unique_items)
 		pairs = [(item_code, city) for item_code in unique_items]
 
@@ -58,23 +65,24 @@ class RateFetcher:
 			if not opt:
 				continue
 
+			eq_rate = opt.rate_60d_equivalent  # already computed and stored on Material Rate
+
 			if preserve_overrides:
 				is_overridden = (
 					round(existing.working_rate or 0, 2) != round(existing.fetched_rate or 0, 2)
-					or (existing.working_supplier_credit_days or 0) != (existing.fetched_supplier_credit_days or 0)
 				)
 				if is_overridden:
 					result.overrides_detected = True
-					if round(opt.delivered_rate, 2) != round(existing.fetched_rate or 0, 2):
+					if round(eq_rate, 2) != round(existing.fetched_rate or 0, 2):
 						result.overrides_changed.append(item_code)
 				else:
-					existing.working_rate = opt.delivered_rate
+					existing.working_rate = eq_rate
 					existing.working_supplier_credit_days = opt.supplier_credit_days
 			else:
-				existing.working_rate = opt.delivered_rate
+				existing.working_rate = eq_rate
 				existing.working_supplier_credit_days = opt.supplier_credit_days
 
-			existing.fetched_rate = opt.delivered_rate
+			existing.fetched_rate = eq_rate
 			existing.fetched_supplier_credit_days = opt.supplier_credit_days
 			existing.rate_freshness = opt.rate_freshness
 			existing.supplier = opt.supplier
@@ -91,17 +99,39 @@ class RateFetcher:
 			opt = resolved.get((item_code, city))
 			if not opt:
 				continue
+			eq_rate = opt.rate_60d_equivalent  # already computed and stored on Material Rate
 			doc.append("rate_lines", {
 				"item": item_code,
 				"city": city,
 				"supplier": opt.supplier,
 				"rate_source_ref": opt.rate_source_ref,
-				"fetched_rate": opt.delivered_rate,
+				"fetched_rate": eq_rate,
 				"fetched_supplier_credit_days": opt.supplier_credit_days,
 				"rate_freshness": opt.rate_freshness,
-				"working_rate": opt.delivered_rate,
+				"working_rate": eq_rate,
 				"working_supplier_credit_days": opt.supplier_credit_days,
 			})
+
+		# ── Scrap / Byproduct lines sync ────────────────────────────────────────────
+		# Rates are entered manually on doc.scrap_lines — no Material Rate lookup.
+		# Sync: keep existing rates, add new items, drop obsolete.
+		unique_scrap = {si["item_code"]: si for si in bom_scrap_items}
+		existing_scrap_map = {sl.item: sl for sl in (doc.scrap_lines or [])}
+
+		doc.scrap_lines = [sl for sl in (doc.scrap_lines or []) if sl.item in unique_scrap]
+
+		for item_code, si in unique_scrap.items():
+			if item_code in existing_scrap_map:
+				existing = existing_scrap_map[item_code]
+				existing.item_name = si["item_name"]
+				existing.uom = si["stock_uom"]
+			else:
+				doc.append("scrap_lines", {
+					"item": item_code,
+					"item_name": si["item_name"],
+					"uom": si["stock_uom"],
+					"rate_per_kg": 0.0,
+				})
 
 		# Freshness summary
 		for item_code in unique_items:

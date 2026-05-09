@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "MR-.YYYY.-.#####",
- "creation": "2024-01-01 00:00:00.000000",
+ "creation": "2024-01-01 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -18,37 +18,56 @@
   "col_break_rate",
   "credit_days",
   "lead_time_days",
+  "rate_60d_equivalent",
   "section_break_validity",
   "valid_from",
   "valid_to",
-  "notes"
+  "notes",
+  "section_break_request",
+  "priority",
+  "requested_on",
+  "col_break_request",
+  "pricing_request",
+  "pricing_calculation",
+  "product",
+  "amended_from"
  ],
  "fields": [
   {
    "fieldname": "item",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Item",
    "options": "Item",
    "reqd": 1
   },
   {
-   "fetch_from": "item.item_name",
+   "columns": 4,
+   "fetch_from": "item.custom_item_label",
    "fieldname": "item_name",
    "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Item Name",
    "read_only": 1
   },
   {
+   "columns": 2,
    "fieldname": "supplier",
    "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Supplier",
    "options": "Supplier"
   },
   {
+   "columns": 2,
    "fieldname": "city",
    "fieldtype": "Link",
+   "in_filter": 1,
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "City",
    "options": "City",
    "reqd": 1
@@ -69,18 +88,19 @@
    "depends_on": "eval:doc.rate_type=='Ex-Works + Freight'",
    "fieldname": "ex_works_rate",
    "fieldtype": "Currency",
-   "label": "Ex-Works Rate (₹)"
+   "label": "Ex-Works Rate (\u20b9)"
   },
   {
    "depends_on": "eval:doc.rate_type=='Ex-Works + Freight'",
    "fieldname": "freight_per_unit",
    "fieldtype": "Currency",
-   "label": "Freight per Unit (₹)"
+   "label": "Freight per Unit (\u20b9)"
   },
   {
    "fieldname": "delivered_rate",
    "fieldtype": "Currency",
-   "label": "Delivered Rate (₹)"
+   "in_list_view": 1,
+   "label": "Delivered Rate (\u20b9)"
   },
   {
    "fieldname": "uom",
@@ -97,6 +117,7 @@
    "default": "0",
    "fieldname": "credit_days",
    "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "Supplier Credit Days"
   },
   {
@@ -105,13 +126,25 @@
    "label": "Lead Time Days"
   },
   {
+   "columns": 2,
+   "description": "Delivered rate normalised to 60-day credit using the config financing rate",
+   "fieldname": "rate_60d_equivalent",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate @ 60d Credit (\u20b9)",
+   "read_only": 1
+  },
+  {
    "fieldname": "section_break_validity",
    "fieldtype": "Section Break",
    "label": "Validity"
   },
   {
+   "columns": 2,
    "fieldname": "valid_from",
    "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Valid From",
    "reqd": 1
   },
@@ -124,18 +157,73 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "section_break_request",
+   "fieldtype": "Section Break",
+   "label": "Rate Request"
+  },
+  {
+   "default": "Normal",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Priority",
+   "options": "Urgent\nHigh\nNormal\nLow"
+  },
+  {
+   "fieldname": "requested_on",
+   "fieldtype": "Datetime",
+   "label": "Requested On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_request",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pricing_request",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Pricing Request",
+   "options": "Pricing Request"
+  },
+  {
+   "fieldname": "pricing_calculation",
+   "fieldtype": "Link",
+   "label": "Pricing Calculation",
+   "options": "Pricing Calculation"
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Product",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Material Rate",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-01 00:00:00.000000",
+ "modified": "2026-05-09 00:51:38.797218",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Material Rate",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -146,10 +234,10 @@
    "role": "System Manager",
    "share": 1,
    "submit": 1,
-   "cancel": 1,
    "write": 1
   },
   {
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -160,7 +248,6 @@
    "role": "Rate Manager",
    "share": 1,
    "submit": 1,
-   "cancel": 1,
    "write": 1
   },
   {
@@ -180,8 +267,20 @@
    "report": 1,
    "role": "Costing Approver",
    "share": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Sales",
+   "share": 1,
+   "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

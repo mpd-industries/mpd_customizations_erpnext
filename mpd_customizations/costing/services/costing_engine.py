@@ -21,23 +21,31 @@ class CostingEngine:
 		self._registry = registry
 		self._config = config or get_config()
 
-	def evaluate(self, costing_request_name: str, trigger: str = "manual") -> Dict:
-		doc = frappe.get_doc("Costing Request", costing_request_name)
+	def evaluate(self, pricing_calculation_name: str, trigger: str = "manual") -> Dict:
+		doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 
 		if not doc.item:
 			frappe.throw(frappe._("Product is required."))
-		if not doc.processor:
-			frappe.throw(frappe._("Processor is required."))
 		if not doc.solids_content_pct:
 			frappe.throw(frappe._("Solids Content % is required."))
+		if not doc.city:
+			frappe.throw(frappe._("City is required on the Pricing Calculation."))
 
 		bom_exists = frappe.db.exists("BOM", {"item": doc.item})
 		if not bom_exists:
 			frappe.throw(frappe._("No BOM found for item {0}.").format(doc.item))
 
-		city = frappe.db.get_value("Processor", doc.processor, "city")
-		if not city:
-			frappe.throw(frappe._("Processor {0} has no city configured.").format(doc.processor))
+		city = doc.city
+
+		# If processor set, optionally validate city matches
+		if doc.processor:
+			processor_city = frappe.db.get_value("Processor", doc.processor, "city")
+			if processor_city and processor_city != city:
+				frappe.throw(
+					frappe._("Processor {0} is configured for city {1}, but this calculation is for city {2}.").format(
+						doc.processor, processor_city, city
+					)
+				)
 
 		fetch_result = RateFetcher.fetch(doc, preserve_overrides=True)
 		doc.save(ignore_permissions=True)
@@ -54,12 +62,22 @@ class CostingEngine:
 			filters={"parent": ["in", bom_names]},
 			fields=["parent", "item_code", "item_name", "qty", "uom"],
 		)
+		all_scrap_items = frappe.get_all(
+			"BOM Scrap Item",
+			filters={"parent": ["in", bom_names]},
+			fields=["parent", "item_code", "item_name", "stock_qty", "stock_uom"],
+		)
 
 		bom_items_map: Dict[str, list] = {}
 		for bi in all_bom_items:
 			bom_items_map.setdefault(bi["parent"], []).append(bi)
 
+		scrap_items_map: Dict[str, list] = {}
+		for si in all_scrap_items:
+			scrap_items_map.setdefault(si["parent"], []).append(si)
+
 		rate_lines_map = {rl.item: rl for rl in (doc.rate_lines or [])}
+		scrap_lines_map = {sl.item: sl for sl in (doc.scrap_lines or [])}
 		processing_line = doc.processing_lines[0] if doc.processing_lines else None
 
 		production_days = doc.production_days or 30
@@ -90,19 +108,19 @@ class CostingEngine:
 				supplier = (rl.supplier or None) if rl else None
 
 				amount = compute_rm_line_amount(qty_per_kg, working_rate)
-				fin = compute_financing_cost_for_line(amount, production_days, credit_days, financing_rate)
-				net_financed = max(0, production_days - credit_days)
+				fin = compute_financing_cost_for_line(amount, production_days, 60, financing_rate)
+				net_financed = max(0, production_days - 60)
 
 				rm_cost += amount
 				financing_cost += fin
 
 				if freshness == "Missing":
-					missing_items.append(bi.item_code)
+					missing_items.append(bi["item_code"])
 				elif freshness == "Expired":
-					expired_items.append(bi.item_code)
+					expired_items.append(bi["item_code"])
 
 				material_lines_data.append({
-					"costing_request": costing_request_name,
+					"pricing_calculation": pricing_calculation_name,
 					"item": bi["item_code"],
 					"item_name": bi["item_name"],
 					"uom": bi["uom"],
@@ -115,7 +133,35 @@ class CostingEngine:
 					"net_financed_days": net_financed,
 					"amount_per_kg": amount,
 					"financing_cost_per_kg": fin,
+					"equalized_amount_per_kg": amount,
+					"is_scrap": 0,
 					"confidence_score": (rl.confidence_score if rl and hasattr(rl, "confidence_score") else 50.0),
+				})
+
+			for si in scrap_items_map.get(bom["name"], []):
+				qty_per_kg = (si["stock_qty"] or 0) / bom_qty
+				sl = scrap_lines_map.get(si["item_code"])
+				scrap_rate = (sl.rate_per_kg or 0) if sl else 0.0
+				scrap_amount = -1 * compute_rm_line_amount(qty_per_kg, scrap_rate)
+				rm_cost += scrap_amount
+
+				material_lines_data.append({
+					"pricing_calculation": pricing_calculation_name,
+					"item": si["item_code"],
+					"item_name": si["item_name"],
+					"uom": si["stock_uom"],
+					"qty_per_kg_output": qty_per_kg,
+					"supplier": None,
+					"city": city,
+					"rate_freshness": "Current",
+					"working_rate": scrap_rate,
+					"working_supplier_credit_days": 0,
+					"net_financed_days": 0,
+					"amount_per_kg": scrap_amount,
+					"financing_cost_per_kg": 0.0,
+					"equalized_amount_per_kg": scrap_amount,
+					"is_scrap": 1,
+					"confidence_score": 0.0,
 				})
 
 			processing_cost = 0.0
@@ -155,22 +201,21 @@ class CostingEngine:
 		selector = FormulationSelector(self._config)
 		selection = selector.select(combination_results, doc.preferred_bom)
 
-		# Remember which BOM was previously selected before wiping combinations
 		previously_selected_bom = None
 		if doc.selected_combination:
 			previously_selected_bom = frappe.db.get_value(
 				"Costing Combination", doc.selected_combination, "bom"
 			)
 
-		frappe.db.delete("Costing Material Line", {"costing_request": costing_request_name})
-		frappe.db.delete("Costing Combination", {"costing_request": costing_request_name})
+		frappe.db.delete("Costing Material Line", {"pricing_calculation": pricing_calculation_name})
+		frappe.db.delete("Costing Combination", {"pricing_calculation": pricing_calculation_name})
 
 		now = now_datetime()
 		saved_combinations = []
 		for combo in combination_results:
 			cc = frappe.get_doc({
 				"doctype": "Costing Combination",
-				"costing_request": costing_request_name,
+				"pricing_calculation": pricing_calculation_name,
 				"bom": combo["bom"],
 				"formulation_id": combo["formulation_id"],
 				"is_preferred": combo.get("is_preferred", 0),
@@ -198,7 +243,6 @@ class CostingEngine:
 
 			saved_combinations.append(cc)
 
-		# Re-select the combination for the same BOM that was previously selected
 		new_selected_name = None
 		new_selected_cost = None
 		if previously_selected_bom:
@@ -222,7 +266,13 @@ class CostingEngine:
 			update_fields["selected_combination"] = ""
 			update_fields["confirmed_ex_factory_cost_per_kg"] = 0
 
-		frappe.db.set_value("Costing Request", costing_request_name, update_fields)
+		frappe.db.set_value("Pricing Calculation", pricing_calculation_name, update_fields)
+
+		# Sync mode → Pricing Request status
+		_sync_to_pricing_request(doc, mode, update_fields.get("confirmed_ex_factory_cost_per_kg"))
+
+		# Create/clear draft Material Rate requests for purchase team
+		_update_pending_rate_items(doc, fetch_result, mode)
 
 		return {
 			"combinations": [_combination_to_dict(cc, combination_results) for cc in saved_combinations],
@@ -243,10 +293,67 @@ def _compute_mode(fetch_result, selected_combination) -> str:
 	if fetch_result.has_missing_rates:
 		return "Awaiting Rates"
 	if fetch_result.has_expired_rates:
-		return "Partially Costed"
+		return "Ready for Working"
 	if selected_combination:
 		return "Ready to Quote"
-	return "Partially Costed"
+	return "Ready for Working"
+
+
+def _sync_to_pricing_request(doc, mode: str, confirmed_cost=None):
+	if not doc.pricing_request:
+		return
+	update = {"status": mode}
+	if confirmed_cost is not None:
+		update["confirmed_price_per_kg"] = confirmed_cost
+		qty = frappe.db.get_value("Pricing Request", doc.pricing_request, "quantity_kg") or 0
+		update["total_price"] = qty * confirmed_cost
+	frappe.db.set_value("Pricing Request", doc.pricing_request, update)
+
+
+def _update_pending_rate_items(doc, fetch_result, mode: str):
+	if not frappe.db.has_column("Material Rate", "pricing_calculation"):
+		return
+
+	# Clear old pending-request drafts for this calculation
+	frappe.db.delete("Material Rate", {
+		"pricing_calculation": doc.name,
+		"docstatus": 0,
+		"requested_on": ["is", "set"],
+	})
+
+	if mode != "Awaiting Rates":
+		return
+
+	priority = "Normal"
+	product = ""
+	if doc.pricing_request:
+		pr_values = frappe.db.get_value(
+			"Pricing Request", doc.pricing_request, ["priority", "product"], as_dict=True
+		) or {}
+		priority = pr_values.get("priority") or "Normal"
+		product = pr_values.get("product") or ""
+
+	for item_code in fetch_result.missing_items:
+		existing = frappe.db.exists("Material Rate", {
+			"item": item_code,
+			"city": doc.city,
+			"pricing_calculation": doc.name,
+			"docstatus": 0,
+		})
+		if not existing:
+			frappe.get_doc({
+				"doctype": "Material Rate",
+				"item": item_code,
+				"city": doc.city,
+				"pricing_calculation": doc.name,
+				"pricing_request": doc.pricing_request or "",
+				"product": product,
+				"priority": priority,
+				"requested_on": frappe.utils.now_datetime(),
+				"uom": frappe.db.get_value("Item", item_code, "stock_uom") or "Kg",
+				"rate_type": "All-In Delivered",
+				"valid_from": frappe.utils.today(),
+			}).insert(ignore_permissions=True)
 
 
 def _combination_to_dict(cc, results) -> Dict:
