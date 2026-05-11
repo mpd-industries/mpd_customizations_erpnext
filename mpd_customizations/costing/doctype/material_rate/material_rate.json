@@ -38,10 +38,14 @@
    "fieldtype": "Link",
    "label": "Item",
    "options": "Item",
-   "reqd": 1
+   "reqd": 1,
+   "in_list_view": 1,
+   "bold": 1,
+   "in_standard_filter": 1,
+   "columns": 2
   },
   {
-   "columns": 4,
+   "columns": 3,
    "fetch_from": "item.custom_item_label",
    "fieldname": "item_name",
    "fieldtype": "Data",
@@ -62,7 +66,7 @@
    "options": "Supplier"
   },
   {
-   "columns": 2,
+   "columns": 1,
    "fieldname": "city",
    "fieldtype": "Link",
    "in_filter": 1,
@@ -116,7 +120,6 @@
    "default": "0",
    "fieldname": "credit_days",
    "fieldtype": "Int",
-   "in_list_view": 1,
    "label": "Supplier Credit Days"
   },
   {
@@ -139,18 +142,19 @@
    "label": "Validity"
   },
   {
-   "columns": 2,
+   "columns": 1,
    "fieldname": "valid_from",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "Valid From",
    "reqd": 1
   },
   {
    "fieldname": "valid_to",
    "fieldtype": "Date",
-   "label": "Valid To"
+   "label": "Valid To",
+   "in_list_view": 1,
+   "columns": 1
   },
   {
    "fieldname": "notes",
@@ -166,7 +170,6 @@
    "default": "Normal",
    "fieldname": "priority",
    "fieldtype": "Select",
-   "in_list_view": 1,
    "label": "Priority",
    "options": "Urgent\nHigh\nNormal\nLow"
   },
@@ -184,7 +187,6 @@
    "fieldname": "pricing_request",
    "fieldtype": "Link",
    "in_filter": 1,
-   "in_list_view": 1,
    "label": "Pricing Request",
    "options": "Pricing Request"
   },
@@ -197,7 +199,6 @@
   {
    "fieldname": "product",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Product",
    "options": "Item",
    "read_only": 1
@@ -254,10 +255,11 @@
    "email": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
    "report": 1,
    "role": "Costing User",
-   "share": 1
+   "share": 1,
+   "create": 1,
+   "write": 1
   },
   {
    "email": 1,

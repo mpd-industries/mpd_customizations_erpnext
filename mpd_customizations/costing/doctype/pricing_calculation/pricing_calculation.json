@@ -51,7 +51,6 @@
   {
    "fieldname": "pricing_request",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Pricing Request",
    "options": "Pricing Request",
    "read_only": 1
@@ -62,14 +61,20 @@
    "in_list_view": 1,
    "label": "Product",
    "options": "Item",
-   "reqd": 1
+   "reqd": 1,
+   "bold": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "columns": 2
   },
   {
    "fetch_from": "item.item_name",
    "fieldname": "item_name",
    "fieldtype": "Data",
    "label": "Product Name",
-   "read_only": 1
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 4
   },
   {
    "fieldname": "city",
@@ -77,7 +82,10 @@
    "in_list_view": 1,
    "label": "City",
    "options": "City",
-   "read_only": 1
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "columns": 1
   },
   {
    "fieldname": "col_break_header",
@@ -92,7 +100,6 @@
   {
    "fieldname": "processor",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Processor",
    "options": "Processor"
   },
@@ -201,15 +208,6 @@
    "label": "State"
   },
   {
-   "default": "Draft",
-   "fieldname": "mode",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Mode",
-   "options": "Draft\nAwaiting Rates\nReady for Working\nReady to Quote\nApproved\nRejected",
-   "read_only": 1
-  },
-  {
    "fieldname": "selected_combination",
    "fieldtype": "Link",
    "label": "Selected Formulation",
@@ -220,13 +218,27 @@
    "fieldname": "confirmed_ex_factory_cost_per_kg",
    "fieldtype": "Currency",
    "label": "Confirmed Ex-Factory Cost per kg",
-   "read_only": 1
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 2
   },
   {
    "fieldname": "valid_until",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Quote Valid Until"
+   "label": "Quote Valid Until",
+   "columns": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Mode",
+   "options": "Draft\nAwaiting Rates\nReady for Working\nReady to Quote\nApproved\nRejected",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "columns": 2
   },
   {
    "fieldname": "last_evaluated_on",
@@ -286,17 +298,6 @@
    "write": 1
   },
   {
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Costing User",
-   "share": 1,
-   "write": 1
-  },
-  {
    "email": 1,
    "export": 1,
    "print": 1,
@@ -304,12 +305,9 @@
    "report": 1,
    "role": "Costing Approver",
    "share": 1,
-   "submit": 1
-  },
-  {
-   "read": 1,
-   "report": 1,
-   "role": "Rate Manager"
+   "submit": 1,
+   "create": 1,
+   "write": 1
   }
  ],
  "row_format": "Dynamic",

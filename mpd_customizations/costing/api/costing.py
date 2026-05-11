@@ -6,6 +6,9 @@ from mpd_customizations.costing.services.config import get_config
 from mpd_customizations.costing.services.cost_calculator import compute_internal_earnings
 from mpd_customizations.costing.services.rate_source_registry import get_default_registry
 
+STANDARD_COSTED_PRICE_LIST = "Standard Costed"
+QUOTE_VALIDITY_DAYS = 14
+
 
 @frappe.whitelist()
 def evaluate(pricing_calculation_name: str, trigger: str = "manual"):
@@ -428,7 +431,51 @@ def approve_pricing_calculation(pricing_calculation_name: str):
 		if pr_docstatus == 0:
 			frappe.db.set_value("Pricing Request", pc.pricing_request, "docstatus", 1)
 
+	if not pc.valid_until:
+		pc.valid_until = frappe.utils.add_days(frappe.utils.today(), QUOTE_VALIDITY_DAYS)
+		frappe.db.set_value("Pricing Calculation", pc.name, "valid_until", pc.valid_until)
+
+	_upsert_standard_costed_price(pc)
+
 	return {"success": True}
+
+
+def _upsert_standard_costed_price(pc):
+	if not frappe.db.exists("Price List", STANDARD_COSTED_PRICE_LIST):
+		return
+
+	rate = pc.confirmed_ex_factory_cost_per_kg
+	if not rate:
+		return
+
+	uom = frappe.db.get_value("Item", pc.item, "stock_uom") or "Kg"
+	valid_from = frappe.utils.today()
+	valid_upto = pc.valid_until
+
+	existing = frappe.db.get_value(
+		"Item Price",
+		{"item_code": pc.item, "price_list": STANDARD_COSTED_PRICE_LIST, "uom": uom},
+		"name",
+	)
+
+	if existing:
+		frappe.db.set_value("Item Price", existing, {
+			"price_list_rate": rate,
+			"valid_from": valid_from,
+			"valid_upto": valid_upto,
+			"reference": pc.name,
+		})
+	else:
+		frappe.get_doc({
+			"doctype": "Item Price",
+			"item_code": pc.item,
+			"price_list": STANDARD_COSTED_PRICE_LIST,
+			"uom": uom,
+			"price_list_rate": rate,
+			"valid_from": valid_from,
+			"valid_upto": valid_upto,
+			"reference": pc.name,
+		}).insert(ignore_permissions=True)
 
 
 @frappe.whitelist()

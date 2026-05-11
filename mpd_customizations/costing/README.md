@@ -25,7 +25,7 @@ Custom Frappe module for MPD Dye Chem that calculates ex-factory cost per kg for
 ## 1. User-Facing Flow
 
 ```
-Sales team                  Costing team                 Approver
+Costing User                Rate Manager        Costing Approver
 ─────────────────────────────────────────────────────────────────
 Pricing Request
   (product + city +
@@ -43,19 +43,23 @@ Pricing Request
     "Awaiting Rates"      ← one or more RM rates missing
     "Ready for Working"   ← all rates present (some expired OK)
     "Ready to Quote"      ← all rates current, formulation selected
-        │
-        │  Costing team reviews, optionally overrides rates,
-        │  selects a formulation, adjusts additional charges
-        ▼
-  "Ready to Quote"
-        │
-        │                                Approve / Reject
-        ▼                                       │
-  "Approved" (PC submitted,              ───────┘
-   PR status → Approved)
+
+  If rates missing:                If rates missing:
+  Costing User submits             Rate Manager enters &
+  a pending Material Rate ────────► submits Material Rate
+                                        │ auto-triggers re-evaluate
+                                        ▼
+                              Costing Approver reviews,
+                              overrides rates if needed,
+                              selects formulation
+                                        │
+                                        │  Approve / Reject
+                                        ▼
+                              "Approved" (PC submitted,
+                               PR status → Approved)
 ```
 
-Everything after "Pricing Calculation created" is automatic or driven by the costing team. The sales team only sees the Pricing Request.
+The Costing User only sees the Pricing Request — they raise the enquiry and can flag missing rates, but have no visibility into the calculation itself. The Costing Approver owns the full calculation workflow.
 
 ---
 
@@ -379,7 +383,7 @@ When any Material Rate is submitted, `on_material_rate_submitted` fires. It find
 
 ## 9. Approval Workflow
 
-### Costing team's job
+### Costing Approver's job
 
 1. Review the auto-populated rate lines — check freshness indicators and market benchmarks.
 2. Override rates if needed (e.g. locked-in contract price differs from spot).
@@ -387,9 +391,7 @@ When any Material Rate is submitted, `on_material_rate_submitted` fires. It find
 4. Set additional charges if applicable.
 5. Ensure mode reaches `Ready to Quote`.
 
-### Approver's job
-
-When mode is `Ready to Quote`, a Costing Approver sees **Approve** and **Reject** buttons.
+When mode is `Ready to Quote`, the Costing Approver sees **Approve** and **Reject** buttons.
 
 **Approve:**
 - Calls `approve_pricing_calculation`.
@@ -409,14 +411,32 @@ The PR itself is submittable. Before submit, status must be `Ready to Quote` (th
 
 ## 10. Roles and Permissions
 
-| Role | What they can do |
-|---|---|
-| **Costing User** | Create/edit Pricing Calculations and Material Rates. Cannot submit/approve. |
-| **Costing Approver** | Read Pricing Calculations. Can approve or reject (calls the approve/reject APIs). Can submit Material Rates. |
-| **Rate Manager** | Read-only on Material Rates and Pricing Calculations. Intended for purchase team members who enter rates but don't need the full costing view. |
-| **System Manager** | Full access including cancel/delete. |
+### Role Summary
 
-The Pricing Request is intentionally not restricted to costing roles — the sales team creates it.
+| Role | Pricing Request | Material Rate | Pricing Calculation | Costing Combination |
+|---|---|---|---|---|
+| **Costing User** | create, read, write | create, write | — | — |
+| **Costing Approver** | read, write, submit, amend, cancel | read | create, read, write, submit | read |
+| **Rate Manager** | — | full (create, read, write, submit, cancel, delete) | — | — |
+| **System Manager** | full | full | full | full |
+
+### Role Intent
+
+**Costing User** — Sales / commercial team. Raises pricing requests and can submit pending Material Rates when a rate is missing. They do not see the underlying rate database or how costs are calculated — only the Pricing Request outcome.
+
+**Costing Approver** — The person who works the calculation. Has full visibility: can see all Material Rates (to understand what rates are available), creates and edits Pricing Calculations, triggers evaluations, selects a formulation, and approves or rejects the final cost. Only this role (and System Manager) sees the internal earnings breakdown in the cost breakdown view.
+
+**Rate Manager** — Purchase team. Manages the rate database exclusively. Enters, updates, and submits Material Rates. Has no visibility into Pricing Calculations or Costing Combinations — they add rates without seeing how those rates feed into product costs.
+
+**System Manager** — Full access including cancel and delete on all doctypes.
+
+### Pricing Request access
+
+The Pricing Request is accessible to both Costing User (to raise and track their own requests) and Costing Approver (to manage the approval workflow). The `Costing Sales` role also has full create/submit access for dedicated sales staff.
+
+### Missing rates — Costing User workflow
+
+If an evaluation surfaces missing rates, a Costing User can go directly to **Material Rate → New** and submit a draft rate for the relevant item. They cannot see the list of existing rates — they submit without knowing what others have entered. The Rate Manager then reviews and submits the pending rate, which auto-triggers a re-evaluation of open Pricing Calculations.
 
 ---
 

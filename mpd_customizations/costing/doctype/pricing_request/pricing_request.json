@@ -35,7 +35,11 @@
    "in_list_view": 1,
    "label": "Product",
    "options": "Item",
-   "reqd": 1
+   "reqd": 1,
+   "bold": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "columns": 2
   },
   {
    "fetch_from": "product.item_name",
@@ -43,7 +47,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Product Name",
-   "read_only": 1
+   "read_only": 1,
+   "columns": 4
   },
   {
    "fieldname": "city",
@@ -51,7 +56,10 @@
    "in_list_view": 1,
    "label": "City",
    "options": "City",
-   "reqd": 1
+   "reqd": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "columns": 1
   },
   {
    "fieldname": "col_break_product",
@@ -61,7 +69,9 @@
    "fieldname": "quantity_kg",
    "fieldtype": "Float",
    "label": "Quantity (kg)",
-   "precision": "2"
+   "precision": "2",
+   "in_list_view": 1,
+   "columns": 1
   },
   {
    "fieldname": "solids_content_pct",
@@ -75,7 +85,9 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Priority",
-   "options": "Urgent\nHigh\nNormal\nLow"
+   "options": "Urgent\nHigh\nNormal\nLow",
+   "in_standard_filter": 1,
+   "columns": 1
   },
   {
    "fieldname": "notes",
@@ -88,20 +100,23 @@
    "label": "Status"
   },
   {
+   "fieldname": "confirmed_price_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Confirmed Price per kg",
+   "read_only": 1,
+   "columns": 2
+  },
+  {
    "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
    "options": "Draft\nAwaiting Rates\nReady for Working\nReady to Quote\nPending Approval\nApproved\nRejected",
-   "read_only": 1
-  },
-  {
-   "fieldname": "confirmed_price_per_kg",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "label": "Confirmed Price per kg",
-   "read_only": 1
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "columns": 1
   },
   {
    "fieldname": "total_price",
@@ -182,7 +197,8 @@
    "report": 1,
    "role": "Costing User",
    "share": 1,
-   "write": 1
+   "write": 1,
+   "create": 1
   },
   {
    "amend": 1,

@@ -36,7 +36,10 @@
    "in_list_view": 1,
    "label": "Pricing Calculation",
    "options": "Pricing Calculation",
-   "reqd": 1
+   "reqd": 1,
+   "bold": 1,
+   "in_standard_filter": 1,
+   "columns": 2
   },
   {
    "fieldname": "bom",
@@ -48,7 +51,9 @@
   {
    "fieldname": "formulation_id",
    "fieldtype": "Data",
-   "label": "Formulation ID"
+   "label": "Formulation ID",
+   "in_list_view": 1,
+   "columns": 1
   },
   {
    "fieldname": "formulation_description",
@@ -99,7 +104,9 @@
   {
    "fieldname": "total_cost_per_kg",
    "fieldtype": "Currency",
-   "label": "Total Cost per kg"
+   "label": "Total Cost per kg",
+   "in_list_view": 1,
+   "columns": 2
   },
   {
    "fieldname": "col_break_costs",
@@ -116,16 +123,21 @@
    "label": "Delta % vs Cheapest"
   },
   {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "\nReady to Quote\nIndicative — Rates Expired\nIndicative — Rates Missing\nExcluded — Too Expensive"
-  },
-  {
    "default": "0",
    "fieldname": "is_selected",
    "fieldtype": "Check",
-   "label": "Selected"
+   "label": "Selected",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nReady to Quote\nIndicative \u2014 Rates Expired\nIndicative \u2014 Rates Missing\nExcluded \u2014 Too Expensive",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "columns": 1
   },
   {
    "fieldname": "section_break_refs",
@@ -173,15 +185,7 @@
   },
   {
    "read": 1,
-   "role": "Costing User"
-  },
-  {
-   "read": 1,
    "role": "Costing Approver"
-  },
-  {
-   "read": 1,
-   "role": "Rate Manager"
   }
  ],
  "sort_field": "modified",
