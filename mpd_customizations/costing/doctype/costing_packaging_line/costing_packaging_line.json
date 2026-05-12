@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "creation": "2026-05-11 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "packaging_material",
+  "fill_quantity_kg",
+  "packages_per_kg",
+  "packaging_rate_ref",
+  "fetched_rate_per_unit",
+  "fetched_rate_per_kg",
+  "rate_freshness",
+  "working_rate_per_unit",
+  "working_rate_per_kg",
+  "override_reason",
+  "packaging_cost_per_kg"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "packaging_material",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Packaging Material",
+   "options": "Packaging Material",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "fill_quantity_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Fill (kg/pkg)"
+  },
+  {
+   "fieldname": "packages_per_kg",
+   "fieldtype": "Float",
+   "label": "Pkgs per kg Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "packaging_rate_ref",
+   "fieldtype": "Link",
+   "label": "Rate Source",
+   "options": "Packaging Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fetched_rate_per_unit",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Official Rate per Unit"
+  },
+  {
+   "fieldname": "fetched_rate_per_kg",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Official Rate per kg"
+  },
+  {
+   "fieldname": "rate_freshness",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Freshness",
+   "options": "\nCurrent\nExpired\nMissing",
+   "read_only": 1,
+   "columns": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "working_rate_per_unit",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate per Unit"
+  },
+  {
+   "fieldname": "working_rate_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate per kg",
+   "read_only": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "override_reason",
+   "fieldtype": "Small Text",
+   "label": "Override Reason"
+  },
+  {
+   "fieldname": "packaging_cost_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Cost per kg Output",
+   "read_only": 1,
+   "columns": 2
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-11 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Packaging Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

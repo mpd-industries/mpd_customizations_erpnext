@@ -1,0 +1,66 @@
+[
+ {
+  "doctype": "Packaging Material",
+  "name": "HDPE Barrel Used",
+  "material_name": "HDPE Barrel Used",
+  "tare_weight_kg": 4.0,
+  "fill_quantity_kg": 190.0,
+  "notes": "Second-use HDPE barrel, 200L capacity"
+ },
+ {
+  "doctype": "Packaging Material",
+  "name": "MS Barrel Used",
+  "material_name": "MS Barrel Used",
+  "tare_weight_kg": 5.0,
+  "fill_quantity_kg": 190.0,
+  "notes": "Second-use mild steel barrel, 200L capacity"
+ },
+ {
+  "doctype": "Packaging Material",
+  "name": "Bulk Bag",
+  "material_name": "Bulk Bag",
+  "tare_weight_kg": 1.5,
+  "fill_quantity_kg": 200.0,
+  "notes": "FIBC / jumbo bag"
+ },
+ {
+  "doctype": "Packaging Material",
+  "name": "Steel Drum Closed Head PAC1010 New",
+  "material_name": "Steel Drum Closed Head PAC1010 New",
+  "tare_weight_kg": 9.5,
+  "fill_quantity_kg": 200.0,
+  "notes": "New closed-head steel drum, PAC1010 grade, 200 kg net"
+ },
+ {
+  "doctype": "Packaging Material",
+  "name": "MS Epoxy Drum New",
+  "material_name": "MS Epoxy Drum New",
+  "tare_weight_kg": 6.5,
+  "fill_quantity_kg": 190.0,
+  "notes": "New mild steel drum with epoxy lining"
+ },
+ {
+  "doctype": "Packaging Material",
+  "name": "HDPE Barrel New",
+  "material_name": "HDPE Barrel New",
+  "tare_weight_kg": 7.0,
+  "fill_quantity_kg": 190.0,
+  "notes": "New HDPE barrel, 200L capacity"
+ },
+ {
+  "doctype": "Packaging Material",
+  "name": "Paper Bag",
+  "material_name": "Paper Bag",
+  "tare_weight_kg": 1.5,
+  "fill_quantity_kg": 25.0,
+  "notes": "Multi-wall paper sack"
+ },
+ {
+  "doctype": "Packaging Material",
+  "name": "UN Certified Drum",
+  "material_name": "UN Certified Drum",
+  "tare_weight_kg": 6.0,
+  "fill_quantity_kg": 190.0,
+  "notes": "UN-certified steel drum for hazardous goods transport"
+ }
+]

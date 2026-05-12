@@ -22,12 +22,32 @@ class PricingCalculation(Document):
 		if self.supplier_financing_rate_pct is not None and self.supplier_financing_rate_pct <= 0:
 			frappe.throw(_("Supplier Financing Rate must be positive."))
 
-		if self.item:
+		if self.customer_product_ref:
+			# Customer Quote mode — sync export flag from Customer Product
+			cp_is_export = frappe.db.get_value("Customer Product", self.customer_product_ref, "is_export") or 0
+			self.is_export = cp_is_export
+		elif self.item:
 			bom_exists = frappe.db.exists("BOM", {"item": self.item})
 			if not bom_exists:
 				frappe.throw(
 					_("Item {0} has no BOM. Only items with a BOM can be costed.").format(self.item)
 				)
+
+		# Recompute packaging line derived fields
+		for pl in self.packaging_lines or []:
+			fill = pl.fill_quantity_kg or 0
+			if fill:
+				pl.packages_per_kg = 1.0 / fill
+				if pl.working_rate_per_unit is not None:
+					pl.working_rate_per_kg = (pl.working_rate_per_unit or 0) / fill
+				pl.packaging_cost_per_kg = pl.working_rate_per_kg or 0
+			else:
+				pl.packages_per_kg = 0
+				pl.packaging_cost_per_kg = 0
+
+		# Recompute delivery line derived fields
+		for dl in self.delivery_lines or []:
+			dl.delivery_cost_per_kg_inr = dl.working_freight_per_kg or 0
 
 		solids = self.solids_content_pct or 0
 		for charge in self.additional_charges or []:

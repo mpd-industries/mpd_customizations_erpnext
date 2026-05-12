@@ -7,6 +7,7 @@
  "field_order": [
   "processor_name",
   "city",
+  "address",
   "col_break_1",
   "default_rm_warehouse",
   "notes"
@@ -27,6 +28,13 @@
    "label": "City",
    "options": "City",
    "reqd": 1
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Link",
+   "label": "Dispatch Address",
+   "options": "Address",
+   "description": "Physical dispatch location — used as the source address in freight rate lookups"
   },
   {
    "fieldname": "col_break_1",

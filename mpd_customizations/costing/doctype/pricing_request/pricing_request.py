@@ -15,9 +15,18 @@ class PricingRequest(Document):
 		)
 
 	def validate(self):
+		if not self.product and not self.customer_product:
+			frappe.throw(_("Either Product or Customer Product is required."))
+
 		if self.solids_content_pct is not None:
 			if not (0 < self.solids_content_pct < 100):
 				frappe.throw(_("Solids Content % must be between 0 and 100 (exclusive)."))
+
+		# Auto-fill city from Customer Product delivery destination if not set
+		if self.customer_product and not self.city:
+			delivery_city = frappe.db.get_value("Customer Product", self.customer_product, "delivery_city")
+			if delivery_city:
+				self.city = delivery_city
 
 		if self.quantity_kg and self.confirmed_price_per_kg:
 			self.total_price = self.quantity_kg * self.confirmed_price_per_kg
@@ -48,10 +57,9 @@ def _run_initial_evaluation(pc_name):
 def _create_calculation(pr):
 	config = frappe.get_single("Costing Configuration")
 
-	pc = frappe.get_doc({
+	pc_data = {
 		"doctype": "Pricing Calculation",
 		"pricing_request": pr.name,
-		"item": pr.product,
 		"city": pr.city,
 		"solids_content_pct": pr.solids_content_pct or 0,
 		"mode": "Draft",
@@ -59,10 +67,40 @@ def _create_calculation(pr):
 		"fetched_production_days": config.production_days or 30,
 		"supplier_financing_rate_pct": config.supplier_financing_rate_pct or 12.0,
 		"fetched_supplier_financing_rate_pct": config.supplier_financing_rate_pct or 12.0,
-	})
+	}
 
-	# Pre-fill from last approved request for same product+city
-	prev = _get_previous_approved(pr.product, pr.city)
+	if pr.customer_product:
+		# Customer Quote mode — populate from Customer Product
+		cp = frappe.get_doc("Customer Product", pr.customer_product)
+		pc_data["customer_product_ref"] = pr.customer_product
+		pc_data["customer"] = cp.customer
+		pc_data["customer_product_code"] = cp.customer_product_code
+		pc_data["is_export"] = cp.is_export or 0
+		if not pr.city and cp.delivery_city:
+			pc_data["city"] = cp.delivery_city
+	else:
+		cp = None
+		pc_data["item"] = pr.product
+
+	pc = frappe.get_doc(pc_data)
+
+	if cp:
+		# Pre-populate packaging line from Customer Product default
+		if cp.packaging_material:
+			pc.append("packaging_lines", {
+				"packaging_material": cp.packaging_material,
+				"fill_quantity_kg": cp.fill_quantity_kg or 1.0,
+			})
+		# Pre-populate delivery line from Customer Product
+		if cp.delivery_country:
+			pc.append("delivery_lines", {
+				"destination_city": cp.delivery_city or "",
+				"destination_country": cp.delivery_country,
+				"is_export": cp.is_export or 0,
+			})
+
+	# Pre-fill from last approved request
+	prev = _get_previous_approved(pr.product or None, pr.customer_product or None, pr.city)
 	if prev:
 		pc.preferred_bom = prev.get("preferred_bom") or ""
 		pc.production_days = prev.get("production_days") or pc.production_days
@@ -115,10 +153,17 @@ def _create_calculation(pr):
 	_notify_costing_team(pr, pc.name)
 
 
-def _get_previous_approved(product, city):
+def _get_previous_approved(product, customer_product, city):
+	if customer_product:
+		filters = {"customer_product_ref": customer_product, "mode": "Approved"}
+	elif product:
+		filters = {"item": product, "city": city, "mode": "Approved"}
+	else:
+		return None
+
 	results = frappe.get_all(
 		"Pricing Calculation",
-		filters={"item": product, "city": city, "mode": "Approved"},
+		filters=filters,
 		fields=["name", "preferred_bom", "production_days", "supplier_financing_rate_pct",
 		        "confirmed_ex_factory_cost_per_kg", "processor"],
 		order_by="modified desc",

@@ -17,6 +17,8 @@
   "processing_cost_per_kg",
   "additional_charges_per_kg",
   "outward_freight_per_kg",
+  "packaging_cost_per_kg",
+  "delivery_cost_per_kg",
   "total_cost_per_kg",
   "col_break_costs",
   "rank",
@@ -100,6 +102,16 @@
    "fieldname": "outward_freight_per_kg",
    "fieldtype": "Currency",
    "label": "Outward Freight per kg"
+  },
+  {
+   "fieldname": "packaging_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Packaging Cost per kg"
+  },
+  {
+   "fieldname": "delivery_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Delivery Cost per kg"
   },
   {
    "fieldname": "total_cost_per_kg",

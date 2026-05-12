@@ -247,6 +247,18 @@ function _render_action_bar(frm) {
 				() => _show_overrides_dialog(frm)
 			);
 		}
+
+		const _freight_ov = (frm.doc.delivery_lines || []).filter(dl =>
+			(dl.rate_freshness === "Missing" && (dl.working_freight_per_kg || 0) > 0) ||
+			Math.round((dl.working_freight_per_kg || 0) * 10000) / 10000 !==
+			Math.round((dl.fetched_freight_per_kg || 0) * 10000) / 10000
+		);
+		if (_freight_ov.length > 0) {
+			frm.add_custom_button(
+				`🚚 Save Freight to Master (${_freight_ov.length})`,
+				() => _show_freight_promote_dialog(frm, _freight_ov)
+			);
+		}
 	}
 }
 
@@ -340,6 +352,80 @@ function _show_overrides_dialog(frm) {
 		});
 	});
 
+	d.show();
+}
+
+// ─── Freight promote-to-master dialog ───────────────────────────────────────
+
+function _show_freight_promote_dialog(frm, overridden_lines) {
+	const rows = overridden_lines.map(dl => {
+		const dest = frappe.utils.escape_html(dl.destination_city || dl.destination_address || "—");
+		const mode = frappe.utils.escape_html(dl.transport_mode || "Barrels");
+		const freshness_badge = dl.rate_freshness === "Missing"
+			? `<span class="badge badge-danger">${__("Missing")}</span>`
+			: `<span class="badge badge-warning">${__("Override")}</span>`;
+		return `<tr>
+			<td>${dest}</td>
+			<td>${mode}</td>
+			<td class="text-right">₹${(dl.working_freight_per_kg || 0).toFixed(4)}/kg</td>
+			<td>${freshness_badge}</td>
+		</tr>`;
+	}).join("");
+
+	const html = `
+		<p class="text-muted small mb-2">
+			${__("These freight rates will be saved as draft Freight Rate records. Review and submit them to make them active for future calculations.")}
+		</p>
+		<table class="table table-sm table-bordered mb-0">
+			<thead class="thead-light">
+				<tr>
+					<th>${__("Destination")}</th>
+					<th>${__("Mode")}</th>
+					<th class="text-right">${__("Rate Used")}</th>
+					<th>${__("Status")}</th>
+				</tr>
+			</thead>
+			<tbody>${rows}</tbody>
+		</table>
+		<div id="freight-promote-result" class="mt-2"></div>`;
+
+	const d = new frappe.ui.Dialog({
+		title: __("Save Freight Rates to Master"),
+		fields: [{ fieldtype: "HTML", fieldname: "content" }],
+		primary_action_label: __("Create Draft Freight Rate(s)"),
+		primary_action() {
+			d.set_primary_action(__("Creating…"), null);
+			frappe.call({
+				method: `${API}.promote_freight_overrides_to_master`,
+				args: { pricing_calculation_name: frm.doc.name },
+				callback(r) {
+					const res = r.message || {};
+					const created = res.created || [];
+					const skipped = res.skipped || [];
+
+					let msg = "";
+					if (created.length) {
+						const links = created.map(c =>
+							`<a href="/app/freight-rate/${encodeURIComponent(c.name)}" target="_blank">${frappe.utils.escape_html(c.name)}</a>`
+						).join(", ");
+						msg += `<div class="text-success mb-1">✓ ${__("Created")}: ${links}</div>`;
+					}
+					if (skipped.length) {
+						msg += `<div class="text-muted small">${__("Skipped (draft already exists)")}:
+							${skipped.map(s => frappe.utils.escape_html(s)).join(", ")}</div>`;
+					}
+					if (!created.length && !skipped.length) {
+						msg = `<div class="text-muted">${__("Nothing to promote — ensure the processor has a Dispatch Address set.")}</div>`;
+					}
+
+					d.fields_dict.content.$wrapper.find("#freight-promote-result").html(msg);
+					d.set_primary_action(__("Done"), () => { d.hide(); frm.reload_doc(); });
+				},
+			});
+		},
+	});
+
+	d.fields_dict.content.$wrapper.html(html);
 	d.show();
 }
 

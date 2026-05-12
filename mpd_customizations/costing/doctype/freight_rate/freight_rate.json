@@ -1,0 +1,281 @@
+{
+ "actions": [],
+ "autoname": "FRT-.YYYY.-.#####",
+ "creation": "2026-05-11 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_route",
+  "source_address",
+  "source_city",
+  "col_break_route",
+  "destination_address",
+  "destination_city",
+  "destination_country",
+  "section_break_scope",
+  "customer",
+  "customer_name",
+  "customer_product",
+  "col_break_scope",
+  "transport_mode",
+  "is_export",
+  "section_break_rate",
+  "freight_per_kg",
+  "col_break_rate",
+  "currency",
+  "forex_rate",
+  "section_break_validity",
+  "valid_from",
+  "valid_to",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_route",
+   "fieldtype": "Section Break",
+   "label": "Route"
+  },
+  {
+   "bold": 1,
+   "columns": 3,
+   "fieldname": "source_address",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Source Address",
+   "options": "Address",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "source_city",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Source City",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_route",
+   "fieldtype": "Column Break"
+  },
+  {
+   "bold": 1,
+   "columns": 3,
+   "fieldname": "destination_address",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Destination Address",
+   "options": "Address",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "destination_city",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Destination City",
+   "read_only": 1
+  },
+  {
+   "fieldname": "destination_country",
+   "fieldtype": "Link",
+   "label": "Destination Country",
+   "options": "Country",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_scope",
+   "fieldtype": "Section Break",
+   "label": "Scope"
+  },
+  {
+   "columns": 3,
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "search_index": 1,
+   "description": "Optional — leave blank for a general lane rate applicable to all customers"
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_product",
+   "fieldtype": "Link",
+   "label": "Customer Product",
+   "options": "Customer Product",
+   "depends_on": "eval:doc.customer",
+   "description": "Optional — leave blank to apply to all products for this customer"
+  },
+  {
+   "fieldname": "col_break_scope",
+   "fieldtype": "Column Break"
+  },
+  {
+   "bold": 1,
+   "columns": 2,
+   "fieldname": "transport_mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Transport Mode",
+   "options": "\nBarrels\nBags\nMS Tanker\nSS Tanker",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_export",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Export",
+   "read_only": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "section_break_rate",
+   "fieldtype": "Section Break",
+   "label": "Rate"
+  },
+  {
+   "columns": 2,
+   "fieldname": "freight_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Freight per kg (INR)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col_break_rate",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Quote Currency",
+   "options": "Currency",
+   "description": "Foreign currency for export quotes. Leave blank for domestic."
+  },
+  {
+   "fieldname": "forex_rate",
+   "fieldtype": "Float",
+   "label": "Forex Rate (INR per unit)",
+   "depends_on": "eval:doc.is_export",
+   "description": "INR equivalent of 1 unit of the quote currency"
+  },
+  {
+   "fieldname": "section_break_validity",
+   "fieldtype": "Section Break",
+   "label": "Validity"
+  },
+  {
+   "columns": 1,
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Valid From",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "valid_to",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Valid To"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Freight Rate",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-05-11 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Freight Rate",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Rate Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Dispatch Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Approver",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -19,7 +19,7 @@ class FetchResult:
 
 class RateFetcher:
 	@staticmethod
-	def fetch(doc, preserve_overrides: bool = True) -> FetchResult:
+	def fetch(doc, preserve_overrides: bool = True, bom_list=None) -> FetchResult:
 		result = FetchResult()
 		pricing_dt = now_datetime()
 
@@ -27,14 +27,21 @@ class RateFetcher:
 		if not city:
 			frappe.throw(frappe._("City is required on this document."))
 
-		boms = frappe.get_all(
-			"BOM",
-			filters={"item": doc.item},
-			fields=["name", "item", "quantity", "custom_formulation_id"],
-		)
+		if bom_list is not None:
+			# Customer product mode: BOMs provided directly
+			boms = bom_list
+		else:
+			boms = frappe.get_all(
+				"BOM",
+				filters={"item": doc.item},
+				fields=["name", "item", "quantity", "custom_formulation_id"],
+			)
 
 		if not boms:
-			frappe.throw(frappe._("No active submitted BOM found for item {0}.").format(doc.item))
+			if bom_list is not None:
+				frappe.throw(frappe._("No BOMs found for Customer Product."))
+			else:
+				frappe.throw(frappe._("No active submitted BOM found for item {0}.").format(doc.item))
 
 		bom_names = [b["name"] for b in boms]
 		bom_items = frappe.get_all(

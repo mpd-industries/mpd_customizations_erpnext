@@ -24,11 +24,16 @@ frappe.ui.form.on("Pricing Request", {
 							method: "mpd_customizations.costing.api.costing.create_pending_rates",
 							args: { pricing_calculation_name: frm.doc.pricing_calculation },
 							callback(r) {
-								const count = r.message && r.message.created_count;
-								if (count > 0) {
-									frappe.show_alert({ message: __(`${count} pending rate item(s) created`), indicator: "green" });
+								const msg = r.message || {};
+								const mat = msg.created_count || 0;
+								const frt = msg.freight_created_count || 0;
+								if (mat + frt > 0) {
+									const parts = [];
+									if (mat) parts.push(__(`${mat} material rate(s)`));
+									if (frt) parts.push(__(`${frt} freight rate(s)`));
+									frappe.show_alert({ message: __(`Created: ${parts.join(", ")}`), indicator: "green" });
 								} else {
-									frappe.show_alert({ message: __("No new pending rate items — all already exist or no missing/expired rates"), indicator: "blue" });
+									frappe.show_alert({ message: __("No new pending items — all already exist or no missing rates"), indicator: "blue" });
 								}
 							},
 						});

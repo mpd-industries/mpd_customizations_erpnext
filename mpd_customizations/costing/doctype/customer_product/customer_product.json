@@ -1,0 +1,227 @@
+{
+ "actions": [],
+ "autoname": "CPR-.YYYY.-.#####",
+ "creation": "2026-05-11 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_identity",
+  "customer",
+  "customer_name",
+  "customer_product_code",
+  "col_break_identity",
+  "product_description",
+  "is_active",
+  "section_break_packaging",
+  "packaging_material",
+  "fill_quantity_kg",
+  "col_break_packaging",
+  "packaging_description",
+  "section_break_delivery",
+  "delivery_address",
+  "delivery_city",
+  "delivery_country",
+  "col_break_delivery",
+  "is_export",
+  "section_break_formulations",
+  "formulations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_identity",
+   "fieldtype": "Section Break",
+   "label": "Product Identity"
+  },
+  {
+   "bold": 1,
+   "columns": 2,
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Name",
+   "read_only": 1,
+   "columns": 3
+  },
+  {
+   "bold": 1,
+   "columns": 2,
+   "fieldname": "customer_product_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer Product Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "product_description",
+   "fieldtype": "Small Text",
+   "label": "Product Description"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "fieldname": "section_break_packaging",
+   "fieldtype": "Section Break",
+   "label": "Default Packaging"
+  },
+  {
+   "fieldname": "packaging_material",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Packaging Material",
+   "options": "Packaging Material"
+  },
+  {
+   "fieldname": "fill_quantity_kg",
+   "fieldtype": "Float",
+   "label": "Fill Quantity (kg/pkg)",
+   "description": "Default fill quantity — can be adjusted per quote"
+  },
+  {
+   "fieldname": "col_break_packaging",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "packaging_description",
+   "fieldtype": "Small Text",
+   "label": "Packaging Notes"
+  },
+  {
+   "fieldname": "section_break_delivery",
+   "fieldtype": "Section Break",
+   "label": "Delivery Destination"
+  },
+  {
+   "fieldname": "delivery_address",
+   "fieldtype": "Link",
+   "label": "Delivery Address",
+   "options": "Address",
+   "description": "Filtered to this customer's addresses"
+  },
+  {
+   "fieldname": "delivery_city",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "City",
+   "options": "City",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_country",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Country",
+   "options": "Country",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_delivery",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_export",
+   "fieldtype": "Check",
+   "label": "Export Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_formulations",
+   "fieldtype": "Section Break",
+   "label": "Valid Formulations"
+  },
+  {
+   "editable_grid": 1,
+   "fieldname": "formulations",
+   "fieldtype": "Table",
+   "label": "Formulations",
+   "options": "Customer Product Formulation"
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-11 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Customer Product",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Sales",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "R&D Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Approver",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing User",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

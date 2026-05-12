@@ -159,6 +159,72 @@ def recompute_combinations(pricing_calculation_name: str):
 
 
 @frappe.whitelist()
+def promote_freight_overrides_to_master(pricing_calculation_name: str):
+	frappe.has_permission("Pricing Calculation", "write", throw=True)
+
+	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
+
+	source_address = ""
+	if doc.processor:
+		source_address = frappe.db.get_value("Processor", doc.processor, "address") or ""
+
+	created = []
+	skipped = []
+
+	for dl in doc.delivery_lines or []:
+		working_rate = dl.working_freight_per_kg or 0
+		if not working_rate:
+			continue
+
+		is_missing = dl.rate_freshness == "Missing"
+		is_overridden = round(working_rate, 4) != round(dl.fetched_freight_per_kg or 0, 4)
+		if not (is_missing or is_overridden):
+			continue
+
+		dest_address = dl.destination_address
+		if not dest_address or not source_address:
+			skipped.append(dest_address or "Unknown")
+			continue
+
+		transport_mode = dl.transport_mode or "Barrels"
+		customer = doc.customer or ""
+		customer_product = doc.customer_product_ref or ""
+
+		existing_filters = {
+			"source_address": source_address,
+			"destination_address": dest_address,
+			"transport_mode": transport_mode,
+			"docstatus": 0,
+		}
+		if customer:
+			existing_filters["customer"] = customer
+		if customer_product:
+			existing_filters["customer_product"] = customer_product
+
+		existing = frappe.db.exists("Freight Rate", existing_filters)
+		if existing:
+			skipped.append(existing)
+			continue
+
+		new_doc = frappe.get_doc({
+			"doctype": "Freight Rate",
+			"source_address": source_address,
+			"destination_address": dest_address,
+			"transport_mode": transport_mode,
+			"customer": customer,
+			"customer_product": customer_product,
+			"freight_per_kg": working_rate,
+			"currency": dl.working_currency or "",
+			"forex_rate": dl.working_forex_rate or 0,
+			"valid_from": frappe.utils.today(),
+		})
+		new_doc.insert(ignore_permissions=True)
+		created.append({"name": new_doc.name, "destination": dest_address, "transport_mode": transport_mode})
+
+	return {"created": created, "skipped": skipped}
+
+
+@frappe.whitelist()
 def revert_all_overrides(pricing_calculation_name: str):
 	frappe.has_permission("Pricing Calculation", "write", throw=True)
 
@@ -226,7 +292,56 @@ def create_pending_rates(pricing_calculation_name: str):
 			}).insert(ignore_permissions=True)
 			created += 1
 
-	return {"created_count": created}
+	freight_created = _create_missing_freight_rates(doc)
+
+	return {"created_count": created, "freight_created_count": freight_created}
+
+
+def _create_missing_freight_rates(doc) -> int:
+	source_address = ""
+	if doc.processor:
+		source_address = frappe.db.get_value("Processor", doc.processor, "address") or ""
+	if not source_address:
+		return 0
+
+	customer = doc.customer or ""
+	customer_product = doc.customer_product_ref or ""
+	created = 0
+
+	for dl in doc.delivery_lines or []:
+		if dl.rate_freshness != "Missing":
+			continue
+		if not dl.destination_address:
+			continue
+
+		transport_mode = dl.transport_mode or "Barrels"
+		existing_filters = {
+			"source_address": source_address,
+			"destination_address": dl.destination_address,
+			"transport_mode": transport_mode,
+			"docstatus": ["in", [0, 1]],
+		}
+		if customer:
+			existing_filters["customer"] = customer
+		if customer_product:
+			existing_filters["customer_product"] = customer_product
+
+		if frappe.db.exists("Freight Rate", existing_filters):
+			continue
+
+		frappe.get_doc({
+			"doctype": "Freight Rate",
+			"source_address": source_address,
+			"destination_address": dl.destination_address,
+			"transport_mode": transport_mode,
+			"customer": customer,
+			"customer_product": customer_product,
+			"freight_per_kg": 0,
+			"valid_from": frappe.utils.today(),
+		}).insert(ignore_permissions=True)
+		created += 1
+
+	return created
 
 
 def _get_bom_items_without_current_rate(product_item: str, city: str) -> list:

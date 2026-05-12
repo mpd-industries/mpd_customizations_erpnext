@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List, Optional
 
 import frappe
 from frappe.utils import now_datetime
@@ -12,6 +12,8 @@ from mpd_customizations.costing.services.cost_calculator import (
 	compute_total_cost,
 )
 from mpd_customizations.costing.services.formulation_selector import FormulationSelector
+from mpd_customizations.costing.services.freight_rate_fetcher import FreightRateFetcher
+from mpd_customizations.costing.services.packaging_rate_fetcher import PackagingRateFetcher
 from mpd_customizations.costing.services.rate_fetcher import RateFetcher
 from mpd_customizations.costing.services.rate_source_registry import RateSourceRegistry
 
@@ -24,37 +26,42 @@ class CostingEngine:
 	def evaluate(self, pricing_calculation_name: str, trigger: str = "manual") -> Dict:
 		doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 
-		if not doc.item:
-			frappe.throw(frappe._("Product is required."))
-		if not doc.solids_content_pct:
-			frappe.throw(frappe._("Solids Content % is required."))
-		if not doc.city:
-			frappe.throw(frappe._("City is required on the Pricing Calculation."))
+		is_customer_quote = bool(doc.customer_product_ref)
 
-		bom_exists = frappe.db.exists("BOM", {"item": doc.item})
-		if not bom_exists:
-			frappe.throw(frappe._("No BOM found for item {0}.").format(doc.item))
+		if is_customer_quote:
+			boms = _get_customer_product_boms(doc.customer_product_ref)
+			_init_packaging_lines(doc)
+			_init_delivery_lines(doc)
+			fetch_result = RateFetcher.fetch(doc, preserve_overrides=True, bom_list=boms)
+			PackagingRateFetcher.fetch(doc, preserve_overrides=True)
+			FreightRateFetcher.fetch(doc, preserve_overrides=True)
+		else:
+			if not doc.item:
+				frappe.throw(frappe._("Product is required."))
+			if not doc.city:
+				frappe.throw(frappe._("City is required on the Pricing Calculation."))
 
-		city = doc.city
+			bom_exists = frappe.db.exists("BOM", {"item": doc.item})
+			if not bom_exists:
+				frappe.throw(frappe._("No BOM found for item {0}.").format(doc.item))
 
-		# If processor set, optionally validate city matches
-		if doc.processor:
-			processor_city = frappe.db.get_value("Processor", doc.processor, "city")
-			if processor_city and processor_city != city:
-				frappe.throw(
-					frappe._("Processor {0} is configured for city {1}, but this calculation is for city {2}.").format(
-						doc.processor, processor_city, city
+			if doc.processor:
+				processor_city = frappe.db.get_value("Processor", doc.processor, "city")
+				if processor_city and processor_city != doc.city:
+					frappe.throw(
+						frappe._("Processor {0} is configured for city {1}, but this calculation is for city {2}.").format(
+							doc.processor, processor_city, doc.city
+						)
 					)
-				)
 
-		fetch_result = RateFetcher.fetch(doc, preserve_overrides=True)
+			boms = frappe.get_all(
+				"BOM",
+				filters={"item": doc.item},
+				fields=["name", "item", "quantity", "custom_formulation_id", "custom_formulation_description"],
+			)
+			fetch_result = RateFetcher.fetch(doc, preserve_overrides=True)
+
 		doc.save(ignore_permissions=True)
-
-		boms = frappe.get_all(
-			"BOM",
-			filters={"item": doc.item},
-			fields=["name", "item", "quantity", "custom_formulation_id", "custom_formulation_description"],
-		)
 
 		bom_names = [b["name"] for b in boms]
 		all_bom_items = frappe.get_all(
@@ -76,8 +83,6 @@ class CostingEngine:
 		for si in all_scrap_items:
 			scrap_items_map.setdefault(si["parent"], []).append(si)
 
-		# Build map of previous approved PC's RM costs per BOM for delta display
-		# Also derive preferred_bom from the previously selected combination
 		prev_rm_costs = {}
 		preferred_bom_override = None
 		if doc.pricing_request:
@@ -98,6 +103,7 @@ class CostingEngine:
 			frappe.db.set_value("Pricing Calculation", pricing_calculation_name, "preferred_bom", preferred_bom_override)
 			doc.preferred_bom = preferred_bom_override
 
+		city = doc.city or ""
 		rate_lines_map = {rl.item: rl for rl in (doc.rate_lines or [])}
 		scrap_lines_map = {sl.item: sl for sl in (doc.scrap_lines or [])}
 		processing_line = doc.processing_lines[0] if doc.processing_lines else None
@@ -109,6 +115,14 @@ class CostingEngine:
 		additional_charges_per_kg = sum(
 			compute_additional_charge_amount(c.rate or 0, c.basis, solids)
 			for c in (doc.additional_charges or [])
+		)
+
+		# Packaging and delivery costs are constant across all combinations
+		packaging_cost_per_kg = sum(
+			(pl.packaging_cost_per_kg or 0) for pl in (doc.packaging_lines or [])
+		)
+		delivery_cost_per_kg = sum(
+			(dl.delivery_cost_per_kg_inr or 0) for dl in (doc.delivery_lines or [])
 		)
 
 		combination_results = []
@@ -195,18 +209,37 @@ class CostingEngine:
 				if not processing_line.working_includes_outward_freight:
 					outward_freight = processing_line.working_freight_per_unit or 0
 
-			total = compute_total_cost(rm_cost, financing_cost, processing_cost, additional_charges_per_kg, outward_freight)
+			# For customer quotes, outward freight comes from delivery_lines (not processing)
+			if is_customer_quote:
+				outward_freight = 0.0
 
-			if missing_items:
+			base_total = compute_total_cost(rm_cost, financing_cost, processing_cost, additional_charges_per_kg, outward_freight)
+			total = base_total + packaging_cost_per_kg + delivery_cost_per_kg
+
+			# Combination status based on rate quality (never blocks calculation)
+			pkg_missing = any(
+				(pl.rate_freshness == "Missing") for pl in (doc.packaging_lines or [])
+			)
+			pkg_expired = any(
+				(pl.rate_freshness == "Expired") for pl in (doc.packaging_lines or [])
+			)
+			del_missing = any(
+				(dl.rate_freshness == "Missing") for dl in (doc.delivery_lines or [])
+			)
+			del_expired = any(
+				(dl.rate_freshness == "Expired") for dl in (doc.delivery_lines or [])
+			)
+
+			if missing_items or pkg_missing or del_missing:
 				status = "Indicative — Rates Missing"
-			elif expired_items:
+			elif expired_items or pkg_expired or del_expired:
 				status = "Indicative — Rates Expired"
 			else:
 				status = "Ready to Quote"
 
 			combination_results.append({
 				"bom": bom["name"],
-				"formulation_id": bom["custom_formulation_id"] or "",
+				"formulation_id": bom.get("custom_formulation_id") or "",
 				"formulation_description": bom.get("custom_formulation_description") or "",
 				"prev_rm_cost_per_kg": prev_rm_costs.get(bom["name"], 0) or 0,
 				"rm_cost_per_kg": rm_cost,
@@ -214,6 +247,8 @@ class CostingEngine:
 				"processing_cost_per_kg": processing_cost,
 				"additional_charges_per_kg": additional_charges_per_kg,
 				"outward_freight_per_kg": outward_freight,
+				"packaging_cost_per_kg": packaging_cost_per_kg,
+				"delivery_cost_per_kg": delivery_cost_per_kg,
 				"total_cost_per_kg": total,
 				"status": status,
 				"processing_charge_ref": processing_charge_ref or "",
@@ -250,6 +285,8 @@ class CostingEngine:
 				"processing_cost_per_kg": combo["processing_cost_per_kg"],
 				"additional_charges_per_kg": combo["additional_charges_per_kg"],
 				"outward_freight_per_kg": combo["outward_freight_per_kg"],
+				"packaging_cost_per_kg": combo["packaging_cost_per_kg"],
+				"delivery_cost_per_kg": combo["delivery_cost_per_kg"],
 				"total_cost_per_kg": combo["total_cost_per_kg"],
 				"rank": combo.get("rank") or 0,
 				"delta_pct": combo.get("delta_pct") or 0,
@@ -278,7 +315,7 @@ class CostingEngine:
 				new_selected_cost = reselect.total_cost_per_kg
 				frappe.db.set_value("Costing Combination", reselect.name, "is_selected", 1)
 
-		mode = _compute_mode(fetch_result, new_selected_name or doc.selected_combination)
+		mode = _compute_mode(new_selected_name or doc.selected_combination)
 		update_fields = {
 			"last_evaluated_on": now,
 			"engine_version_used": self._config.engine_version,
@@ -294,10 +331,7 @@ class CostingEngine:
 
 		frappe.db.set_value("Pricing Calculation", pricing_calculation_name, update_fields)
 
-		# Sync mode → Pricing Request status
 		_sync_to_pricing_request(doc, mode, update_fields.get("confirmed_ex_factory_cost_per_kg"))
-
-		# Create/clear draft Material Rate requests for purchase team
 		_update_pending_rate_items(doc, fetch_result, mode)
 
 		return {
@@ -315,11 +349,50 @@ class CostingEngine:
 		}
 
 
-def _compute_mode(fetch_result, selected_combination) -> str:
-	if fetch_result.has_missing_rates:
-		return "Awaiting Rates"
-	if fetch_result.has_expired_rates:
-		return "Ready for Working"
+def _get_customer_product_boms(customer_product_ref: str) -> List[Dict]:
+	formulations = frappe.get_all(
+		"Customer Product Formulation",
+		filters={"parent": customer_product_ref, "parenttype": "Customer Product"},
+		fields=["bom"],
+	)
+	if not formulations:
+		frappe.throw(frappe._("Customer Product {0} has no formulations configured.").format(customer_product_ref))
+
+	bom_names = [f["bom"] for f in formulations]
+	boms = frappe.get_all(
+		"BOM",
+		filters={"name": ["in", bom_names]},
+		fields=["name", "item", "quantity", "custom_formulation_id", "custom_formulation_description"],
+	)
+	return boms
+
+
+def _init_packaging_lines(doc):
+	if doc.packaging_lines:
+		return
+	cp = frappe.get_doc("Customer Product", doc.customer_product_ref)
+	if cp.packaging_material:
+		doc.append("packaging_lines", {
+			"packaging_material": cp.packaging_material,
+			"fill_quantity_kg": cp.fill_quantity_kg or 1.0,
+		})
+
+
+def _init_delivery_lines(doc):
+	if doc.delivery_lines:
+		return
+	cp = frappe.get_doc("Customer Product", doc.customer_product_ref)
+	if cp.delivery_address or cp.delivery_city or cp.delivery_country:
+		doc.append("delivery_lines", {
+			"destination_address": cp.delivery_address or "",
+			"destination_city": cp.delivery_city or "",
+			"destination_country": cp.delivery_country or "",
+			"is_export": cp.is_export or 0,
+			"transport_mode": "Barrels",
+		})
+
+
+def _compute_mode(selected_combination) -> str:
 	if selected_combination:
 		return "Ready to Quote"
 	return "Ready for Working"
@@ -340,14 +413,16 @@ def _update_pending_rate_items(doc, fetch_result, mode: str):
 	if not frappe.db.has_column("Material Rate", "pricing_calculation"):
 		return
 
-	# Clear old pending-request drafts for this calculation
 	frappe.db.delete("Material Rate", {
 		"pricing_calculation": doc.name,
 		"docstatus": 0,
 		"requested_on": ["is", "set"],
 	})
 
-	if mode not in ("Awaiting Rates", "Ready for Working"):
+	items_to_request = list(fetch_result.missing_items)
+	items_to_request += [i for i in fetch_result.expired_items if i not in items_to_request]
+
+	if not items_to_request:
 		return
 
 	priority = "Normal"
@@ -359,20 +434,18 @@ def _update_pending_rate_items(doc, fetch_result, mode: str):
 		priority = pr_values.get("priority") or "Normal"
 		product = pr_values.get("product") or ""
 
-	items_to_request = list(fetch_result.missing_items)
-	items_to_request += [i for i in fetch_result.expired_items if i not in items_to_request]
-
+	city = doc.city or ""
 	for item_code in items_to_request:
 		existing = frappe.db.exists("Material Rate", {
 			"item": item_code,
-			"city": doc.city,
+			"city": city,
 			"docstatus": 0,
 		})
-		if not existing:
+		if not existing and city:
 			frappe.get_doc({
 				"doctype": "Material Rate",
 				"item": item_code,
-				"city": doc.city,
+				"city": city,
 				"pricing_calculation": doc.name,
 				"pricing_request": doc.pricing_request or "",
 				"product": product,
@@ -402,6 +475,8 @@ def _combination_to_dict(cc, results) -> Dict:
 		"processing_cost_per_kg": cc.processing_cost_per_kg,
 		"additional_charges_per_kg": cc.additional_charges_per_kg,
 		"outward_freight_per_kg": cc.outward_freight_per_kg,
+		"packaging_cost_per_kg": cc.packaging_cost_per_kg,
+		"delivery_cost_per_kg": cc.delivery_cost_per_kg,
 		"total_cost_per_kg": cc.total_cost_per_kg,
 		"material_lines": raw.get("material_lines", []),
 	}

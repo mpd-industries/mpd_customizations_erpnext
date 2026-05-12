@@ -10,9 +10,11 @@
  ],
  "fields": [
   {
+   "bold": 1,
    "fieldname": "city_name",
    "fieldtype": "Data",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "City Name",
    "reqd": 1,
    "unique": 1
@@ -25,7 +27,7 @@
   }
  ],
  "links": [],
- "modified": "2024-01-01 00:00:00.000000",
+ "modified": "2026-05-11 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "City",
@@ -72,6 +74,24 @@
    "read": 1,
    "report": 1,
    "role": "Costing Approver",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Sales",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Dispatch Manager",
    "share": 1
   }
  ],

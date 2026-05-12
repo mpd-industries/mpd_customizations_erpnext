@@ -148,8 +148,17 @@ doc_events = {
 		"before_save": "mpd_customizations.mpd_base.item_ai.item_hooks.before_save",
 		"on_trash":    "mpd_customizations.mpd_base.item_ai.item_hooks.on_trash",
 	},
+	"Address": {
+		"on_update": "mpd_customizations.costing.doctype.city.city.on_address_update",
+	},
 	"Material Rate": {
 		"on_submit": "mpd_customizations.costing.api.costing.on_material_rate_submitted",
+	},
+	"Packaging Rate": {
+		"on_submit": "mpd_customizations.costing.doctype.packaging_rate.packaging_rate.on_packaging_rate_submitted",
+	},
+	"Freight Rate": {
+		"on_submit": "mpd_customizations.costing.doctype.freight_rate.freight_rate.on_freight_rate_submitted",
 	},
 }
 
@@ -170,8 +179,10 @@ fixtures = [
     {"dt": "Role", "filters": [["name", "in", ["Xfloor CMS Manager"]]]},
     # Costing module fixtures
     {"dt": "Custom Field", "filters": [["module", "=", "Costing"]]},
-    {"dt": "Role", "filters": [["name", "in", ["Costing User", "Costing Approver", "Rate Manager"]]]},
+    {"dt": "Role", "filters": [["name", "in", ["Costing User", "Costing Approver", "Rate Manager", "Costing Sales", "R&D Manager", "Dispatch Manager"]]]},
     {"dt": "Costing Configuration"},
+    {"dt": "Packaging Material"},
+    {"dt": "Packaging Rate"},
 ]
 
 # Scheduled Tasks

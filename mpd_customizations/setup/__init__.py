@@ -15,6 +15,7 @@ def after_install():
     seed_item_category_codes()
     seed_llm_fixtures()
     backfill_item_labels()
+    _sync_cities()
 
 
 def after_migrate():
@@ -24,6 +25,7 @@ def after_migrate():
     backfill_item_labels()
     backfill_item_solids()
     _migrate_pending_rate_items()
+    _sync_cities()
     if os.environ.get("MPD_SYNC_ITEM_AI_PROMPT") == "1":
         sync_item_classification_system_prompt_from_code()
 
@@ -93,6 +95,14 @@ def backfill_item_solids():
     if updated:
         frappe.db.commit()
         print(f"Backfilled custom_solids_content_pct for {updated} item(s).")
+
+
+def _sync_cities():
+    try:
+        from mpd_customizations.costing.doctype.city.city import sync_cities_from_addresses
+        sync_cities_from_addresses()
+    except Exception:
+        pass  # City table may not exist yet on first install before migrate
 
 
 def _migrate_pending_rate_items():
