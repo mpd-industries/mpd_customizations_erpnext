@@ -123,11 +123,6 @@ function _on_rate_line_change(frm, cdt, cdn) {
 function _render_action_bar(frm) {
 	frm.add_custom_button(__("Get Rates"), () => _on_get_rates(frm));
 
-	if (frm.doc.last_evaluated_on &&
-		(frm.doc.mode === "Awaiting Rates" || frm.doc.mode === "Partially Costed")) {
-		frm.add_custom_button(__("Create Pending Rates"), () => _on_create_pending_rates(frm));
-	}
-
 	if (frm.doc.selected_combination && frm.doc.mode === "Ready to Quote") {
 		frm.add_custom_button(__("Submit for Approval"), () => frm.savesubmit(), __("Actions"));
 	}
@@ -154,7 +149,6 @@ function _render_sales_view(frm) {
 	const stage3 = ["Pending Approval", "Approved"].includes(mode);
 
 	if (stage1) {
-		frm.add_custom_button(__("Request Pending Rates"), () => _on_create_pending_rates(frm));
 		frm.dashboard.add_comment(
 			`⏳ Waiting for rates to be filled in. Click "Request Pending Rates" to notify the purchase team.`,
 			"orange", true
@@ -216,7 +210,6 @@ function _render_sales_cost_summary(frm, combinations) {
 	frm.dashboard.add_comment(html, "blue", true);
 
 	if (preferred && preferred.status !== "Ready to Quote") {
-		frm.add_custom_button(__("Request Pending Rates"), () => _on_create_pending_rates(frm));
 		frm.dashboard.add_comment(
 			`⚠ Preferred formulation has missing/expired rates. You may request them or proceed with current values.`,
 			"orange", true
@@ -557,31 +550,6 @@ function _render_cost_breakdown(frm, data) {
 			${layer3_html}
 		</div>
 	`);
-}
-
-// ─── Create Pending Rates ────────────────────────────────────────────────────
-
-function _on_create_pending_rates(frm) {
-	frappe.call({
-		method: `${API}.create_pending_rates`,
-		args: { costing_request_name: frm.doc.name },
-		callback(r) {
-			if (r.message) {
-				const count = r.message.created_count;
-				frappe.show_alert({
-					message: __("{0} pending rate(s) created", [count]),
-					indicator: count > 0 ? "green" : "blue",
-				});
-				if (count > 0) {
-					frm.dashboard.add_comment(
-						__(`${count} pending Material Rate(s) created. <a href="/app/material-rate?costing_request=${frm.doc.name}">View them</a>.`),
-						"blue",
-						true
-					);
-				}
-			}
-		},
-	});
 }
 
 // ─── Previous costing prefill ────────────────────────────────────────────────

@@ -20,21 +20,25 @@ class FreightRateFetcher:
 		result = FreightFetchResult()
 		pricing_date = getdate(now_datetime())
 		source_address = _get_source_address(doc)
-		customer = getattr(doc, "customer", "") or ""
-		customer_product_ref = getattr(doc, "customer_product_ref", "") or ""
 
 		for line in doc.delivery_lines or []:
 			if not line.destination_address:
 				continue
 
+			# Keep source fields in sync with the processor (survives re-evaluations)
+			if source_address and not line.source_address:
+				line.source_address = source_address
+			if getattr(doc, "processor", None) and not line.source_city:
+				line.source_city = frappe.db.get_value("Processor", doc.processor, "city") or ""
+
 			mode = line.transport_mode or "Barrels"
+			incoterms = getattr(line, "incoterms", "") or ""
 			rate_record = _get_best_freight_rate(
 				source_address,
 				line.destination_address,
 				mode,
-				customer,
-				customer_product_ref,
 				pricing_date,
+				incoterms,
 			)
 			dest_label = f"{line.destination_city or line.destination_address} ({mode})"
 
@@ -77,8 +81,6 @@ class FreightRateFetcher:
 					result.has_expired_rates = True
 					result.expired_destinations.append(dest_label)
 
-			line.delivery_cost_per_kg_inr = line.working_freight_per_kg or 0
-
 		return result
 
 
@@ -94,17 +96,14 @@ def _get_best_freight_rate(
 	source_address: str,
 	destination_address: str,
 	transport_mode: str,
-	customer: str,
-	customer_product_ref: str,
 	pricing_date,
+	incoterms: str = "",
 ) -> Optional[dict]:
 	"""
-	Fetch the most specific active rate for this lane+mode.
-	Specificity order (highest to lowest):
-	  1. customer + customer_product match
-	  2. customer match (no product restriction)
-	  3. General lane rate (no customer, no product)
-	Expired rates are used as fallback in the same priority order.
+	Fetch the best active rate for this route+mode+incoterms.
+	Current rates take priority over expired; most recent valid_from wins within each pool.
+	If incoterms is specified, rates with matching incoterms are preferred; rates with blank
+	incoterms are used as fallback.
 	"""
 	all_rates = frappe.get_all(
 		"Freight Rate",
@@ -114,7 +113,7 @@ def _get_best_freight_rate(
 			"transport_mode": transport_mode,
 			"docstatus": 1,
 		},
-		fields=["name", "customer", "customer_product", "freight_per_kg", "forex_rate", "currency", "valid_from", "valid_to"],
+		fields=["name", "incoterms", "freight_per_kg", "forex_rate", "currency", "valid_from", "valid_to"],
 		order_by="valid_from desc",
 	)
 
@@ -132,31 +131,18 @@ def _get_best_freight_rate(
 	)
 
 	for pool in (current, expired):
-		# Tier 1: exact customer + product match
-		if customer and customer_product_ref:
-			match = next(
-				(r for r in pool if r.get("customer") == customer and r.get("customer_product") == customer_product_ref),
-				None,
-			)
+		if incoterms:
+			# Prefer exact incoterms match, fall back to blank incoterms
+			match = next((r for r in pool if r.get("incoterms") == incoterms), None)
 			if match:
 				return match
-
-		# Tier 2: customer match, no product restriction
-		if customer:
-			match = next(
-				(r for r in pool if r.get("customer") == customer and not r.get("customer_product")),
-				None,
-			)
+			match = next((r for r in pool if not r.get("incoterms")), None)
 			if match:
 				return match
-
-		# Tier 3: general lane rate
-		match = next(
-			(r for r in pool if not r.get("customer") and not r.get("customer_product")),
-			None,
-		)
-		if match:
-			return match
+		else:
+			match = next(iter(pool), None)
+			if match:
+				return match
 
 	return None
 

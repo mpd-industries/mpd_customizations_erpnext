@@ -18,33 +18,16 @@ frappe.ui.form.on("Pricing Request", {
 					frappe.set_route("Form", "Pricing Calculation", frm.doc.pricing_calculation);
 				});
 
-				if (!["Ready to Quote", "Pending Approval", "Approved", "Rejected"].includes(frm.doc.status)) {
-					frm.add_custom_button(__("Create Pending Rates"), () => {
-						frappe.call({
-							method: "mpd_customizations.costing.api.costing.create_pending_rates",
-							args: { pricing_calculation_name: frm.doc.pricing_calculation },
-							callback(r) {
-								const msg = r.message || {};
-								const mat = msg.created_count || 0;
-								const frt = msg.freight_created_count || 0;
-								if (mat + frt > 0) {
-									const parts = [];
-									if (mat) parts.push(__(`${mat} material rate(s)`));
-									if (frt) parts.push(__(`${frt} freight rate(s)`));
-									frappe.show_alert({ message: __(`Created: ${parts.join(", ")}`), indicator: "green" });
-								} else {
-									frappe.show_alert({ message: __("No new pending items — all already exist or no missing rates"), indicator: "blue" });
-								}
-							},
-						});
-					}, __("Actions"));
-				}
 			}
 		}
 	},
 
 	product(frm) {
 		_fetch_solids(frm);
+	},
+
+	customer_product(frm) {
+		_fetch_solids_from_customer_product(frm);
 	},
 });
 
@@ -58,6 +41,25 @@ function _fetch_solids(frm) {
 	if (!frm.doc.product) return;
 	frappe.db.get_value("Item", frm.doc.product, "custom_solids_content_pct").then(r => {
 		if (r.message && r.message.custom_solids_content_pct) {
+			frm.set_value("solids_content_pct", r.message.custom_solids_content_pct);
+		}
+	});
+}
+
+function _fetch_solids_from_customer_product(frm) {
+	if (!frm.doc.customer_product) return;
+	frappe.db.get_list("Customer Product Formulation", {
+		filters: { parent: frm.doc.customer_product },
+		fields: ["bom"],
+		limit: 1,
+	}).then(rows => {
+		if (!rows || !rows.length || !rows[0].bom) return Promise.resolve(null);
+		return frappe.db.get_value("BOM", rows[0].bom, "item");
+	}).then(r => {
+		if (!r || !r.message) return Promise.resolve(null);
+		return frappe.db.get_value("Item", r.message.item, "custom_solids_content_pct");
+	}).then(r => {
+		if (r && r.message && r.message.custom_solids_content_pct) {
 			frm.set_value("solids_content_pct", r.message.custom_solids_content_pct);
 		}
 	});

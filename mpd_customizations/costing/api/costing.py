@@ -33,7 +33,8 @@ def get_combinations(pricing_calculation_name: str):
 			"rank", "delta_pct", "status",
 			"is_preferred", "is_selected", "rm_cost_per_kg", "financing_cost_per_kg",
 			"processing_cost_per_kg", "additional_charges_per_kg", "outward_freight_per_kg",
-			"total_cost_per_kg", "missing_items", "expired_items",
+			"total_cost_per_kg", "credit_charge_per_kg", "commission_per_kg",
+			"margin_per_kg", "selling_price_per_kg", "missing_items", "expired_items",
 		],
 	)
 
@@ -70,26 +71,28 @@ def select_combination(pricing_calculation_name: str, combination_name: str):
 
 	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 	new_mode = "Ready to Quote" if combo.status in ("Ready to Quote", "Indicative — Rates Expired") else doc.mode
+	selling_price = combo.selling_price_per_kg or combo.total_cost_per_kg
 	frappe.db.set_value(
 		"Pricing Calculation",
 		pricing_calculation_name,
 		{
 			"selected_combination": combination_name,
 			"confirmed_ex_factory_cost_per_kg": combo.total_cost_per_kg,
+			"confirmed_selling_price_per_kg": selling_price,
 			"mode": new_mode,
 		},
 	)
 
-	# Sync to Pricing Request
+	# Sync selling price (not ex-factory cost) to Pricing Request
 	if doc.pricing_request:
 		qty = frappe.db.get_value("Pricing Request", doc.pricing_request, "quantity_kg") or 0
 		frappe.db.set_value("Pricing Request", doc.pricing_request, {
 			"status": new_mode,
-			"confirmed_price_per_kg": combo.total_cost_per_kg,
-			"total_price": qty * combo.total_cost_per_kg,
+			"confirmed_price_per_kg": selling_price,
+			"total_price": qty * selling_price,
 		})
 
-	return {"confirmed_ex_factory_cost_per_kg": combo.total_cost_per_kg, "mode": new_mode}
+	return {"confirmed_ex_factory_cost_per_kg": combo.total_cost_per_kg, "selling_price_per_kg": selling_price, "mode": new_mode}
 
 
 @frappe.whitelist()
@@ -187,21 +190,13 @@ def promote_freight_overrides_to_master(pricing_calculation_name: str):
 			continue
 
 		transport_mode = dl.transport_mode or "Barrels"
-		customer = doc.customer or ""
-		customer_product = doc.customer_product_ref or ""
 
-		existing_filters = {
+		existing = frappe.db.exists("Freight Rate", {
 			"source_address": source_address,
 			"destination_address": dest_address,
 			"transport_mode": transport_mode,
 			"docstatus": 0,
-		}
-		if customer:
-			existing_filters["customer"] = customer
-		if customer_product:
-			existing_filters["customer_product"] = customer_product
-
-		existing = frappe.db.exists("Freight Rate", existing_filters)
+		})
 		if existing:
 			skipped.append(existing)
 			continue
@@ -211,8 +206,6 @@ def promote_freight_overrides_to_master(pricing_calculation_name: str):
 			"source_address": source_address,
 			"destination_address": dest_address,
 			"transport_mode": transport_mode,
-			"customer": customer,
-			"customer_product": customer_product,
 			"freight_per_kg": working_rate,
 			"currency": dl.working_currency or "",
 			"forex_rate": dl.working_forex_rate or 0,
@@ -245,142 +238,23 @@ def revert_all_overrides(pricing_calculation_name: str):
 	return _run_evaluate(pricing_calculation_name)
 
 
-@frappe.whitelist()
-def create_pending_rates(pricing_calculation_name: str):
-	frappe.has_permission("Pricing Calculation", "write", throw=True)
-
-	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
-	priority = "Normal"
-	product = ""
-	if doc.pricing_request:
-		pr_values = frappe.db.get_value(
-			"Pricing Request", doc.pricing_request, ["priority", "product"], as_dict=True
-		) or {}
-		priority = pr_values.get("priority") or "Normal"
-		product = pr_values.get("product") or ""
-
-	if doc.rate_lines:
-		items_needing_rates = [
-			rl.item for rl in doc.rate_lines
-			if rl.rate_freshness in ("Missing", "Expired")
-		]
-	else:
-		items_needing_rates = _get_bom_items_without_current_rate(doc.item, doc.city)
-
-	if not frappe.db.has_column("Material Rate", "pricing_calculation"):
-		return {"created_count": 0, "error": "Run bench migrate first to add new fields to Material Rate"}
-
-	created = 0
-	for item in items_needing_rates:
-		existing = frappe.db.exists(
-			"Material Rate",
-			{"item": item, "city": doc.city, "docstatus": 0},
-		)
-		if not existing:
-			frappe.get_doc({
-				"doctype": "Material Rate",
-				"item": item,
-				"city": doc.city,
-				"pricing_calculation": pricing_calculation_name,
-				"pricing_request": doc.pricing_request or "",
-				"product": product,
-				"priority": priority,
-				"requested_on": now_datetime(),
-				"uom": frappe.db.get_value("Item", item, "stock_uom") or "Kg",
-				"rate_type": "All-In Delivered",
-				"valid_from": frappe.utils.today(),
-			}).insert(ignore_permissions=True)
-			created += 1
-
-	freight_created = _create_missing_freight_rates(doc)
-
-	return {"created_count": created, "freight_created_count": freight_created}
-
-
-def _create_missing_freight_rates(doc) -> int:
-	source_address = ""
-	if doc.processor:
-		source_address = frappe.db.get_value("Processor", doc.processor, "address") or ""
-	if not source_address:
-		return 0
-
-	customer = doc.customer or ""
-	customer_product = doc.customer_product_ref or ""
-	created = 0
-
-	for dl in doc.delivery_lines or []:
-		if dl.rate_freshness != "Missing":
-			continue
-		if not dl.destination_address:
-			continue
-
-		transport_mode = dl.transport_mode or "Barrels"
-		existing_filters = {
-			"source_address": source_address,
-			"destination_address": dl.destination_address,
-			"transport_mode": transport_mode,
-			"docstatus": ["in", [0, 1]],
-		}
-		if customer:
-			existing_filters["customer"] = customer
-		if customer_product:
-			existing_filters["customer_product"] = customer_product
-
-		if frappe.db.exists("Freight Rate", existing_filters):
-			continue
-
-		frappe.get_doc({
-			"doctype": "Freight Rate",
-			"source_address": source_address,
-			"destination_address": dl.destination_address,
-			"transport_mode": transport_mode,
-			"customer": customer,
-			"customer_product": customer_product,
-			"freight_per_kg": 0,
-			"valid_from": frappe.utils.today(),
-		}).insert(ignore_permissions=True)
-		created += 1
-
-	return created
-
-
-def _get_bom_items_without_current_rate(product_item: str, city: str) -> list:
-	today = frappe.utils.today()
-	boms = frappe.get_all(
-		"BOM",
-		filters={"item": product_item},
-		fields=["name"],
+def _notify_dispatch_team(pricing_request: str, routes: list):
+	dispatch_users = frappe.get_all(
+		"Has Role",
+		filters={"role": "Dispatch Manager", "parenttype": "User"},
+		fields=["parent"],
 	)
-	if not boms:
-		return []
-
-	seen = set()
-	result = []
-	for bom in boms:
-		bom_items = frappe.get_all(
-			"BOM Item",
-			filters={"parent": bom.name},
-			fields=["item_code"],
+	for u in dispatch_users:
+		links = ", ".join(
+			f'<a href="/app/freight-rate/{r["name"]}">{r["dest"]} ({r["mode"]})</a>'
+			for r in routes
 		)
-		for bi in bom_items:
-			item_code = bi.item_code
-			if item_code in seen:
-				continue
-			seen.add(item_code)
-			has_rate = frappe.db.exists(
-				"Material Rate",
-				{
-					"item": item_code,
-					"city": city,
-					"docstatus": 1,
-					"valid_from": ["<=", today],
-					"valid_to": [">=", today],
-				},
-			)
-			if not has_rate:
-				result.append(item_code)
-
-	return result
+		pr_part = f" for <a href='/app/pricing-request/{pricing_request}'>{pricing_request}</a>" if pricing_request else ""
+		frappe.publish_realtime(
+			"eval_js",
+			f"frappe.show_alert({{message: 'Freight rate needed{pr_part}: {links}', indicator: 'orange'}})",
+			user=u.parent,
+		)
 
 
 @frappe.whitelist()
@@ -427,8 +301,14 @@ def get_cost_breakdown(pricing_calculation_name: str):
 		],
 		"outward_freight_per_kg": combo.outward_freight_per_kg,
 		"total_cost_per_kg": combo.total_cost_per_kg,
+		"credit_charge_per_kg": combo.credit_charge_per_kg,
+		"commission_per_kg": combo.commission_per_kg,
+		"margin_per_kg": combo.margin_per_kg,
+		"selling_price_per_kg": combo.selling_price_per_kg,
 		"production_days": doc.production_days,
 		"supplier_financing_rate_pct": doc.supplier_financing_rate_pct,
+		"customer_credit_rate_pct": doc.customer_credit_rate_pct,
+		"credit_days": doc.credit_days or 0,
 		"processing_charge_ref": combo.processing_charge_ref,
 		"solids_content_pct": doc.solids_content_pct,
 	}

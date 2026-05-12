@@ -25,10 +25,12 @@ frappe.ui.form.on("Pricing Calculation", {
 		_apply_amber_indicators(frm);
 
 		if (frm.doc.confirmed_ex_factory_cost_per_kg) {
-			frm.dashboard.add_comment(
-				`Ex-Factory: ₹${frm.doc.confirmed_ex_factory_cost_per_kg.toFixed(2)}/kg`,
-				"blue", true
-			);
+			const ex = frm.doc.confirmed_ex_factory_cost_per_kg;
+			const sp = frm.doc.confirmed_selling_price_per_kg;
+			const label = (sp && sp > ex)
+				? `Ex-Factory: ₹${ex.toFixed(2)}/kg &nbsp;·&nbsp; <strong>Selling: ₹${sp.toFixed(2)}/kg</strong>`
+				: `Ex-Factory: ₹${ex.toFixed(2)}/kg`;
+			frm.dashboard.add_comment(label, "blue", true);
 		}
 
 		if ((frm.doc.mode === "Ready to Quote" || frm.doc.mode === "Approved") && frappe.user.has_role("Costing Approver")) {
@@ -54,6 +56,25 @@ frappe.ui.form.on("Pricing Calculation", {
 	},
 
 	// ─── Parameter fields ────────────────────────────────────────────────────────
+
+	customer_product_ref(frm) {
+		if (!frm.doc.customer_product_ref) return;
+		frappe.db.get_list("Customer Product Formulation", {
+			filters: { parent: frm.doc.customer_product_ref },
+			fields: ["bom"],
+			limit: 1,
+		}).then(rows => {
+			if (!rows || !rows.length || !rows[0].bom) return Promise.resolve(null);
+			return frappe.db.get_value("BOM", rows[0].bom, "item");
+		}).then(r => {
+			if (!r || !r.message) return Promise.resolve(null);
+			return frappe.db.get_value("Item", r.message.item, "custom_solids_content_pct");
+		}).then(r => {
+			if (r && r.message && r.message.custom_solids_content_pct) {
+				frm.set_value("solids_content_pct", r.message.custom_solids_content_pct);
+			}
+		});
+	},
 
 	processor(frm) {
 		if (!frm.doc.processor || !frm.doc.item || frm.doc.__islocal) return;
@@ -230,6 +251,7 @@ function _render_action_bar(frm) {
 			});
 		}, __("Decision"));
 	}
+
 
 	if (frm.doc.docstatus === 0) {
 		const _rate_ov = (frm.doc.rate_lines || []).filter(rl =>
@@ -477,10 +499,12 @@ function _render_combinations(frm, combinations) {
 	}
 
 	const has_prev = combinations.some(c => (c.prev_rm_cost_per_kg || 0) > 0);
+	const has_selling = combinations.some(c => (c.selling_price_per_kg || 0) > (c.total_cost_per_kg || 0));
 
 	// Table header
 	const select_col_header = is_submitted ? "" : `<th style="width:100px"></th>`;
 	const prev_col_header = has_prev ? `<th class="text-right" style="width:110px">${__("Prev RM/kg")}</th>` : "";
+	const selling_col_header = has_selling ? `<th class="text-right" style="width:120px">${__("Selling Price/kg")}</th>` : "";
 
 	const rows = [...combinations]
 		.sort((a, b) => (a.rank || 99) - (b.rank || 99))
@@ -540,12 +564,17 @@ function _render_combinations(frm, combinations) {
 				}
 			</td>`;
 
+			const selling_cell = has_selling
+				? `<td class="text-right font-weight-bold" style="color:#1565c0;">₹${(combo.selling_price_per_kg || 0).toFixed(2)}</td>`
+				: "";
+
 			return `<tr style="${row_bg}">
 				<td class="font-weight-bold">${frappe.utils.escape_html(combo.formulation_id || combo.bom)}${badges.join("")}</td>
 				<td class="text-muted small">${desc}</td>
 				<td class="text-right">₹${(combo.rm_cost_per_kg || 0).toFixed(2)}</td>
 				${prev_cell}
-				<td class="text-right font-weight-bold">₹${(combo.total_cost_per_kg || 0).toFixed(2)}</td>
+				<td class="text-right">₹${(combo.total_cost_per_kg || 0).toFixed(2)}</td>
+				${selling_cell}
 				<td>${status_badge}</td>
 				${action_cell}
 			</tr>`;
@@ -559,7 +588,8 @@ function _render_combinations(frm, combinations) {
 					<th>${__("Description")}</th>
 					<th class="text-right" style="width:100px">${__("RM Cost/kg")}</th>
 					${prev_col_header}
-					<th class="text-right" style="width:110px">${__("Total/kg")}</th>
+					<th class="text-right" style="width:110px">${has_selling ? __("Ex-Factory/kg") : __("Total/kg")}</th>
+					${selling_col_header}
 					<th style="width:145px">${__("Status")}</th>
 					${select_col_header}
 				</tr>
@@ -775,6 +805,23 @@ function _render_approved_cost_snapshot(frm, data, $wrapper) {
 						<td class="font-weight-bold">${__("CONFIRMED EX-FACTORY COST")}</td>
 						<td class="text-right font-weight-bold" style="font-size:1.1em;">₹${(l.total_cost_per_kg || 0).toFixed(2)}/kg</td>
 					</tr>
+					${(l.selling_price_per_kg || 0) > (l.total_cost_per_kg || 0) ? `
+					<tr>
+						<td>${__("Credit Charge")} <span class="text-muted small">(${l.credit_days || 0}d, ${Math.max(0, (l.credit_days || 0) - 30)} extra days @ ${l.customer_credit_rate_pct || 0}% pa)</span></td>
+						<td class="text-right">₹${(l.credit_charge_per_kg || 0).toFixed(2)}/kg</td>
+					</tr>
+					<tr>
+						<td>${__("Commission")}</td>
+						<td class="text-right">₹${(l.commission_per_kg || 0).toFixed(2)}/kg</td>
+					</tr>
+					<tr>
+						<td>${__("Margin")}</td>
+						<td class="text-right">₹${(l.margin_per_kg || 0).toFixed(2)}/kg</td>
+					</tr>
+					<tr style="background:#e3f2fd;">
+						<td class="font-weight-bold">${__("SELLING PRICE")}</td>
+						<td class="text-right font-weight-bold" style="font-size:1.1em;color:#1565c0;">₹${(l.selling_price_per_kg || 0).toFixed(2)}/kg</td>
+					</tr>` : ""}
 				</tbody>
 			</table>
 
@@ -871,6 +918,15 @@ function _render_cost_breakdown(frm, data) {
 			<div class="font-weight-bold mt-2">OUTWARD FREIGHT: ₹${(l.outward_freight_per_kg || 0).toFixed(2)}/kg</div>
 			<hr>
 			<div class="font-weight-bold text-primary">CONFIRMED EX-FACTORY COST: ₹${(l.total_cost_per_kg || 0).toFixed(2)}/kg</div>
+			${(l.selling_price_per_kg || 0) > (l.total_cost_per_kg || 0) ? `
+			<hr>
+			<div class="font-weight-bold mt-2">CUSTOMER PRICING</div>
+			<div class="ml-3">Credit Charge <span class="text-muted small">(${l.credit_days || 0} days, ${Math.max(0, (l.credit_days || 0) - 30)} extra days @ ${l.customer_credit_rate_pct || 0}% pa)</span> — ₹${(l.credit_charge_per_kg || 0).toFixed(2)}/kg</div>
+			<div class="ml-3">Commission — ₹${(l.commission_per_kg || 0).toFixed(2)}/kg</div>
+			<div class="ml-3">Margin — ₹${(l.margin_per_kg || 0).toFixed(2)}/kg</div>
+			<hr>
+			<div class="font-weight-bold" style="color:#1565c0;">SELLING PRICE: ₹${(l.selling_price_per_kg || 0).toFixed(2)}/kg</div>
+			` : ""}
 		</div>
 	`);
 }

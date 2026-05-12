@@ -5,11 +5,14 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "source_address",
+  "source_city",
   "destination_address",
   "destination_country",
   "destination_city",
   "is_export",
   "transport_mode",
+  "incoterms",
   "freight_rate_ref",
   "fetched_freight_per_kg",
   "fetched_forex_rate",
@@ -18,10 +21,25 @@
   "working_freight_per_kg",
   "working_forex_rate",
   "working_currency",
-  "override_reason",
-  "delivery_cost_per_kg_inr"
+  "override_reason"
  ],
  "fields": [
+  {
+   "fieldname": "source_address",
+   "fieldtype": "Link",
+   "label": "Source Address",
+   "options": "Address",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "source_city",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Source City",
+   "options": "City",
+   "read_only": 1
+  },
   {
    "fieldname": "destination_address",
    "fieldtype": "Link",
@@ -30,10 +48,8 @@
    "read_only": 1
   },
   {
-   "columns": 2,
    "fieldname": "destination_country",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Country",
    "options": "Country",
    "read_only": 1
@@ -51,10 +67,8 @@
    "default": "0",
    "fieldname": "is_export",
    "fieldtype": "Check",
-   "in_list_view": 1,
    "label": "Export",
-   "read_only": 1,
-   "columns": 1
+   "read_only": 1
   },
   {
    "columns": 2,
@@ -64,6 +78,15 @@
    "in_list_view": 1,
    "label": "Transport Mode",
    "options": "\nBarrels\nBags\nMS Tanker\nSS Tanker"
+  },
+  {
+   "columns": 2,
+   "fieldname": "incoterms",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Incoterms",
+   "options": "Incoterm",
+   "read_only": 1
   },
   {
    "fieldname": "freight_rate_ref",
@@ -94,11 +117,9 @@
   {
    "fieldname": "rate_freshness",
    "fieldtype": "Select",
-   "in_list_view": 1,
    "label": "Freshness",
    "options": "\nCurrent\nExpired\nMissing",
-   "read_only": 1,
-   "columns": 1
+   "read_only": 1
   },
   {
    "columns": 2,
@@ -110,9 +131,7 @@
   {
    "fieldname": "working_forex_rate",
    "fieldtype": "Float",
-   "in_list_view": 1,
    "label": "Forex Rate (INR/unit)",
-   "columns": 2,
    "description": "INR per 1 unit of foreign currency. Leave 0 for domestic."
   },
   {
@@ -125,19 +144,11 @@
    "fieldname": "override_reason",
    "fieldtype": "Small Text",
    "label": "Override Reason"
-  },
-  {
-   "fieldname": "delivery_cost_per_kg_inr",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "label": "Delivery Cost/kg (INR)",
-   "read_only": 1,
-   "columns": 2
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-05-11 00:00:00",
+ "modified": "2026-05-12 00:00:00",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Costing Delivery Line",

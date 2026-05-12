@@ -1,5 +1,7 @@
 from typing import Dict, List
 
+_CREDIT_FREE_DAYS = 30
+
 
 def compute_rm_line_amount(qty_per_kg_output: float, working_rate: float) -> float:
 	return qty_per_kg_output * working_rate
@@ -55,6 +57,62 @@ def compute_total_cost(
 	outward_freight: float,
 ) -> float:
 	return rm_cost + financing_cost + processing_cost + additional_charges + outward_freight
+
+
+def compute_credit_charge(
+	total_cost_per_kg: float,
+	credit_days: int,
+	customer_credit_rate_pct: float,
+) -> float:
+	extra_days = max(0, (credit_days or 0) - _CREDIT_FREE_DAYS)
+	return total_cost_per_kg * (extra_days / 365) * (customer_credit_rate_pct / 100)
+
+
+def compute_commission_amount(
+	rate: float,
+	commission_type: str,
+	total_cost_per_kg: float,
+	solids_content_pct: float,
+) -> float:
+	if commission_type == "% of Ex-Factory Cost":
+		return total_cost_per_kg * (rate / 100)
+	elif commission_type == "Per kg of Output":
+		return rate
+	elif commission_type == "Per kg of Solids":
+		return rate * (_effective_solids(solids_content_pct) / 100)
+	raise ValueError(f"Unrecognised commission_type: {commission_type!r}")
+
+
+def compute_total_commission(
+	commissions: List[Dict],
+	total_cost_per_kg: float,
+	solids_content_pct: float,
+) -> float:
+	return sum(
+		compute_commission_amount(
+			c.get("rate") or 0,
+			c.get("commission_type") or "",
+			total_cost_per_kg,
+			solids_content_pct,
+		)
+		for c in commissions
+	)
+
+
+def compute_margin(
+	total_cost_per_kg: float,
+	margin_type: str,
+	margin_rate: float,
+	solids_content_pct: float,
+) -> float:
+	rate = margin_rate or 0
+	if margin_type == "% of Ex-Factory Cost":
+		return total_cost_per_kg * (rate / 100)
+	elif margin_type == "Per kg of Output":
+		return rate
+	elif margin_type == "Per kg of Solids":
+		return rate * (_effective_solids(solids_content_pct) / 100)
+	return 0.0
 
 
 def compute_internal_earnings(

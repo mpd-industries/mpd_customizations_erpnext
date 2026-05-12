@@ -11,6 +11,7 @@
   "supplier_financing_rate_pct",
   "actual_cost_of_capital_pct",
   "credit_benefit_rate_pct",
+  "customer_credit_rate_pct",
   "section_break_formulation",
   "auto_exclusion_threshold_pct",
   "formulation_switch_threshold_pct",
@@ -60,6 +61,12 @@
    "fieldname": "credit_benefit_rate_pct",
    "fieldtype": "Float",
    "label": "Credit Benefit Rate % pa (>60d)"
+  },
+  {
+   "default": "16",
+   "fieldname": "customer_credit_rate_pct",
+   "fieldtype": "Float",
+   "label": "Customer Credit Rate % pa"
   },
   {
    "fieldname": "section_break_formulation",

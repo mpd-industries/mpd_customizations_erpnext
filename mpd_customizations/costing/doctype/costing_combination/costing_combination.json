@@ -20,6 +20,10 @@
   "packaging_cost_per_kg",
   "delivery_cost_per_kg",
   "total_cost_per_kg",
+  "credit_charge_per_kg",
+  "commission_per_kg",
+  "margin_per_kg",
+  "selling_price_per_kg",
   "col_break_costs",
   "rank",
   "delta_pct",
@@ -119,6 +123,29 @@
    "label": "Total Cost per kg",
    "in_list_view": 1,
    "columns": 2
+  },
+  {
+   "fieldname": "credit_charge_per_kg",
+   "fieldtype": "Currency",
+   "label": "Credit Charge per kg"
+  },
+  {
+   "fieldname": "commission_per_kg",
+   "fieldtype": "Currency",
+   "label": "Commission per kg"
+  },
+  {
+   "fieldname": "margin_per_kg",
+   "fieldtype": "Currency",
+   "label": "MPD Margin per kg"
+  },
+  {
+   "bold": 1,
+   "fieldname": "selling_price_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "columns": 2,
+   "label": "Selling Price per kg"
   },
   {
    "fieldname": "col_break_costs",

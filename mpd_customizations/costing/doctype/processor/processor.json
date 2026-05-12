@@ -10,7 +10,9 @@
   "address",
   "col_break_1",
   "default_rm_warehouse",
-  "notes"
+  "notes",
+  "section_break_charges",
+  "charges"
  ],
  "fields": [
   {
@@ -50,6 +52,17 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "section_break_charges",
+   "fieldtype": "Section Break",
+   "label": "Processing Charges"
+  },
+  {
+   "fieldname": "charges",
+   "fieldtype": "Table",
+   "label": "Charges",
+   "options": "Processing Charge"
   }
  ],
  "links": [],

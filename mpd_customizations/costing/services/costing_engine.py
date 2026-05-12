@@ -6,9 +6,12 @@ from frappe.utils import now_datetime
 from mpd_customizations.costing.services.config import get_config
 from mpd_customizations.costing.services.cost_calculator import (
 	compute_additional_charge_amount,
+	compute_credit_charge,
 	compute_financing_cost_for_line,
+	compute_margin,
 	compute_processing_cost,
 	compute_rm_line_amount,
+	compute_total_commission,
 	compute_total_cost,
 )
 from mpd_customizations.costing.services.formulation_selector import FormulationSelector
@@ -112,6 +115,37 @@ class CostingEngine:
 		financing_rate = doc.supplier_financing_rate_pct or 12.0
 		solids = doc.solids_content_pct or 0
 
+		customer_credit_rate_pct = doc.customer_credit_rate_pct or self._config.customer_credit_rate_pct
+		credit_days = 0
+		margin_type = ""
+		margin_rate = 0.0
+		commissions = []
+		if is_customer_quote:
+			cp = frappe.get_doc("Customer Product", doc.customer_product_ref)
+			credit_days = cp.credit_days or 0
+			margin_type = cp.margin_type or ""
+			margin_rate = cp.margin_rate or 0.0
+			commissions = [
+				{"rate": r.rate or 0, "commission_type": r.commission_type}
+				for r in (cp.commissions or [])
+			]
+
+		# Sync fetched credit rate to doc for override tracking
+		if doc.fetched_customer_credit_rate_pct != customer_credit_rate_pct:
+			frappe.db.set_value(
+				"Pricing Calculation", pricing_calculation_name,
+				"fetched_customer_credit_rate_pct", customer_credit_rate_pct,
+			)
+		if not doc.customer_credit_rate_pct:
+			frappe.db.set_value(
+				"Pricing Calculation", pricing_calculation_name,
+				"customer_credit_rate_pct", customer_credit_rate_pct,
+			)
+			doc.customer_credit_rate_pct = customer_credit_rate_pct
+
+		if is_customer_quote and doc.credit_days != credit_days:
+			frappe.db.set_value("Pricing Calculation", pricing_calculation_name, "credit_days", credit_days)
+
 		additional_charges_per_kg = sum(
 			compute_additional_charge_amount(c.rate or 0, c.basis, solids)
 			for c in (doc.additional_charges or [])
@@ -122,7 +156,7 @@ class CostingEngine:
 			(pl.packaging_cost_per_kg or 0) for pl in (doc.packaging_lines or [])
 		)
 		delivery_cost_per_kg = sum(
-			(dl.delivery_cost_per_kg_inr or 0) for dl in (doc.delivery_lines or [])
+			(dl.working_freight_per_kg or 0) for dl in (doc.delivery_lines or [])
 		)
 
 		combination_results = []
@@ -216,6 +250,11 @@ class CostingEngine:
 			base_total = compute_total_cost(rm_cost, financing_cost, processing_cost, additional_charges_per_kg, outward_freight)
 			total = base_total + packaging_cost_per_kg + delivery_cost_per_kg
 
+			credit_charge = compute_credit_charge(total, credit_days, customer_credit_rate_pct)
+			commission = compute_total_commission(commissions, total, solids)
+			margin = compute_margin(total, margin_type, margin_rate, solids)
+			selling_price = total + credit_charge + commission + margin
+
 			# Combination status based on rate quality (never blocks calculation)
 			pkg_missing = any(
 				(pl.rate_freshness == "Missing") for pl in (doc.packaging_lines or [])
@@ -250,6 +289,10 @@ class CostingEngine:
 				"packaging_cost_per_kg": packaging_cost_per_kg,
 				"delivery_cost_per_kg": delivery_cost_per_kg,
 				"total_cost_per_kg": total,
+				"credit_charge_per_kg": credit_charge,
+				"commission_per_kg": commission,
+				"margin_per_kg": margin,
+				"selling_price_per_kg": selling_price,
 				"status": status,
 				"processing_charge_ref": processing_charge_ref or "",
 				"missing_items": ", ".join(missing_items),
@@ -288,6 +331,10 @@ class CostingEngine:
 				"packaging_cost_per_kg": combo["packaging_cost_per_kg"],
 				"delivery_cost_per_kg": combo["delivery_cost_per_kg"],
 				"total_cost_per_kg": combo["total_cost_per_kg"],
+				"credit_charge_per_kg": combo.get("credit_charge_per_kg", 0),
+				"commission_per_kg": combo.get("commission_per_kg", 0),
+				"margin_per_kg": combo.get("margin_per_kg", 0),
+				"selling_price_per_kg": combo.get("selling_price_per_kg", combo["total_cost_per_kg"]),
 				"rank": combo.get("rank") or 0,
 				"delta_pct": combo.get("delta_pct") or 0,
 				"status": combo["status"],
@@ -323,16 +370,25 @@ class CostingEngine:
 			"formulation_switch_alert": selection.switch_alert or "",
 		}
 		if new_selected_name:
+			reselect_combo = next((cc for cc in saved_combinations if cc.name == new_selected_name), None)
+			new_selling_price = reselect_combo.selling_price_per_kg if reselect_combo else new_selected_cost
 			update_fields["selected_combination"] = new_selected_name
 			update_fields["confirmed_ex_factory_cost_per_kg"] = new_selected_cost
+			update_fields["confirmed_selling_price_per_kg"] = new_selling_price or new_selected_cost
 		else:
 			update_fields["selected_combination"] = ""
 			update_fields["confirmed_ex_factory_cost_per_kg"] = 0
+			update_fields["confirmed_selling_price_per_kg"] = 0
 
 		frappe.db.set_value("Pricing Calculation", pricing_calculation_name, update_fields)
 
-		_sync_to_pricing_request(doc, mode, update_fields.get("confirmed_ex_factory_cost_per_kg"))
+		_sync_to_pricing_request(
+			doc, mode,
+			update_fields.get("confirmed_ex_factory_cost_per_kg"),
+			update_fields.get("confirmed_selling_price_per_kg"),
+		)
 		_update_pending_rate_items(doc, fetch_result, mode)
+		_create_pending_freight_rates(doc)
 
 		return {
 			"combinations": [_combination_to_dict(cc, combination_results) for cc in saved_combinations],
@@ -382,14 +438,25 @@ def _init_delivery_lines(doc):
 	if doc.delivery_lines:
 		return
 	cp = frappe.get_doc("Customer Product", doc.customer_product_ref)
-	if cp.delivery_address or cp.delivery_city or cp.delivery_country:
-		doc.append("delivery_lines", {
-			"destination_address": cp.delivery_address or "",
-			"destination_city": cp.delivery_city or "",
-			"destination_country": cp.delivery_country or "",
-			"is_export": cp.is_export or 0,
-			"transport_mode": "Barrels",
-		})
+	if not cp.delivery_address:
+		return
+	source_address = ""
+	source_city = ""
+	if doc.processor:
+		proc = frappe.db.get_value("Processor", doc.processor, ["address", "city"], as_dict=True) or {}
+		source_address = proc.get("address") or ""
+		source_city = proc.get("city") or ""
+	doc.append("delivery_lines", {
+		"source_address": source_address,
+		"source_city": source_city,
+		"destination_address": cp.delivery_address,
+		"destination_city": cp.delivery_city or "",
+		"destination_country": cp.delivery_country or "",
+		"is_export": cp.is_export or 0,
+		"transport_mode": cp.transport_mode or "Barrels",
+		"incoterms": cp.incoterms or "",
+		"rate_freshness": "Missing",
+	})
 
 
 def _compute_mode(selected_combination) -> str:
@@ -398,14 +465,15 @@ def _compute_mode(selected_combination) -> str:
 	return "Ready for Working"
 
 
-def _sync_to_pricing_request(doc, mode: str, confirmed_cost=None):
+def _sync_to_pricing_request(doc, mode: str, confirmed_cost=None, confirmed_selling_price=None):
 	if not doc.pricing_request:
 		return
 	update = {"status": mode}
 	if confirmed_cost is not None:
-		update["confirmed_price_per_kg"] = confirmed_cost
+		price_for_pr = confirmed_selling_price if (confirmed_selling_price and confirmed_selling_price > 0) else confirmed_cost
 		qty = frappe.db.get_value("Pricing Request", doc.pricing_request, "quantity_kg") or 0
-		update["total_price"] = qty * confirmed_cost
+		update["confirmed_price_per_kg"] = price_for_pr
+		update["total_price"] = qty * price_for_pr
 	frappe.db.set_value("Pricing Request", doc.pricing_request, update)
 
 
@@ -457,6 +525,61 @@ def _update_pending_rate_items(doc, fetch_result, mode: str):
 			}).insert(ignore_permissions=True)
 
 
+def _create_pending_freight_rates(doc):
+	if not doc.delivery_lines:
+		return
+	source_address = ""
+	if doc.processor:
+		source_address = frappe.db.get_value("Processor", doc.processor, "address") or ""
+	if not source_address:
+		return
+
+	pricing_request = doc.pricing_request or ""
+	created_names = []
+
+	for dl in doc.delivery_lines:
+		if (not dl.rate_freshness or dl.rate_freshness != "Missing"):
+			continue
+		if not dl.destination_address:
+			continue
+
+		line_source = getattr(dl, "source_address", "") or source_address
+		if not line_source:
+			continue
+		transport_mode = dl.transport_mode or "Barrels"
+		incoterms = getattr(dl, "incoterms", "") or ""
+
+		if frappe.db.exists("Freight Rate", {
+			"source_address": line_source,
+			"destination_address": dl.destination_address,
+			"transport_mode": transport_mode,
+			"incoterms": incoterms,
+			"docstatus": ["in", [0, 1]],
+		}):
+			continue
+
+		frt = frappe.get_doc({
+			"doctype": "Freight Rate",
+			"source_address": line_source,
+			"destination_address": dl.destination_address,
+			"transport_mode": transport_mode,
+			"incoterms": incoterms,
+			"freight_per_kg": 0,
+			"valid_from": frappe.utils.today(),
+			"pricing_request": pricing_request,
+			"requested_on": frappe.utils.now_datetime(),
+		}).insert(ignore_permissions=True)
+		created_names.append({
+			"name": frt.name,
+			"dest": dl.destination_city or dl.destination_address,
+			"mode": transport_mode,
+		})
+
+	if created_names:
+		from mpd_customizations.costing.api.costing import _notify_dispatch_team
+		_notify_dispatch_team(pricing_request, created_names)
+
+
 def _combination_to_dict(cc, results) -> Dict:
 	raw = next((r for r in results if r["bom"] == cc.bom), {})
 	return {
@@ -478,5 +601,9 @@ def _combination_to_dict(cc, results) -> Dict:
 		"packaging_cost_per_kg": cc.packaging_cost_per_kg,
 		"delivery_cost_per_kg": cc.delivery_cost_per_kg,
 		"total_cost_per_kg": cc.total_cost_per_kg,
+		"credit_charge_per_kg": cc.credit_charge_per_kg,
+		"commission_per_kg": cc.commission_per_kg,
+		"margin_per_kg": cc.margin_per_kg,
+		"selling_price_per_kg": cc.selling_price_per_kg,
 		"material_lines": raw.get("material_lines", []),
 	}

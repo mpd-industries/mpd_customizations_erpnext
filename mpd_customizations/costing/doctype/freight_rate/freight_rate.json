@@ -13,11 +13,8 @@
   "destination_city",
   "destination_country",
   "section_break_scope",
-  "customer",
-  "customer_name",
-  "customer_product",
-  "col_break_scope",
   "transport_mode",
+  "incoterms",
   "is_export",
   "section_break_rate",
   "freight_per_kg",
@@ -28,6 +25,8 @@
   "valid_from",
   "valid_to",
   "notes",
+  "pricing_request",
+  "requested_on",
   "amended_from"
  ],
  "fields": [
@@ -93,36 +92,6 @@
    "label": "Scope"
   },
   {
-   "columns": 3,
-   "fieldname": "customer",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Customer",
-   "options": "Customer",
-   "search_index": 1,
-   "description": "Optional — leave blank for a general lane rate applicable to all customers"
-  },
-  {
-   "fetch_from": "customer.customer_name",
-   "fieldname": "customer_name",
-   "fieldtype": "Data",
-   "label": "Customer Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "customer_product",
-   "fieldtype": "Link",
-   "label": "Customer Product",
-   "options": "Customer Product",
-   "depends_on": "eval:doc.customer",
-   "description": "Optional — leave blank to apply to all products for this customer"
-  },
-  {
-   "fieldname": "col_break_scope",
-   "fieldtype": "Column Break"
-  },
-  {
    "bold": 1,
    "columns": 2,
    "fieldname": "transport_mode",
@@ -132,6 +101,12 @@
    "label": "Transport Mode",
    "options": "\nBarrels\nBags\nMS Tanker\nSS Tanker",
    "reqd": 1
+  },
+  {
+   "fieldname": "incoterms",
+   "fieldtype": "Link",
+   "label": "Incoterms",
+   "options": "Incoterm"
   },
   {
    "default": "0",
@@ -152,8 +127,7 @@
    "fieldname": "freight_per_kg",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Freight per kg (INR)",
-   "reqd": 1
+   "label": "Freight per kg (INR)"
   },
   {
    "fieldname": "col_break_rate",
@@ -197,6 +171,21 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "pricing_request",
+   "fieldtype": "Link",
+   "label": "Pricing Request",
+   "options": "Pricing Request",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "requested_on",
+   "fieldtype": "Datetime",
+   "label": "Requested On",
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "amended_from",

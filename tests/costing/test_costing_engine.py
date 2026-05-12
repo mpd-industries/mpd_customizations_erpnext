@@ -12,6 +12,8 @@ def _make_config():
 		production_days=30,
 		supplier_financing_rate_pct=12.0,
 		actual_cost_of_capital_pct=9.0,
+		credit_benefit_rate_pct=8.0,
+		customer_credit_rate_pct=16.0,
 		auto_exclusion_threshold_pct=15.0,
 		formulation_switch_threshold_pct=5.0,
 		default_valid_to="End of Month",

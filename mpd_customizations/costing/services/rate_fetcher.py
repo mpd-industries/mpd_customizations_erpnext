@@ -206,7 +206,7 @@ def _get_processing_charge(processor: str, item: str, pricing_dt):
 	# Fetch all active charges for this processor in one query
 	all_charges = frappe.get_all(
 		"Processing Charge",
-		filters={"processor": processor, "is_active": 1},
+		filters={"parent": processor, "parenttype": "Processor", "is_active": 1},
 		fields=["name", "item", "item_group", "charge_per_kg", "fg_freight_per_unit",
 		        "includes_outward_freight", "valid_from", "valid_to"],
 	)

@@ -7,6 +7,8 @@ from mpd_customizations.costing.services.cost_calculator import compute_addition
 
 
 class PricingCalculation(Document):
+	ignore_linked_doctypes = ["Pricing Request", "Material Rate"]
+
 	def before_insert(self):
 		if not self.valid_until:
 			self.valid_until = add_days(today(), 7)
@@ -60,8 +62,11 @@ class PricingCalculation(Document):
 			frappe.throw(_("Cannot submit — Pricing Calculation must be in Approved mode first."))
 
 	def on_trash(self):
+		if self.pricing_request:
+			frappe.db.set_value("Pricing Request", self.pricing_request, "pricing_calculation", "")
 		frappe.db.delete("Costing Material Line", {"pricing_calculation": self.name})
 		frappe.db.delete("Costing Combination", {"pricing_calculation": self.name})
+		frappe.db.delete("Material Rate", {"pricing_calculation": self.name, "docstatus": 0})
 
 	def sync_status_to_request(self):
 		if not self.pricing_request:

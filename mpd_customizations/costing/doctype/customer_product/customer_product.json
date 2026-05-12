@@ -23,6 +23,15 @@
   "delivery_country",
   "col_break_delivery",
   "is_export",
+  "section_break_terms",
+  "incoterms",
+  "credit_days",
+  "transport_mode",
+  "col_break_terms",
+  "margin_type",
+  "margin_rate",
+  "section_break_commission",
+  "commissions",
   "section_break_formulations",
   "formulations"
  ],
@@ -145,6 +154,57 @@
    "read_only": 1
   },
   {
+   "fieldname": "section_break_terms",
+   "fieldtype": "Section Break",
+   "label": "Commercial Terms"
+  },
+  {
+   "fieldname": "incoterms",
+   "fieldtype": "Link",
+   "label": "Incoterms",
+   "options": "Incoterm"
+  },
+  {
+   "default": "0",
+   "fieldname": "credit_days",
+   "fieldtype": "Int",
+   "label": "Credit Days",
+   "description": "0 = advance payment · ≤30 = no charge · >30 = interest charged on extra days"
+  },
+  {
+   "fieldname": "transport_mode",
+   "fieldtype": "Select",
+   "label": "Default Transport Mode",
+   "options": "\nBarrels\nBags\nMS Tanker\nSS Tanker"
+  },
+  {
+   "fieldname": "col_break_terms",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "margin_type",
+   "fieldtype": "Select",
+   "label": "MPD Margin Type",
+   "options": "\n% of Ex-Factory Cost\nPer kg of Output\nPer kg of Solids"
+  },
+  {
+   "fieldname": "margin_rate",
+   "fieldtype": "Float",
+   "label": "MPD Margin Rate"
+  },
+  {
+   "fieldname": "section_break_commission",
+   "fieldtype": "Section Break",
+   "label": "Commission"
+  },
+  {
+   "editable_grid": 1,
+   "fieldname": "commissions",
+   "fieldtype": "Table",
+   "label": "Commissions",
+   "options": "Customer Product Commission"
+  },
+  {
    "fieldname": "section_break_formulations",
    "fieldtype": "Section Break",
    "label": "Valid Formulations"
@@ -166,7 +226,6 @@
  "owner": "Administrator",
  "permissions": [
   {
-   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,

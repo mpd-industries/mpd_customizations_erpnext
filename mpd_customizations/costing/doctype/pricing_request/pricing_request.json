@@ -12,6 +12,7 @@
   "col_break_customer",
   "product",
   "product_name",
+  "processor",
   "city",
   "col_break_product",
   "quantity_kg",
@@ -36,81 +37,95 @@
   {
    "bold": 1,
    "columns": 2,
+   "depends_on": "eval:!doc.product",
+   "description": "Set this for a customer-facing quote. Leave blank for internal costing.",
    "fieldname": "customer_product",
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Customer Product",
    "options": "Customer Product",
-   "search_index": 1,
-   "description": "Set this for a customer-facing quote. Leave blank for internal costing."
+   "search_index": 1
   },
   {
+   "columns": 2,
+   "depends_on": "eval:doc.customer_product",
    "fetch_from": "customer_product.customer",
    "fieldname": "customer",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Customer",
    "options": "Customer",
-   "read_only": 1,
-   "in_list_view": 1,
-   "columns": 2,
-   "depends_on": "eval:doc.customer_product"
+   "read_only": 1
   },
   {
+   "depends_on": "eval:doc.customer_product",
    "fetch_from": "customer_product.customer_product_code",
    "fieldname": "customer_product_code",
    "fieldtype": "Data",
    "label": "Customer Product Code",
-   "read_only": 1,
-   "depends_on": "eval:doc.customer_product"
+   "read_only": 1
   },
   {
    "fieldname": "col_break_customer",
    "fieldtype": "Column Break"
   },
   {
+   "bold": 1,
+   "columns": 2,
+   "depends_on": "eval:!doc.customer_product",
    "fieldname": "product",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Product",
    "options": "Item",
-   "mandatory_depends_on": "eval:!doc.customer_product",
-   "bold": 1,
-   "in_standard_filter": 1,
-   "search_index": 1,
-   "columns": 2
+   "search_index": 1
   },
   {
+   "columns": 4,
    "fetch_from": "product.item_name",
    "fieldname": "product_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Product Name",
-   "read_only": 1,
-   "columns": 4
+   "read_only": 1
   },
   {
+   "bold": 1,
+   "columns": 2,
+   "fieldname": "processor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Processor",
+   "options": "Processor",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "columns": 1,
+   "fetch_from": "processor.city",
    "fieldname": "city",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "City",
    "options": "City",
-   "reqd": 1,
-   "in_standard_filter": 1,
-   "search_index": 1,
-   "columns": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "col_break_product",
    "fieldtype": "Column Break"
   },
   {
+   "columns": 1,
    "fieldname": "quantity_kg",
    "fieldtype": "Float",
-   "label": "Quantity (kg)",
-   "precision": "2",
    "in_list_view": 1,
-   "columns": 1
+   "label": "Quantity (kg)",
+   "precision": "2"
   },
   {
    "fieldname": "solids_content_pct",
@@ -119,14 +134,14 @@
    "reqd": 1
   },
   {
+   "columns": 1,
    "default": "Normal",
    "fieldname": "priority",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Priority",
-   "options": "Urgent\nHigh\nNormal\nLow",
    "in_standard_filter": 1,
-   "columns": 1
+   "label": "Priority",
+   "options": "Urgent\nHigh\nNormal\nLow"
   },
   {
    "fieldname": "notes",
@@ -139,23 +154,23 @@
    "label": "Status"
   },
   {
+   "columns": 2,
    "fieldname": "confirmed_price_per_kg",
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Confirmed Price per kg",
-   "read_only": 1,
-   "columns": 2
+   "read_only": 1
   },
   {
+   "columns": 1,
    "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Draft\nReady for Working\nReady to Quote\nPending Approval\nApproved\nRejected",
-   "read_only": 1,
-   "in_standard_filter": 1,
-   "columns": 1
+   "read_only": 1
   },
   {
    "fieldname": "total_price",
@@ -194,7 +209,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-07 00:00:00",
+ "modified": "2026-05-12 14:33:48.304491",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Pricing Request",
@@ -229,6 +244,7 @@
    "write": 1
   },
   {
+   "create": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -236,8 +252,7 @@
    "report": 1,
    "role": "Costing User",
    "share": 1,
-   "write": 1,
-   "create": 1
+   "write": 1
   },
   {
    "amend": 1,

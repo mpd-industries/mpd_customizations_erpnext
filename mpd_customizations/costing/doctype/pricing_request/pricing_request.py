@@ -4,15 +4,12 @@ from frappe.model.document import Document
 
 
 class PricingRequest(Document):
+	ignore_linked_doctypes = ["Pricing Calculation"]
+
 	def after_insert(self):
-		_create_calculation(self)
-		if self.pricing_calculation:
-			_run_initial_evaluation(self.pricing_calculation)
-		frappe.publish_realtime(
-			"eval_js",
-			f"if(cur_frm&&cur_frm.doctype==='Pricing Request'&&cur_frm.docname==='{self.name}'){{cur_frm.reload_doc();}}",
-			user=frappe.session.user,
-		)
+		pc_name =_create_calculation(self)
+		if pc_name:
+			_run_initial_evaluation(pc_name)
 
 	def validate(self):
 		if not self.product and not self.customer_product:
@@ -22,11 +19,24 @@ class PricingRequest(Document):
 			if not (0 < self.solids_content_pct < 100):
 				frappe.throw(_("Solids Content % must be between 0 and 100 (exclusive)."))
 
-		# Auto-fill city from Customer Product delivery destination if not set
-		if self.customer_product and not self.city:
-			delivery_city = frappe.db.get_value("Customer Product", self.customer_product, "delivery_city")
-			if delivery_city:
-				self.city = delivery_city
+		# Derive city from processor (server-side fallback for fetch_from)
+		if self.processor and not self.city:
+			self.city = frappe.db.get_value("Processor", self.processor, "city") or ""
+
+		# Auto-fill solids from Customer Product's first formulation if not set
+		if self.customer_product and not self.solids_content_pct:
+			formulation = frappe.get_all(
+				"Customer Product Formulation",
+				filters={"parent": self.customer_product},
+				fields=["bom"],
+				limit=1,
+			)
+			if formulation and formulation[0].bom:
+				item = frappe.db.get_value("BOM", formulation[0].bom, "item")
+				if item:
+					solids = frappe.db.get_value("Item", item, "custom_solids_content_pct")
+					if solids:
+						self.solids_content_pct = solids
 
 		if self.quantity_kg and self.confirmed_price_per_kg:
 			self.total_price = self.quantity_kg * self.confirmed_price_per_kg
@@ -61,6 +71,8 @@ def _create_calculation(pr):
 		"doctype": "Pricing Calculation",
 		"pricing_request": pr.name,
 		"city": pr.city,
+		"processor": pr.processor or "",
+		"processor_name": frappe.db.get_value("Processor", pr.processor, "processor_name") if pr.processor else "",
 		"solids_content_pct": pr.solids_content_pct or 0,
 		"mode": "Draft",
 		"production_days": config.production_days or 30,
@@ -76,8 +88,6 @@ def _create_calculation(pr):
 		pc_data["customer"] = cp.customer
 		pc_data["customer_product_code"] = cp.customer_product_code
 		pc_data["is_export"] = cp.is_export or 0
-		if not pr.city and cp.delivery_city:
-			pc_data["city"] = cp.delivery_city
 	else:
 		cp = None
 		pc_data["item"] = pr.product
@@ -91,16 +101,8 @@ def _create_calculation(pr):
 				"packaging_material": cp.packaging_material,
 				"fill_quantity_kg": cp.fill_quantity_kg or 1.0,
 			})
-		# Pre-populate delivery line from Customer Product
-		if cp.delivery_country:
-			pc.append("delivery_lines", {
-				"destination_city": cp.delivery_city or "",
-				"destination_country": cp.delivery_country,
-				"is_export": cp.is_export or 0,
-			})
-
 	# Pre-fill from last approved request
-	prev = _get_previous_approved(pr.product or None, pr.customer_product or None, pr.city)
+	prev = _get_previous_approved(pr.product or None, pr.customer_product or None, pr.processor or None)
 	if prev:
 		pc.preferred_bom = prev.get("preferred_bom") or ""
 		pc.production_days = prev.get("production_days") or pc.production_days
@@ -149,15 +151,14 @@ def _create_calculation(pr):
 	pc.insert(ignore_permissions=True)
 	frappe.db.set_value("Pricing Request", pr.name, "pricing_calculation", pc.name)
 
-	# Notify costing team
-	_notify_costing_team(pr, pc.name)
+	return pc.name
 
 
-def _get_previous_approved(product, customer_product, city):
+def _get_previous_approved(product, customer_product, processor):
 	if customer_product:
 		filters = {"customer_product_ref": customer_product, "mode": "Approved"}
 	elif product:
-		filters = {"item": product, "city": city, "mode": "Approved"}
+		filters = {"item": product, "processor": processor, "mode": "Approved"} if processor else {"item": product, "mode": "Approved"}
 	else:
 		return None
 
@@ -181,6 +182,6 @@ def _notify_costing_team(pr, calc_name):
 	for u in costing_users:
 		frappe.publish_realtime(
 			"eval_js",
-			f"frappe.show_alert({{message: 'New Pricing Request {pr.name} — {pr.product_name or pr.product} ({pr.city}) [Priority: {pr.priority}]', indicator: 'blue'}})",
+			f"frappe.show_alert({{message: 'New Pricing Request {pr.name} — {pr.product_name or pr.product} @ {pr.processor} [Priority: {pr.priority}]', indicator: 'blue'}})",
 			user=u.parent,
 		)

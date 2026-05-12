@@ -19,7 +19,8 @@ class ProcessingCharge(Document):
 
 	def _check_overlap(self):
 		filters = {
-			"processor": self.processor,
+			"parent": self.parent,
+			"parenttype": "Processor",
 			"is_active": 1,
 			"name": ["!=", self.name or ""],
 		}

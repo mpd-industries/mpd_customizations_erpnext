@@ -81,7 +81,9 @@ function _set_section_visibility(frm) {
 			"customer", "customer_product_code", "product_description",
 			"packaging_material", "fill_quantity_kg", "packaging_description",
 			"delivery_address",
+			"incoterms", "credit_days", "transport_mode", "margin_type", "margin_rate",
 		].forEach(f => frm.set_df_property(f, "read_only", 1));
+		frm.set_df_property("commissions", "read_only", 1);
 	}
 }
 

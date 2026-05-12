@@ -1,11 +1,9 @@
 {
  "actions": [],
- "autoname": "PC-.YYYY.-.#####",
- "creation": "2024-01-01 00:00:00.000000",
+ "creation": "2024-01-01 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "processor",
   "item",
   "item_name",
   "item_group",
@@ -22,14 +20,6 @@
  ],
  "fields": [
   {
-   "fieldname": "processor",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Processor",
-   "options": "Processor",
-   "reqd": 1
-  },
-  {
    "fieldname": "item",
    "fieldtype": "Link",
    "label": "Item (Specific)",
@@ -45,6 +35,7 @@
   {
    "fieldname": "item_group",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Item Group (Fallback)",
    "options": "Item Group"
   },
@@ -56,7 +47,7 @@
    "fieldname": "charge_per_kg",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Charge per kg of Solids (₹)",
+   "label": "Charge per kg of Solids (\u20b9)",
    "reqd": 1
   },
   {
@@ -69,7 +60,7 @@
    "depends_on": "eval:!doc.includes_outward_freight",
    "fieldname": "fg_freight_per_unit",
    "fieldtype": "Currency",
-   "label": "FG Freight per Unit (₹)"
+   "label": "FG Freight per Unit (\u20b9)"
   },
   {
    "fieldname": "section_break_validity",
@@ -95,6 +86,7 @@
    "default": "1",
    "fieldname": "is_active",
    "fieldtype": "Check",
+   "in_list_view": 1,
    "label": "Active"
   },
   {
@@ -103,57 +95,15 @@
    "label": "Notes"
   }
  ],
+ "istable": 1,
  "links": [],
- "modified": "2024-01-01 00:00:00.000000",
+ "modified": "2026-05-12 14:42:01.237114",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Processing Charge",
- "naming_rule": "Expression (old style)",
  "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Rate Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Costing User",
-   "share": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Costing Approver",
-   "share": 1
-  }
- ],
+ "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
