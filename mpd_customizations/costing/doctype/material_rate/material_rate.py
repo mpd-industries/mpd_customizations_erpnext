@@ -48,7 +48,7 @@ class MaterialRate(Document):
 
 	def on_submit(self):
 		self._check_overlap()
-		_notify_open_costing_requests(self)
+		_clear_stale_pending_drafts(self)
 
 	def _set_default_valid_to(self):
 		from_date = getdate(self.valid_from) if self.valid_from else getdate()
@@ -84,7 +84,7 @@ class MaterialRate(Document):
 				frappe.db.set_value("Material Rate", existing.name, "valid_to", new_valid_to)
 
 
-def _notify_open_costing_requests(doc):
+def _clear_stale_pending_drafts(doc):
 	# Clear other pending-request drafts for same item+city
 	if frappe.db.has_column("Material Rate", "requested_on"):
 		frappe.db.delete("Material Rate", {

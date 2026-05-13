@@ -38,32 +38,44 @@ function _is_sales_view() {
 }
 
 function _fetch_solids(frm) {
-	if (!frm.doc.product) return;
-	frappe.db.get_value("Item", frm.doc.product, "custom_solids_content_pct").then(r => {
-		if (r.message && r.message.custom_solids_content_pct) {
-			frm.set_value("solids_content_pct", r.message.custom_solids_content_pct);
-		}
-	});
+	if (!frm.doc.product && !frm.doc.customer_product) return;
+	if (frm.doc.product) {
+
+		frappe.db.get_value("Item", frm.doc.product, "custom_solids_content_pct").then(r => {
+			if (r.message && r.message.custom_solids_content_pct) {
+				frm.set_value("solids_content_pct", r.message.custom_solids_content_pct);
+			}
+		});
+	}
+	if (frm.doc.customer_product) {
+		_fetch_solids_from_customer_product(frm);
+	}
 }
 
 function _fetch_solids_from_customer_product(frm) {
-	if (!frm.doc.customer_product) return;
-	frappe.db.get_list("Customer Product Formulation", {
-		filters: { parent: frm.doc.customer_product },
-		fields: ["bom"],
-		limit: 1,
-	}).then(rows => {
-		if (!rows || !rows.length || !rows[0].bom) return Promise.resolve(null);
-		return frappe.db.get_value("BOM", rows[0].bom, "item");
-	}).then(r => {
-		if (!r || !r.message) return Promise.resolve(null);
-		return frappe.db.get_value("Item", r.message.item, "custom_solids_content_pct");
-	}).then(r => {
-		if (r && r.message && r.message.custom_solids_content_pct) {
-			frm.set_value("solids_content_pct", r.message.custom_solids_content_pct);
-		}
-	});
+    if (!frm.doc.customer_product) return;
+
+    frappe.db.get_doc("Customer Product", frm.doc.customer_product)
+        .then(doc => {
+            // Access the child table (adjust field name to match your child table fieldname)
+            const formulations = doc.formulations; // ← replace with your actual child table fieldname
+            
+            if (!formulations || formulations.length === 0) return;
+
+            const firstRow = formulations[0];
+            console.log("First formulation row:", firstRow);
+
+            if (!firstRow.item) return;
+
+            frappe.db.get_value("Item", firstRow.item, "custom_solids_content_pct")
+                .then(r => {
+                    if (r?.message?.custom_solids_content_pct) {
+                        frm.set_value("solids_content_pct", r.message.custom_solids_content_pct);
+                    }
+                });
+        });
 }
+
 
 function _render_status_panel(frm) {
 	const status = frm.doc.status || "Draft";

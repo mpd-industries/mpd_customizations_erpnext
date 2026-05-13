@@ -53,7 +53,8 @@
   "formulation_switch_alert",
   "section_break_panels",
   "combinations_html",
-  "cost_breakdown_html"
+  "cost_breakdown_html",
+  "amended_from"
  ],
  "fields": [
   {
@@ -69,38 +70,38 @@
    "read_only": 1
   },
   {
+   "columns": 2,
    "fieldname": "customer_product_ref",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Customer Product",
    "options": "Customer Product",
    "read_only": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "search_index": 1,
-   "columns": 2
+   "search_index": 1
   },
   {
+   "columns": 2,
+   "depends_on": "eval:doc.customer_product_ref",
    "fetch_from": "customer_product_ref.customer",
    "fieldname": "customer",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Customer",
    "options": "Customer",
    "read_only": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "search_index": 1,
-   "columns": 2,
-   "depends_on": "eval:doc.customer_product_ref"
+   "search_index": 1
   },
   {
+   "depends_on": "eval:doc.customer_product_ref",
    "fetch_from": "customer_product_ref.customer_product_code",
    "fieldname": "customer_product_code",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "Customer Product Code",
    "read_only": 1,
-   "in_standard_filter": 1,
-   "search_index": 1,
-   "depends_on": "eval:doc.customer_product_ref"
+   "search_index": 1
   },
   {
    "fieldname": "col_break_customer",
@@ -108,45 +109,45 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.customer_product_ref",
    "fieldname": "is_export",
    "fieldtype": "Check",
    "label": "Export Order",
-   "read_only": 1,
-   "depends_on": "eval:doc.customer_product_ref"
+   "read_only": 1
   },
   {
+   "bold": 1,
+   "columns": 2,
+   "depends_on": "eval:!doc.customer_product_ref",
    "fieldname": "item",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Product",
-   "options": "Item",
-   "mandatory_depends_on": "eval:!doc.customer_product_ref",
-   "depends_on": "eval:!doc.customer_product_ref",
-   "bold": 1,
    "in_standard_filter": 1,
-   "search_index": 1,
-   "columns": 2
+   "label": "Product",
+   "mandatory_depends_on": "eval:!doc.customer_product_ref",
+   "options": "Item",
+   "search_index": 1
   },
   {
+   "columns": 4,
+   "depends_on": "eval:!doc.customer_product_ref",
    "fetch_from": "item.item_name",
    "fieldname": "item_name",
    "fieldtype": "Data",
-   "label": "Product Name",
-   "read_only": 1,
    "in_list_view": 1,
-   "depends_on": "eval:!doc.customer_product_ref",
-   "columns": 4
+   "label": "Product Name",
+   "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "city",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "City",
    "options": "City",
    "read_only": 1,
-   "in_standard_filter": 1,
-   "search_index": 1,
-   "columns": 1
+   "search_index": 1
   },
   {
    "fieldname": "col_break_header",
@@ -192,8 +193,7 @@
    "depends_on": "eval:doc.customer_product_ref",
    "fieldname": "credit_days",
    "fieldtype": "Int",
-   "label": "Credit Days",
-   "read_only": 1
+   "label": "Credit Days"
   },
   {
    "fieldname": "col_break_params",
@@ -243,7 +243,6 @@
   },
   {
    "depends_on": "eval:doc.customer_product_ref",
-   "editable_grid": 1,
    "fieldname": "packaging_lines",
    "fieldtype": "Table",
    "label": "Packaging",
@@ -257,7 +256,6 @@
   },
   {
    "depends_on": "eval:doc.customer_product_ref",
-   "editable_grid": 1,
    "fieldname": "delivery_lines",
    "fieldtype": "Table",
    "label": "Delivery",
@@ -269,7 +267,6 @@
    "label": "Additional Charges"
   },
   {
-   "editable_grid": 1,
    "fieldname": "additional_charges",
    "fieldtype": "Table",
    "label": "Additional Charges",
@@ -281,7 +278,6 @@
    "label": "Rates"
   },
   {
-   "editable_grid": 1,
    "fieldname": "rate_lines",
    "fieldtype": "Table",
    "label": "Material Rates",
@@ -293,7 +289,6 @@
    "label": "Scrap / Byproducts"
   },
   {
-   "editable_grid": 1,
    "fieldname": "scrap_lines",
    "fieldtype": "Table",
    "label": "Scrap / Byproducts",
@@ -305,7 +300,6 @@
    "label": "Processing"
   },
   {
-   "editable_grid": 1,
    "fieldname": "processing_lines",
    "fieldtype": "Table",
    "label": "Processing Charge",
@@ -324,39 +318,39 @@
    "read_only": 1
   },
   {
+   "columns": 2,
    "fieldname": "confirmed_ex_factory_cost_per_kg",
    "fieldtype": "Currency",
-   "label": "Confirmed Ex-Factory Cost per kg",
-   "read_only": 1,
    "in_list_view": 1,
-   "columns": 2
+   "label": "Confirmed Ex-Factory Cost per kg",
+   "read_only": 1
   },
   {
+   "columns": 2,
    "depends_on": "eval:doc.customer_product_ref",
    "fieldname": "confirmed_selling_price_per_kg",
    "fieldtype": "Currency",
-   "label": "Confirmed Selling Price per kg",
-   "read_only": 1,
    "in_list_view": 1,
-   "columns": 2
+   "label": "Confirmed Selling Price per kg",
+   "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "valid_until",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Quote Valid Until",
-   "columns": 1
+   "label": "Quote Valid Until"
   },
   {
+   "columns": 2,
    "default": "Draft",
    "fieldname": "mode",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Mode",
    "options": "Draft\nReady for Working\nReady to Quote\nApproved\nRejected",
-   "read_only": 1,
-   "in_standard_filter": 1,
-   "columns": 2
+   "read_only": 1
   },
   {
    "fieldname": "last_evaluated_on",
@@ -390,16 +384,26 @@
    "fieldname": "cost_breakdown_html",
    "fieldtype": "HTML",
    "label": "Cost Breakdown"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Pricing Calculation",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-05-07 00:00:00",
+ "modified": "2026-05-12 17:17:01.131055",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Pricing Calculation",
  "naming_rule": "Expression",
  "owner": "Administrator",
- "is_submittable": 1,
  "permissions": [
   {
    "cancel": 1,
@@ -416,6 +420,7 @@
    "write": 1
   },
   {
+   "create": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -424,7 +429,6 @@
    "role": "Costing Approver",
    "share": 1,
    "submit": 1,
-   "create": 1,
    "write": 1
   },
   {

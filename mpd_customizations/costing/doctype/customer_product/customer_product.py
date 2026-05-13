@@ -16,6 +16,11 @@ class CustomerProduct(Document):
 		self._enforce_field_ownership()
 		self._validate_formulation_solids()
 
+	def before_save(self):
+		# set the field customer_product_label
+		self.customer_product_label = f"{self.customer_name}-{self.customer_product_code}"
+	
+	
 	def _compute_is_export(self):
 		if self.delivery_country:
 			india_names = frappe.get_all("Country", filters={"country_name": "India"}, fields=["name"], limit=1)

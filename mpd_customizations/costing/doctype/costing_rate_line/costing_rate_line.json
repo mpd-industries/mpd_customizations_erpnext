@@ -7,6 +7,7 @@
  "field_order": [
   "item",
   "item_name",
+  "custom_item_label",
   "uom",
   "city",
   "supplier",
@@ -38,6 +39,13 @@
    "fieldname": "item_name",
    "fieldtype": "Data",
    "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "item.custom_item_label",
+   "fieldname": "custom_item_label",
+   "fieldtype": "Data",
+   "label": "Item Label",
    "read_only": 1
   },
   {

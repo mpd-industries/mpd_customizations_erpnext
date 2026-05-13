@@ -9,9 +9,11 @@
   "customer",
   "customer_name",
   "customer_product_code",
+  "customer_product_label",
   "col_break_identity",
   "product_description",
   "is_active",
+  "additional_notes",
   "section_break_packaging",
   "packaging_material",
   "fill_quantity_kg",
@@ -54,13 +56,13 @@
    "search_index": 1
   },
   {
+   "columns": 3,
    "fetch_from": "customer.customer_name",
    "fieldname": "customer_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Customer Name",
-   "read_only": 1,
-   "columns": 3
+   "read_only": 1
   },
   {
    "bold": 1,
@@ -100,10 +102,10 @@
    "options": "Packaging Material"
   },
   {
+   "description": "Default fill quantity \u2014 can be adjusted per quote",
    "fieldname": "fill_quantity_kg",
    "fieldtype": "Float",
-   "label": "Fill Quantity (kg/pkg)",
-   "description": "Default fill quantity — can be adjusted per quote"
+   "label": "Fill Quantity (kg/pkg)"
   },
   {
    "fieldname": "col_break_packaging",
@@ -120,11 +122,11 @@
    "label": "Delivery Destination"
   },
   {
+   "description": "Filtered to this customer's addresses",
    "fieldname": "delivery_address",
    "fieldtype": "Link",
    "label": "Delivery Address",
-   "options": "Address",
-   "description": "Filtered to this customer's addresses"
+   "options": "Address"
   },
   {
    "fieldname": "delivery_city",
@@ -166,10 +168,10 @@
   },
   {
    "default": "0",
+   "description": "0 = advance payment \u00b7 \u226430 = no charge \u00b7 >30 = interest charged on extra days",
    "fieldname": "credit_days",
    "fieldtype": "Int",
-   "label": "Credit Days",
-   "description": "0 = advance payment · ≤30 = no charge · >30 = interest charged on extra days"
+   "label": "Credit Days"
   },
   {
    "fieldname": "transport_mode",
@@ -198,7 +200,6 @@
    "label": "Commission"
   },
   {
-   "editable_grid": 1,
    "fieldname": "commissions",
    "fieldtype": "Table",
    "label": "Commissions",
@@ -210,15 +211,24 @@
    "label": "Valid Formulations"
   },
   {
-   "editable_grid": 1,
    "fieldname": "formulations",
    "fieldtype": "Table",
    "label": "Formulations",
    "options": "Customer Product Formulation"
+  },
+  {
+   "fieldname": "customer_product_label",
+   "fieldtype": "Data",
+   "label": "Customer Product Label"
+  },
+  {
+   "fieldname": "additional_notes",
+   "fieldtype": "Small Text",
+   "label": "Additional Notes"
   }
  ],
  "links": [],
- "modified": "2026-05-11 00:00:00",
+ "modified": "2026-05-13 14:18:17.047376",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Customer Product",
@@ -279,8 +289,11 @@
   }
  ],
  "row_format": "Dynamic",
+ "search_fields": "customer_product_label",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "customer_product_label",
  "track_changes": 1
 }
