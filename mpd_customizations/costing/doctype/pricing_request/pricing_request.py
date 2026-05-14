@@ -165,8 +165,7 @@ def _get_previous_approved(product, customer_product, processor):
 	results = frappe.get_all(
 		"Pricing Calculation",
 		filters=filters,
-		fields=["name", "preferred_bom", "production_days", "supplier_financing_rate_pct",
-		        "confirmed_ex_factory_cost_per_kg", "processor"],
+		fields=["name", "preferred_bom", "production_days", "supplier_financing_rate_pct", "processor"],
 		order_by="modified desc",
 		limit=1,
 	)

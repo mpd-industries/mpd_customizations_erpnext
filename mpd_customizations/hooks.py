@@ -151,15 +151,6 @@ doc_events = {
 	"Address": {
 		"on_update": "mpd_customizations.costing.doctype.city.city.on_address_update",
 	},
-	"Material Rate": {
-		"on_submit": "mpd_customizations.costing.api.costing.on_material_rate_submitted",
-	},
-	"Packaging Rate": {
-		"on_submit": "mpd_customizations.costing.doctype.packaging_rate.packaging_rate.on_packaging_rate_submitted",
-	},
-	"Freight Rate": {
-		"on_submit": "mpd_customizations.costing.doctype.freight_rate.freight_rate.on_freight_rate_submitted",
-	},
 }
 
 # doc_events = {

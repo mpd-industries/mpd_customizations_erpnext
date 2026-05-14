@@ -36,7 +36,6 @@ class FreightRate(Document):
 
 	def on_submit(self):
 		self._expire_overlapping_rates()
-		on_freight_rate_submitted(self)
 
 	def _expire_overlapping_rates(self):
 		filters = {
@@ -63,38 +62,3 @@ def _end_of_quarter(d: date) -> date:
 	return next_month - timedelta(days=1)
 
 
-def on_freight_rate_submitted(doc, method=None):
-	_re_evaluate_affected_calculations(doc.destination_address)
-
-
-def _re_evaluate_affected_calculations(destination_address: str):
-	from mpd_customizations.costing.services.config import get_config
-	from mpd_customizations.costing.services.rate_source_registry import get_default_registry
-	from mpd_customizations.costing.services.costing_engine import CostingEngine
-
-	open_pcs = frappe.get_all(
-		"Pricing Calculation",
-		filters={
-			"customer_product_ref": ["is", "set"],
-			"mode": ["not in", ["Approved", "Rejected"]],
-			"docstatus": 0,
-		},
-		fields=["name"],
-	)
-
-	engine = CostingEngine(get_default_registry(), get_config())
-	for pc in open_pcs:
-		delivery_lines = frappe.get_all(
-			"Costing Delivery Line",
-			filters={
-				"parent": pc.name,
-				"parenttype": "Pricing Calculation",
-				"destination_address": destination_address,
-			},
-			fields=["name"],
-		)
-		if delivery_lines:
-			try:
-				engine.evaluate(pc.name, "auto")
-			except Exception:
-				frappe.log_error(frappe.get_traceback(), f"Re-evaluate failed for {pc.name} after Freight Rate submit")

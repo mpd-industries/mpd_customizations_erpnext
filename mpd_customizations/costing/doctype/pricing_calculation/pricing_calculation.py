@@ -64,17 +64,9 @@ class PricingCalculation(Document):
 	def on_trash(self):
 		if self.pricing_request:
 			frappe.db.set_value("Pricing Request", self.pricing_request, "pricing_calculation", "")
-		frappe.db.delete("Costing Material Line", {"pricing_calculation": self.name})
-		frappe.db.delete("Costing Combination", {"pricing_calculation": self.name})
 		frappe.db.delete("Material Rate", {"pricing_calculation": self.name, "docstatus": 0})
 
 	def sync_status_to_request(self):
 		if not self.pricing_request:
 			return
-		update = {"status": self.mode}
-		if self.confirmed_ex_factory_cost_per_kg:
-			update["confirmed_price_per_kg"] = self.confirmed_ex_factory_cost_per_kg
-			pr = frappe.get_doc("Pricing Request", self.pricing_request)
-			qty = pr.quantity_kg or 0
-			update["total_price"] = qty * self.confirmed_ex_factory_cost_per_kg
-		frappe.db.set_value("Pricing Request", self.pricing_request, update)
+		frappe.db.set_value("Pricing Request", self.pricing_request, {"status": self.mode})

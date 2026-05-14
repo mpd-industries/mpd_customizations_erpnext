@@ -44,8 +44,8 @@
   "additional_charges",
   "section_break_state",
   "mode",
+  "costing_raw",
   "selected_combination",
-  "confirmed_ex_factory_cost_per_kg",
   "confirmed_selling_price_per_kg",
   "valid_until",
   "last_evaluated_on",
@@ -314,15 +314,7 @@
    "fieldname": "selected_combination",
    "fieldtype": "Link",
    "label": "Selected Formulation",
-   "options": "Costing Combination",
-   "read_only": 1
-  },
-  {
-   "columns": 2,
-   "fieldname": "confirmed_ex_factory_cost_per_kg",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "label": "Confirmed Ex-Factory Cost per kg",
+   "options": "BOM",
    "read_only": 1
   },
   {
@@ -394,11 +386,16 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "costing_raw",
+   "fieldtype": "JSON",
+   "label": "Costing Raw"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-12 17:17:01.131055",
+ "modified": "2026-05-14 12:04:06.231847",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Pricing Calculation",

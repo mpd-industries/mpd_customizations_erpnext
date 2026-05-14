@@ -7,12 +7,10 @@ from mpd_customizations.costing.services.config import get_config
 from mpd_customizations.costing.services.cost_calculator import (
 	compute_additional_charge_amount,
 	compute_credit_charge,
-	compute_financing_cost_for_line,
 	compute_margin,
 	compute_processing_cost,
 	compute_rm_line_amount,
 	compute_total_commission,
-	compute_total_cost,
 )
 from mpd_customizations.costing.services.formulation_selector import FormulationSelector
 from mpd_customizations.costing.services.freight_rate_fetcher import FreightRateFetcher
@@ -91,15 +89,14 @@ class CostingEngine:
 		if doc.pricing_request:
 			prev_pc_name = frappe.db.get_value("Pricing Request", doc.pricing_request, "previous_pricing_ref")
 			if prev_pc_name:
-				prev_combos = frappe.get_all(
-					"Costing Combination",
-					filters={"pricing_calculation": prev_pc_name},
-					fields=["bom", "rm_cost_per_kg", "is_selected"],
+				prev_raw = frappe.parse_json(
+					frappe.db.get_value("Pricing Calculation", prev_pc_name, "costing_raw") or "{}"
 				)
-				prev_rm_costs = {c.bom: c.rm_cost_per_kg for c in prev_combos}
-				selected = next((c for c in prev_combos if c.is_selected), None)
-				if selected:
-					preferred_bom_override = selected.bom
+				prev_combos = prev_raw.get("combinations", [])
+				prev_rm_costs = {c["bom"]: c["rm_cost_per_kg"] for c in prev_combos}
+				prev_selected = next((c for c in prev_combos if c.get("is_selected")), None)
+				if prev_selected:
+					preferred_bom_override = prev_selected["bom"]
 
 		preferred_bom = preferred_bom_override or doc.preferred_bom
 		if preferred_bom_override and preferred_bom_override != doc.preferred_bom:
@@ -111,8 +108,6 @@ class CostingEngine:
 		scrap_lines_map = {sl.item: sl for sl in (doc.scrap_lines or [])}
 		processing_line = doc.processing_lines[0] if doc.processing_lines else None
 
-		production_days = doc.production_days or 30
-		financing_rate = doc.supplier_financing_rate_pct or 12.0
 		solids = doc.solids_content_pct or 0
 
 		customer_credit_rate_pct = doc.customer_credit_rate_pct or self._config.customer_credit_rate_pct
@@ -165,7 +160,6 @@ class CostingEngine:
 			bom_qty = bom["quantity"] or 1
 			material_lines_data = []
 			rm_cost = 0.0
-			financing_cost = 0.0
 			missing_items = []
 			expired_items = []
 
@@ -173,16 +167,14 @@ class CostingEngine:
 				qty_per_kg = (bi["qty"] or 0) / bom_qty
 				rl = rate_lines_map.get(bi["item_code"])
 				working_rate = (rl.working_rate or 0) if rl else 0.0
-				credit_days = (rl.working_supplier_credit_days or 0) if rl else 0
+				fetched_rate = (rl.fetched_rate or 0) if rl else 0.0
 				freshness = (rl.rate_freshness or "Missing") if rl else "Missing"
 				supplier = (rl.supplier or None) if rl else None
+				override_reason = (rl.override_reason or "") if rl else ""
+				is_overridden = bool(rl and fetched_rate and round(working_rate, 2) != round(fetched_rate, 2))
 
 				amount = compute_rm_line_amount(qty_per_kg, working_rate)
-				fin = compute_financing_cost_for_line(amount, production_days, 60, financing_rate)
-				net_financed = max(0, production_days - 60)
-
 				rm_cost += amount
-				financing_cost += fin
 
 				if freshness == "Missing":
 					missing_items.append(bi["item_code"])
@@ -199,11 +191,10 @@ class CostingEngine:
 					"city": city,
 					"rate_freshness": freshness,
 					"working_rate": working_rate,
-					"working_supplier_credit_days": credit_days,
-					"net_financed_days": net_financed,
+					"fetched_rate": fetched_rate,
+					"override_reason": override_reason,
+					"is_overridden": is_overridden,
 					"amount_per_kg": amount,
-					"financing_cost_per_kg": fin,
-					"equalized_amount_per_kg": amount,
 					"is_scrap": 0,
 					"confidence_score": (rl.confidence_score if rl and hasattr(rl, "confidence_score") else 50.0),
 				})
@@ -225,11 +216,7 @@ class CostingEngine:
 					"city": city,
 					"rate_freshness": "Current",
 					"working_rate": scrap_rate,
-					"working_supplier_credit_days": 0,
-					"net_financed_days": 0,
 					"amount_per_kg": scrap_amount,
-					"financing_cost_per_kg": 0.0,
-					"equalized_amount_per_kg": scrap_amount,
 					"is_scrap": 1,
 					"confidence_score": 0.0,
 				})
@@ -244,16 +231,14 @@ class CostingEngine:
 					outward_freight = processing_line.working_freight_per_unit or 0
 
 			# For customer quotes, outward freight comes from delivery_lines (not processing)
-			if is_customer_quote:
-				outward_freight = 0.0
 
-			base_total = compute_total_cost(rm_cost, financing_cost, processing_cost, additional_charges_per_kg, outward_freight)
-			total = base_total + packaging_cost_per_kg + delivery_cost_per_kg
-
-			credit_charge = compute_credit_charge(total, credit_days, customer_credit_rate_pct)
-			commission = compute_total_commission(commissions, total, solids)
-			margin = compute_margin(total, margin_type, margin_rate, solids)
-			selling_price = total + credit_charge + commission + margin
+			total_cost_per_kg = rm_cost + processing_cost + additional_charges_per_kg + outward_freight + packaging_cost_per_kg + delivery_cost_per_kg
+			margin = compute_margin(total_cost_per_kg, margin_type, margin_rate, solids)
+			total_cost_per_kg_with_margin = total_cost_per_kg + margin
+			credit_charge = compute_credit_charge(total_cost_per_kg_with_margin, credit_days, customer_credit_rate_pct)
+			margin_with_credit_charge = total_cost_per_kg_with_margin + credit_charge
+			commission = compute_total_commission(commissions, margin_with_credit_charge, solids)
+			selling_price = total_cost_per_kg + credit_charge + commission + margin
 
 			# Combination status based on rate quality (never blocks calculation)
 			pkg_missing = any(
@@ -282,17 +267,17 @@ class CostingEngine:
 				"formulation_description": bom.get("custom_formulation_description") or "",
 				"prev_rm_cost_per_kg": prev_rm_costs.get(bom["name"], 0) or 0,
 				"rm_cost_per_kg": rm_cost,
-				"financing_cost_per_kg": financing_cost,
 				"processing_cost_per_kg": processing_cost,
 				"additional_charges_per_kg": additional_charges_per_kg,
 				"outward_freight_per_kg": outward_freight,
 				"packaging_cost_per_kg": packaging_cost_per_kg,
 				"delivery_cost_per_kg": delivery_cost_per_kg,
-				"total_cost_per_kg": total,
+				"total_cost_per_kg": total_cost_per_kg,
 				"credit_charge_per_kg": credit_charge,
 				"commission_per_kg": commission,
 				"margin_per_kg": margin,
 				"selling_price_per_kg": selling_price,
+				"freight_total_per_kg": outward_freight + delivery_cost_per_kg,
 				"status": status,
 				"processing_charge_ref": processing_charge_ref or "",
 				"missing_items": ", ".join(missing_items),
@@ -303,95 +288,56 @@ class CostingEngine:
 		selector = FormulationSelector(self._config)
 		selection = selector.select(combination_results, preferred_bom)
 
-		previously_selected_bom = None
-		if doc.selected_combination:
-			previously_selected_bom = frappe.db.get_value(
-				"Costing Combination", doc.selected_combination, "bom"
-			)
-
-		frappe.db.delete("Costing Material Line", {"pricing_calculation": pricing_calculation_name})
-		frappe.db.delete("Costing Combination", {"pricing_calculation": pricing_calculation_name})
+		previously_selected_bom = doc.selected_combination or None
 
 		now = now_datetime()
-		saved_combinations = []
+
 		for combo in combination_results:
-			cc = frappe.get_doc({
-				"doctype": "Costing Combination",
-				"pricing_calculation": pricing_calculation_name,
-				"bom": combo["bom"],
-				"formulation_id": combo["formulation_id"],
-				"formulation_description": combo.get("formulation_description") or "",
-				"prev_rm_cost_per_kg": combo.get("prev_rm_cost_per_kg", 0),
-				"is_preferred": combo.get("is_preferred", 0),
-				"rm_cost_per_kg": combo["rm_cost_per_kg"],
-				"financing_cost_per_kg": combo["financing_cost_per_kg"],
-				"processing_cost_per_kg": combo["processing_cost_per_kg"],
-				"additional_charges_per_kg": combo["additional_charges_per_kg"],
-				"outward_freight_per_kg": combo["outward_freight_per_kg"],
-				"packaging_cost_per_kg": combo["packaging_cost_per_kg"],
-				"delivery_cost_per_kg": combo["delivery_cost_per_kg"],
-				"total_cost_per_kg": combo["total_cost_per_kg"],
-				"credit_charge_per_kg": combo.get("credit_charge_per_kg", 0),
-				"commission_per_kg": combo.get("commission_per_kg", 0),
-				"margin_per_kg": combo.get("margin_per_kg", 0),
-				"selling_price_per_kg": combo.get("selling_price_per_kg", combo["total_cost_per_kg"]),
-				"rank": combo.get("rank") or 0,
-				"delta_pct": combo.get("delta_pct") or 0,
-				"status": combo["status"],
-				"is_selected": 0,
-				"processing_charge_ref": combo["processing_charge_ref"],
-				"missing_items": combo["missing_items"],
-				"expired_items": combo["expired_items"],
-				"evaluated_on": now,
-			})
-			cc.insert(ignore_permissions=True)
-			combo["combination_name"] = cc.name
+			combo["is_preferred"] = bool(combo["bom"] == preferred_bom)
+			combo["is_selected"] = bool(combo["bom"] == previously_selected_bom)
 
-			for ml in combo["material_lines"]:
-				ml["combination"] = cc.name
-				frappe.get_doc(dict(doctype="Costing Material Line", **ml)).insert(ignore_permissions=True)
+		costing_raw = {
+			"evaluated_on": now.isoformat(),
+			"engine_version": self._config.engine_version,
+			"switch_alert": selection.switch_alert or "",
+			"customer_credit_rate_pct": doc.customer_credit_rate_pct or 0,
+			"credit_days": doc.credit_days or 0,
+			"solids_content_pct": doc.solids_content_pct or 0,
+			"additional_charges": [
+				{
+					"description": c.description,
+					"basis": c.basis,
+					"rate": c.rate or 0,
+					"amount_per_kg": c.amount_per_kg or 0,
+				}
+				for c in (doc.additional_charges or [])
+			],
+			"combinations": combination_results,
+		}
 
-			saved_combinations.append(cc)
-
-		new_selected_name = None
-		new_selected_cost = None
-		if previously_selected_bom:
-			reselect = next((cc for cc in saved_combinations if cc.bom == previously_selected_bom), None)
-			if reselect:
-				new_selected_name = reselect.name
-				new_selected_cost = reselect.total_cost_per_kg
-				frappe.db.set_value("Costing Combination", reselect.name, "is_selected", 1)
-
-		mode = _compute_mode(new_selected_name or doc.selected_combination)
+		selected_combo = next((c for c in combination_results if c.get("is_selected")), None)
+		mode = "Ready to Quote" if selected_combo else "Ready for Working"
 		update_fields = {
 			"last_evaluated_on": now,
 			"engine_version_used": self._config.engine_version,
 			"mode": mode,
 			"formulation_switch_alert": selection.switch_alert or "",
+			"costing_raw": frappe.as_json(costing_raw),
+			"selected_combination": selected_combo["bom"] if selected_combo else "",
+			"confirmed_selling_price_per_kg": (selected_combo.get("selling_price_per_kg") or 0) if selected_combo else 0,
 		}
-		if new_selected_name:
-			reselect_combo = next((cc for cc in saved_combinations if cc.name == new_selected_name), None)
-			new_selling_price = reselect_combo.selling_price_per_kg if reselect_combo else new_selected_cost
-			update_fields["selected_combination"] = new_selected_name
-			update_fields["confirmed_ex_factory_cost_per_kg"] = new_selected_cost
-			update_fields["confirmed_selling_price_per_kg"] = new_selling_price or new_selected_cost
-		else:
-			update_fields["selected_combination"] = ""
-			update_fields["confirmed_ex_factory_cost_per_kg"] = 0
-			update_fields["confirmed_selling_price_per_kg"] = 0
 
 		frappe.db.set_value("Pricing Calculation", pricing_calculation_name, update_fields)
 
 		_sync_to_pricing_request(
 			doc, mode,
-			update_fields.get("confirmed_ex_factory_cost_per_kg"),
 			update_fields.get("confirmed_selling_price_per_kg"),
 		)
 		_update_pending_rate_items(doc, fetch_result, mode)
 		_create_pending_freight_rates(doc)
 
 		return {
-			"combinations": [_combination_to_dict(cc, combination_results) for cc in saved_combinations],
+			"combinations": combination_results,
 			"fetch_result": {
 				"has_missing_rates": fetch_result.has_missing_rates,
 				"missing_items": fetch_result.missing_items,
@@ -465,15 +411,14 @@ def _compute_mode(selected_combination) -> str:
 	return "Ready for Working"
 
 
-def _sync_to_pricing_request(doc, mode: str, confirmed_cost=None, confirmed_selling_price=None):
+def _sync_to_pricing_request(doc, mode: str, confirmed_selling_price=None):
 	if not doc.pricing_request:
 		return
 	update = {"status": mode}
-	if confirmed_cost is not None:
-		price_for_pr = confirmed_selling_price if (confirmed_selling_price and confirmed_selling_price > 0) else confirmed_cost
+	if confirmed_selling_price:
 		qty = frappe.db.get_value("Pricing Request", doc.pricing_request, "quantity_kg") or 0
-		update["confirmed_price_per_kg"] = price_for_pr
-		update["total_price"] = qty * price_for_pr
+		update["confirmed_price_per_kg"] = confirmed_selling_price
+		update["total_price"] = qty * confirmed_selling_price
 	frappe.db.set_value("Pricing Request", doc.pricing_request, update)
 
 
@@ -580,30 +525,3 @@ def _create_pending_freight_rates(doc):
 		_notify_dispatch_team(pricing_request, created_names)
 
 
-def _combination_to_dict(cc, results) -> Dict:
-	raw = next((r for r in results if r["bom"] == cc.bom), {})
-	return {
-		"name": cc.name,
-		"bom": cc.bom,
-		"formulation_id": cc.formulation_id,
-		"formulation_description": cc.formulation_description,
-		"prev_rm_cost_per_kg": cc.prev_rm_cost_per_kg,
-		"rank": cc.rank,
-		"delta_pct": cc.delta_pct,
-		"status": cc.status,
-		"is_preferred": cc.is_preferred,
-		"is_selected": cc.is_selected,
-		"rm_cost_per_kg": cc.rm_cost_per_kg,
-		"financing_cost_per_kg": cc.financing_cost_per_kg,
-		"processing_cost_per_kg": cc.processing_cost_per_kg,
-		"additional_charges_per_kg": cc.additional_charges_per_kg,
-		"outward_freight_per_kg": cc.outward_freight_per_kg,
-		"packaging_cost_per_kg": cc.packaging_cost_per_kg,
-		"delivery_cost_per_kg": cc.delivery_cost_per_kg,
-		"total_cost_per_kg": cc.total_cost_per_kg,
-		"credit_charge_per_kg": cc.credit_charge_per_kg,
-		"commission_per_kg": cc.commission_per_kg,
-		"margin_per_kg": cc.margin_per_kg,
-		"selling_price_per_kg": cc.selling_price_per_kg,
-		"material_lines": raw.get("material_lines", []),
-	}
