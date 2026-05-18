@@ -254,7 +254,8 @@
   {
    "fieldname": "customer_product_label",
    "fieldtype": "Data",
-   "label": "Customer Product Label"
+   "label": "Customer Product Label",
+   "read_only": 1
   },
   {
    "fieldname": "additional_notes",
@@ -263,7 +264,7 @@
   }
  ],
  "links": [],
- "modified": "2026-05-18 12:22:49.257311",
+ "modified": "2026-05-18 13:25:12.447412",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Customer Product",
