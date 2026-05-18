@@ -3,7 +3,6 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from mpd_customizations.costing.services.config import get_config
-from mpd_customizations.costing.services.cost_calculator import compute_internal_earnings
 from mpd_customizations.costing.services.rate_source_registry import get_default_registry
 
 STANDARD_COSTED_PRICE_LIST = "Standard Costed"
@@ -86,7 +85,7 @@ def apply_rate_override(
 			break
 
 	doc.save(ignore_permissions=True)
-	return _run_evaluate(pricing_calculation_name)
+	return {"saved": True}
 
 
 @frappe.whitelist()
@@ -108,7 +107,7 @@ def apply_processing_override(
 		pl.override_reason = reason
 
 	doc.save(ignore_permissions=True)
-	return _run_evaluate(pricing_calculation_name)
+	return {"saved": True}
 
 
 @frappe.whitelist()
@@ -124,69 +123,37 @@ def revert_rate_override(pricing_calculation_name: str, item: str):
 			break
 
 	doc.save(ignore_permissions=True)
-	return _run_evaluate(pricing_calculation_name)
+	return {"saved": True}
+
+
+_PARAM_MAP = {
+	"production_days": "fetched_production_days",
+	"supplier_financing_rate_pct": "fetched_supplier_financing_rate_pct",
+	"customer_credit_rate_pct": "fetched_customer_credit_rate_pct",
+}
 
 
 @frappe.whitelist()
-def recompute_combinations(pricing_calculation_name: str):
+def revert_parameter_override(pricing_calculation_name: str, param_name: str):
 	frappe.has_permission("Pricing Calculation", "write", throw=True)
-	return _run_evaluate(pricing_calculation_name)
+	fetched_field = _PARAM_MAP.get(param_name)
+	if not fetched_field:
+		frappe.throw(_("Unknown parameter: {0}").format(param_name))
+	val = frappe.db.get_value("Pricing Calculation", pricing_calculation_name, fetched_field)
+	frappe.db.set_value("Pricing Calculation", pricing_calculation_name, param_name, val)
+	return {"saved": True}
 
 
 @frappe.whitelist()
-def promote_freight_overrides_to_master(pricing_calculation_name: str):
+def revert_freight_override(pricing_calculation_name: str, row_name: str):
 	frappe.has_permission("Pricing Calculation", "write", throw=True)
-
 	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
-
-	source_address = ""
-	if doc.processor:
-		source_address = frappe.db.get_value("Processor", doc.processor, "address") or ""
-
-	created = []
-	skipped = []
-
-	for dl in doc.delivery_lines or []:
-		working_rate = dl.working_freight_per_kg or 0
-		if not working_rate:
-			continue
-
-		is_missing = dl.rate_freshness == "Missing"
-		is_overridden = round(working_rate, 4) != round(dl.fetched_freight_per_kg or 0, 4)
-		if not (is_missing or is_overridden):
-			continue
-
-		dest_address = dl.destination_address
-		if not dest_address or not source_address:
-			skipped.append(dest_address or "Unknown")
-			continue
-
-		transport_mode = dl.transport_mode or "Barrels"
-
-		existing = frappe.db.exists("Freight Rate", {
-			"source_address": source_address,
-			"destination_address": dest_address,
-			"transport_mode": transport_mode,
-			"docstatus": 0,
-		})
-		if existing:
-			skipped.append(existing)
-			continue
-
-		new_doc = frappe.get_doc({
-			"doctype": "Freight Rate",
-			"source_address": source_address,
-			"destination_address": dest_address,
-			"transport_mode": transport_mode,
-			"freight_per_kg": working_rate,
-			"currency": dl.working_currency or "",
-			"forex_rate": dl.working_forex_rate or 0,
-			"valid_from": frappe.utils.today(),
-		})
-		new_doc.insert(ignore_permissions=True)
-		created.append({"name": new_doc.name, "destination": dest_address, "transport_mode": transport_mode})
-
-	return {"created": created, "skipped": skipped}
+	for dl in doc.delivery_lines:
+		if dl.name == row_name:
+			dl.working_freight_per_kg = dl.fetched_freight_per_kg or 0
+			break
+	doc.save(ignore_permissions=True)
+	return {"saved": True}
 
 
 @frappe.whitelist()
@@ -206,73 +173,18 @@ def revert_all_overrides(pricing_calculation_name: str):
 		pl.working_includes_outward_freight = pl.fetched_includes_outward_freight
 		pl.override_reason = ""
 
+	for dl in doc.delivery_lines:
+		if dl.fetched_freight_per_kg is not None:
+			dl.working_freight_per_kg = dl.fetched_freight_per_kg
+
 	doc.save(ignore_permissions=True)
-	return _run_evaluate(pricing_calculation_name)
 
+	for param, fetched_field in _PARAM_MAP.items():
+		fetched_val = frappe.db.get_value("Pricing Calculation", pricing_calculation_name, fetched_field)
+		if fetched_val is not None:
+			frappe.db.set_value("Pricing Calculation", pricing_calculation_name, param, fetched_val)
 
-def _notify_dispatch_team(pricing_request: str, routes: list):
-	dispatch_users = frappe.get_all(
-		"Has Role",
-		filters={"role": "Dispatch Manager", "parenttype": "User"},
-		fields=["parent"],
-	)
-	for u in dispatch_users:
-		links = ", ".join(
-			f'<a href="/app/freight-rate/{r["name"]}">{r["dest"]} ({r["mode"]})</a>'
-			for r in routes
-		)
-		pr_part = f" for <a href='/app/pricing-request/{pricing_request}'>{pricing_request}</a>" if pricing_request else ""
-		frappe.publish_realtime(
-			"eval_js",
-			f"frappe.show_alert({{message: 'Freight rate needed{pr_part}: {links}', indicator: 'orange'}})",
-			user=u.parent,
-		)
-
-
-@frappe.whitelist()
-def get_cost_breakdown(pricing_calculation_name: str):
-	frappe.has_permission("Pricing Calculation", "read", throw=True)
-
-	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
-	if not doc.selected_combination:
-		return {}
-
-	raw = frappe.parse_json(doc.costing_raw or "{}") if hasattr(frappe, "parse_json") else __import__("json").loads(doc.costing_raw or "{}")
-	combo = next((c for c in raw.get("combinations", []) if c["bom"] == doc.selected_combination), None)
-	if not combo:
-		return {}
-
-	layer1 = {
-		**combo,
-		"additional_charges": raw.get("additional_charges", []),
-		"production_days": raw.get("production_days", 0),
-		"supplier_financing_rate_pct": raw.get("supplier_financing_rate_pct", 0),
-		"customer_credit_rate_pct": raw.get("customer_credit_rate_pct", 0),
-		"credit_days": raw.get("credit_days", 0),
-		"solids_content_pct": raw.get("solids_content_pct", 0),
-	}
-
-	result = {"layer1": layer1}
-
-	if set(frappe.get_roles(frappe.session.user)) & {"Costing Approver", "System Manager"}:
-		config = get_config()
-		ml_dicts = [
-			{
-				"item": ml["item"],
-				"item_name": ml["item_name"],
-				"amount_per_kg": ml["amount_per_kg"],
-				"net_financed_days": ml["net_financed_days"],
-			}
-			for ml in combo.get("material_lines", [])
-		]
-		layer3 = compute_internal_earnings(
-			ml_dicts,
-			config.actual_cost_of_capital_pct,
-			raw.get("supplier_financing_rate_pct") or config.supplier_financing_rate_pct,
-		)
-		result["layer3"] = layer3
-
-	return result
+	return {"saved": True}
 
 
 @frappe.whitelist()

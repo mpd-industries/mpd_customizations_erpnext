@@ -24,6 +24,9 @@
   "confirmed_price_per_kg",
   "total_price",
   "col_break_status",
+  "section_break_cost_summary",
+  "cost_summary_json",
+  "cost_summary_html",
   "pricing_calculation",
   "previous_pricing_ref",
   "amended_from"
@@ -182,6 +185,25 @@
   {
    "fieldname": "col_break_status",
    "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.cost_summary_json",
+   "fieldname": "section_break_cost_summary",
+   "fieldtype": "Section Break",
+   "label": "Cost Breakdown"
+  },
+  {
+   "fieldname": "cost_summary_json",
+   "fieldtype": "JSON",
+   "hidden": 1,
+   "label": "Cost Summary JSON",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.cost_summary_json",
+   "fieldname": "cost_summary_html",
+   "fieldtype": "HTML",
+   "label": "Cost Summary"
   },
   {
    "fieldname": "pricing_calculation",

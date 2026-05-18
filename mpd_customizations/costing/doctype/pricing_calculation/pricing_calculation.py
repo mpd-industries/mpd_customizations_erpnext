@@ -4,10 +4,11 @@ from frappe.model.document import Document
 from frappe.utils import add_days, today
 
 from mpd_customizations.costing.services.cost_calculator import compute_additional_charge_amount
+from mpd_customizations.costing.services.costing_engine import build_cost_summary, find_selected_combo
 
 
 class PricingCalculation(Document):
-	ignore_linked_doctypes = ["Pricing Request", "Material Rate"]
+	ignore_linked_doctypes = ["Pricing Request", "Material Rate", "Freight Rate"]
 
 	def before_insert(self):
 		if not self.valid_until:
@@ -61,10 +62,30 @@ class PricingCalculation(Document):
 		if self.mode != "Approved":
 			frappe.throw(_("Cannot submit — Pricing Calculation must be in Approved mode first."))
 
+	def on_submit(self):
+		if not self.pricing_request:
+			return
+		raw = frappe.parse_json(self.costing_raw) if self.costing_raw else {}
+		combinations = raw.get("combinations") or []
+		combo = find_selected_combo(combinations, self.selected_combination)
+		if not combo:
+			return
+		summary = build_cost_summary(combo, raw)
+		# JSON must be serialized before set_value — labels contain "%" (e.g. credit rate)
+		frappe.db.set_value(
+			"Pricing Request",
+			self.pricing_request,
+			"cost_summary_json",
+			frappe.as_json(summary),
+			update_modified=False,
+		)
+
 	def on_trash(self):
 		if self.pricing_request:
 			frappe.db.set_value("Pricing Request", self.pricing_request, "pricing_calculation", "")
 		frappe.db.delete("Material Rate", {"pricing_calculation": self.name, "docstatus": 0})
+		if frappe.db.has_column("Freight Rate", "pricing_calculation"):
+			frappe.db.delete("Freight Rate", {"pricing_calculation": self.name, "docstatus": 0})
 
 	def sync_status_to_request(self):
 		if not self.pricing_request:

@@ -1,5 +1,4 @@
-// Pricing Request — sales-facing form
-// Shows only status and final price. No costing details visible here.
+// Pricing Request — status, confirmed price, and approved cost breakdown when available.
 
 frappe.ui.form.on("Pricing Request", {
 	onload(frm) {
@@ -9,7 +8,8 @@ frappe.ui.form.on("Pricing Request", {
 	},
 
 	refresh(frm) {
-		_render_status_panel(frm);
+		_render_pr_actions(frm);
+		_render_pr_cost_summary(frm);
 
 		if (!_is_sales_view()) {
 			// Costing team: show link to the Pricing Calculation
@@ -63,7 +63,6 @@ function _fetch_solids_from_customer_product(frm) {
             if (!formulations || formulations.length === 0) return;
 
             const firstRow = formulations[0];
-            console.log("First formulation row:", firstRow);
 
             if (!firstRow.item) return;
 
@@ -77,38 +76,63 @@ function _fetch_solids_from_customer_product(frm) {
 }
 
 
-function _render_status_panel(frm) {
+function _render_pr_cost_summary(frm) {
+	if (!frm.fields_dict.cost_summary_html) return;
+
+	const $wrapper = frm.fields_dict.cost_summary_html.$wrapper;
+	$wrapper.empty();
+
+	if (!frm.doc.cost_summary_json) return;
+
+	let summary = frm.doc.cost_summary_json;
+	if (typeof summary === "string") {
+		try {
+			summary = JSON.parse(summary);
+		} catch (e) {
+			return;
+		}
+	}
+
+	const heads = summary.heads || [];
+	if (!heads.length) return;
+
+	const title = summary.formulation_id || summary.bom || "";
+	const tbody = heads.map(h => {
+		if (h.is_total) {
+			return `<tr style="background:#e3f2fd;border-top:2px solid #1565c0;">
+				<td class="font-weight-bold" style="padding:4px 8px;color:#1565c0;">${frappe.utils.escape_html(h.label)}</td>
+				<td class="text-right font-weight-bold" style="padding:4px 8px;color:#1565c0;">₹${(h.amount_per_kg || 0).toFixed(2)}/kg</td>
+				<td style="padding:4px 8px;border-left:1px solid #e0e0e0;"></td>
+			</tr>`;
+		}
+		return `<tr>
+			<td style="padding:3px 8px;">${frappe.utils.escape_html(h.label)}</td>
+			<td class="text-right" style="padding:3px 8px;">₹${(h.amount_per_kg || 0).toFixed(2)}/kg</td>
+			<td class="text-right text-muted" style="padding:3px 8px;border-left:1px solid #e0e0e0;">₹${(h.running_total || 0).toFixed(2)}</td>
+		</tr>`;
+	}).join("");
+
+	$wrapper.html(`
+		<div class="border rounded p-3" style="background:#fafafa;">
+			<div class="font-weight-bold mb-2" style="font-size:1.05em;">
+				━━ ${__("COST BREAKDOWN")}${title ? ` — ${frappe.utils.escape_html(title)}` : ""} ━━
+			</div>
+			<table class="table table-sm mb-0" style="font-size:12px;">
+				<thead>
+					<tr style="border-bottom:1px solid #bdbdbd;">
+						<th style="padding:3px 8px;min-width:180px;">${__("Component")}</th>
+						<th class="text-right" style="padding:3px 8px;width:110px;">${__("Amount/kg")}</th>
+						<th class="text-right text-muted" style="padding:3px 8px;width:120px;border-left:1px solid #e0e0e0;">${__("Running Total")}</th>
+					</tr>
+				</thead>
+				<tbody>${tbody}</tbody>
+			</table>
+		</div>
+	`);
+}
+
+function _render_pr_actions(frm) {
 	const status = frm.doc.status || "Draft";
-	const price = frm.doc.confirmed_price_per_kg || 0;
-	const qty = frm.doc.quantity_kg || 0;
-	const total = frm.doc.total_price || (qty * price);
-	const priority = frm.doc.priority || "Normal";
-
-	const priority_color = {
-		"Urgent": "red",
-		"High": "orange",
-		"Normal": "blue",
-		"Low": "gray",
-	}[priority] || "blue";
-
-	frm.dashboard.add_comment(
-		`Priority: <strong style="color:${priority_color}">${priority}</strong>`,
-		priority_color === "red" ? "red" : "blue",
-		true
-	);
-
-	const panels = {
-		"Draft": ["blue", `📋 Saved — costing team notified. They will gather rates and evaluate formulations.`],
-		"Awaiting Rates": ["orange", `⏳ ${__("Rates being gathered")} — purchase team notified. Please wait.`],
-		"Ready for Working": ["yellow", `🔄 Previous price available — fresh rates being gathered.${price ? ` Previous: ₹${price.toFixed(2)}/kg` : ""}`],
-		"Ready to Quote": ["green", `✓ Price ready: <strong>₹${price.toFixed(2)}/kg</strong>${qty ? ` · Total: <strong>₹${total.toFixed(2)}</strong>` : ""}`],
-		"Pending Approval": ["blue", `⏳ Submitted for MD review · ₹${price.toFixed(2)}/kg`],
-		"Approved": ["green", `✓ <strong>APPROVED</strong> · ₹${price.toFixed(2)}/kg${qty ? ` · Total ₹${total.toFixed(2)}` : ""}`],
-		"Rejected": ["red", `✗ Rejected`],
-	};
-
-	const [color, msg] = panels[status] || ["gray", status];
-	frm.dashboard.add_comment(msg, color, true);
 
 	// Submit button only when Ready to Quote and not yet submitted
 	if (status === "Ready to Quote" && !frm.doc.docstatus) {

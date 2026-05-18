@@ -36,6 +36,7 @@ class FreightRate(Document):
 
 	def on_submit(self):
 		self._expire_overlapping_rates()
+		_clear_stale_pending_drafts(self)
 
 	def _expire_overlapping_rates(self):
 		filters = {
@@ -53,6 +54,20 @@ class FreightRate(Document):
 			# overlaps if not entirely before or entirely after
 			if ex_to is None or ex_to >= this_from:
 				frappe.db.set_value("Freight Rate", row.name, "valid_to", this_from - timedelta(days=1))
+
+
+def _clear_stale_pending_drafts(doc):
+	if not frappe.db.has_column("Freight Rate", "requested_on"):
+		return
+	frappe.db.delete("Freight Rate", {
+		"source_address": doc.source_address,
+		"destination_address": doc.destination_address,
+		"transport_mode": doc.transport_mode,
+		"incoterms": doc.incoterms or "",
+		"docstatus": 0,
+		"requested_on": ["is", "set"],
+		"name": ["!=", doc.name],
+	})
 
 
 def _end_of_quarter(d: date) -> date:

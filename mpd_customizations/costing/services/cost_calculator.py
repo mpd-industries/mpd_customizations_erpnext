@@ -105,37 +105,3 @@ def compute_margin(
 	elif margin_type == "Per kg of Solids":
 		return rate * (_effective_solids(solids_content_pct) / 100)
 	return 0.0
-
-
-def compute_internal_earnings(
-	material_lines: List[Dict],
-	actual_cost_of_capital_pct: float,
-	supplier_financing_rate_pct: float,
-) -> Dict:
-	spread_pct = max(0.0, supplier_financing_rate_pct - actual_cost_of_capital_pct)
-	breakdown = []
-	total_spread = 0.0
-
-	for line in material_lines:
-		amount = line.get("amount_per_kg", 0.0)
-		net_days = line.get("net_financed_days", 0)
-		spread = amount * (net_days / 365) * (spread_pct / 100)
-		total_spread += spread
-		breakdown.append(
-			{
-				"item": line.get("item"),
-				"item_name": line.get("item_name"),
-				"amount_per_kg": amount,
-				"net_financed_days": net_days,
-				"spread_per_kg": spread,
-			}
-		)
-
-	return {
-		"rm_spread_per_kg": total_spread,
-		"rm_spread_breakdown": breakdown,
-		"total_spread_per_kg": total_spread,
-		"spread_pct": spread_pct,
-		"supplier_financing_rate_pct": supplier_financing_rate_pct,
-		"actual_cost_of_capital_pct": actual_cost_of_capital_pct,
-	}

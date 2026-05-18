@@ -28,6 +28,7 @@ class CostingEngine:
 		doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 
 		is_customer_quote = bool(doc.customer_product_ref)
+		freight_fetch_result = None
 
 		if is_customer_quote:
 			boms = _get_customer_product_boms(doc.customer_product_ref)
@@ -35,7 +36,7 @@ class CostingEngine:
 			_init_delivery_lines(doc)
 			fetch_result = RateFetcher.fetch(doc, preserve_overrides=True, bom_list=boms)
 			PackagingRateFetcher.fetch(doc, preserve_overrides=True)
-			FreightRateFetcher.fetch(doc, preserve_overrides=True)
+			freight_fetch_result = FreightRateFetcher.fetch(doc, preserve_overrides=True)
 		else:
 			if not doc.item:
 				frappe.throw(frappe._("Product is required."))
@@ -171,7 +172,12 @@ class CostingEngine:
 				freshness = (rl.rate_freshness or "Missing") if rl else "Missing"
 				supplier = (rl.supplier or None) if rl else None
 				override_reason = (rl.override_reason or "") if rl else ""
-				is_overridden = bool(rl and fetched_rate and round(working_rate, 2) != round(fetched_rate, 2))
+				# Flag override when working ≠ fetched. Must include "missing rate" rows
+				# (fetched_rate 0) with a non-zero working rate — old logic required fetched_rate
+				# truthy, so provisional rates never appeared in the snapshot Rate Overrides table.
+				_wr = round(working_rate or 0, 2)
+				_fr = round(fetched_rate or 0, 2)
+				is_overridden = bool(rl and _wr != _fr and (_fr > 0 or _wr > 0))
 
 				amount = compute_rm_line_amount(qty_per_kg, working_rate)
 				rm_cost += amount
@@ -334,18 +340,28 @@ class CostingEngine:
 			update_fields.get("confirmed_selling_price_per_kg"),
 		)
 		_update_pending_rate_items(doc, fetch_result, mode)
-		_create_pending_freight_rates(doc)
+		if freight_fetch_result:
+			_update_pending_freight_rates(doc, freight_fetch_result)
+
+		fetch_result_payload = {
+			"has_missing_rates": fetch_result.has_missing_rates,
+			"missing_items": fetch_result.missing_items,
+			"has_expired_rates": fetch_result.has_expired_rates,
+			"expired_items": fetch_result.expired_items,
+			"overrides_detected": fetch_result.overrides_detected,
+			"overrides_changed": fetch_result.overrides_changed,
+		}
+		if freight_fetch_result:
+			fetch_result_payload.update({
+				"has_missing_freight": freight_fetch_result.has_missing_rates,
+				"missing_freight_destinations": freight_fetch_result.missing_destinations,
+				"has_expired_freight": freight_fetch_result.has_expired_rates,
+				"expired_freight_destinations": freight_fetch_result.expired_destinations,
+			})
 
 		return {
 			"combinations": combination_results,
-			"fetch_result": {
-				"has_missing_rates": fetch_result.has_missing_rates,
-				"missing_items": fetch_result.missing_items,
-				"has_expired_rates": fetch_result.has_expired_rates,
-				"expired_items": fetch_result.expired_items,
-				"overrides_detected": fetch_result.overrides_detected,
-				"overrides_changed": fetch_result.overrides_changed,
-			},
+			"fetch_result": fetch_result_payload,
 			"switch_alert": selection.switch_alert,
 			"mode": mode,
 		}
@@ -403,6 +419,76 @@ def _init_delivery_lines(doc):
 		"incoterms": cp.incoterms or "",
 		"rate_freshness": "Missing",
 	})
+
+
+def build_cost_summary(combo: dict, raw: dict) -> dict:
+	"""Build accounting-head snapshot for Pricing Request (no material_lines)."""
+	solids = raw.get("solids_content_pct") or combo.get("solids_content_pct")
+	credit_days = raw.get("credit_days") or 0
+	credit_rate = raw.get("customer_credit_rate_pct") or 0
+
+	rm = combo.get("rm_cost_per_kg") or 0
+	proc = combo.get("processing_cost_per_kg") or 0
+	addl = combo.get("additional_charges_per_kg")
+	if addl is None:
+		add_charges = raw.get("additional_charges") or combo.get("additional_charges") or []
+		addl = sum((c.get("amount_per_kg") or 0) for c in add_charges)
+	else:
+		addl = addl or 0
+	pkg = combo.get("packaging_cost_per_kg") or 0
+	freight = combo.get("outward_freight_per_kg") or combo.get("freight_total_per_kg") or 0
+	margin = combo.get("margin_per_kg") or 0
+	comm = combo.get("commission_per_kg") or 0
+	credit = combo.get("credit_charge_per_kg") or 0
+	selling = combo.get("selling_price_per_kg") or 0
+
+	heads = []
+	running = 0.0
+
+	def _add(key: str, label: str, amount: float, *, is_total: bool = False):
+		nonlocal running
+		if not is_total:
+			running += amount
+		heads.append({
+			"key": key,
+			"label": label,
+			"amount_per_kg": round(amount, 2),
+			"running_total": round(selling if is_total else running, 2),
+			**( {"is_total": True} if is_total else {} ),
+		})
+
+	_add("rm_cost", "RM Cost", rm)
+	proc_label = "Processing"
+	if solids and proc:
+		proc_label = f"Processing ({solids}% solids)"
+	_add("processing", proc_label, proc)
+	_add("additional_charges", "Additional Charges", addl)
+	_add("packaging", "Packaging", pkg)
+	_add("freight", "Freight", freight)
+	_add("margin", "Margin", margin)
+	_add("commission", "Commission", comm)
+	_add("credit_charge", f"Credit Charge ({credit_days}d @ {credit_rate}% pa)", credit)
+	_add("selling_price", "Selling Price", selling, is_total=True)
+
+	return {
+		"formulation_id": combo.get("formulation_id"),
+		"bom": combo.get("bom"),
+		"credit_days": credit_days,
+		"customer_credit_rate_pct": credit_rate,
+		"solids_content_pct": solids,
+		"heads": heads,
+	}
+
+
+def find_selected_combo(combinations: list, selected_bom: Optional[str] = None):
+	for combo in combinations:
+		if combo.get("is_selected"):
+			return combo
+	if selected_bom:
+		for combo in combinations:
+			if combo.get("bom") == selected_bom:
+				return combo
+	return None
 
 
 def _compute_mode(selected_combination) -> str:
@@ -470,58 +556,45 @@ def _update_pending_rate_items(doc, fetch_result, mode: str):
 			}).insert(ignore_permissions=True)
 
 
-def _create_pending_freight_rates(doc):
-	if not doc.delivery_lines:
-		return
-	source_address = ""
-	if doc.processor:
-		source_address = frappe.db.get_value("Processor", doc.processor, "address") or ""
-	if not source_address:
+def _update_pending_freight_rates(doc, freight_fetch_result):
+	if not frappe.db.has_column("Freight Rate", "pricing_calculation"):
 		return
 
-	pricing_request = doc.pricing_request or ""
-	created_names = []
+	frappe.db.delete("Freight Rate", {
+		"pricing_calculation": doc.name,
+		"docstatus": 0,
+		"requested_on": ["is", "set"],
+	})
 
-	for dl in doc.delivery_lines:
-		if (not dl.rate_freshness or dl.rate_freshness != "Missing"):
-			continue
-		if not dl.destination_address:
-			continue
+	if not freight_fetch_result.has_missing_rates and not freight_fetch_result.has_expired_rates:
+		return
 
-		line_source = getattr(dl, "source_address", "") or source_address
-		if not line_source:
+	for line in doc.delivery_lines or []:
+		if not line.destination_address or line.rate_freshness not in ("Missing", "Expired"):
 			continue
-		transport_mode = dl.transport_mode or "Barrels"
-		incoterms = getattr(dl, "incoterms", "") or ""
-
-		if frappe.db.exists("Freight Rate", {
-			"source_address": line_source,
-			"destination_address": dl.destination_address,
-			"transport_mode": transport_mode,
-			"incoterms": incoterms,
-			"docstatus": ["in", [0, 1]],
-		}):
+		if not line.source_address:
 			continue
 
-		frt = frappe.get_doc({
-			"doctype": "Freight Rate",
-			"source_address": line_source,
-			"destination_address": dl.destination_address,
-			"transport_mode": transport_mode,
-			"incoterms": incoterms,
-			"freight_per_kg": 0,
-			"valid_from": frappe.utils.today(),
-			"pricing_request": pricing_request,
-			"requested_on": frappe.utils.now_datetime(),
-		}).insert(ignore_permissions=True)
-		created_names.append({
-			"name": frt.name,
-			"dest": dl.destination_city or dl.destination_address,
-			"mode": transport_mode,
+		existing = frappe.db.exists("Freight Rate", {
+			"source_address": line.source_address,
+			"destination_address": line.destination_address,
+			"transport_mode": line.transport_mode or "Barrels",
+			"incoterms": line.incoterms or "",
+			"docstatus": 0,
 		})
+		if existing:
+			continue
 
-	if created_names:
-		from mpd_customizations.costing.api.costing import _notify_dispatch_team
-		_notify_dispatch_team(pricing_request, created_names)
+		frappe.get_doc({
+			"doctype": "Freight Rate",
+			"source_address": line.source_address,
+			"destination_address": line.destination_address,
+			"transport_mode": line.transport_mode or "Barrels",
+			"incoterms": line.incoterms or "",
+			"pricing_calculation": doc.name,
+			"pricing_request": doc.pricing_request or "",
+			"requested_on": frappe.utils.now_datetime(),
+			"valid_from": frappe.utils.today(),
+		}).insert(ignore_permissions=True)
 
 

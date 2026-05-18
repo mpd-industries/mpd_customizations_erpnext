@@ -26,6 +26,7 @@
   "valid_to",
   "notes",
   "pricing_request",
+  "pricing_calculation",
   "requested_on",
   "amended_from"
  ],
@@ -177,6 +178,14 @@
    "fieldtype": "Link",
    "label": "Pricing Request",
    "options": "Pricing Request",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "pricing_calculation",
+   "fieldtype": "Link",
+   "label": "Pricing Calculation",
+   "options": "Pricing Calculation",
    "read_only": 1,
    "hidden": 1
   },

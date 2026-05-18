@@ -5,11 +5,91 @@ const API = "mpd_customizations.costing.api.costing";
 
 let _config_production_days = null;
 let _pending_fetch_result = null;
-const _auto_evaluated = new Set();  // tracks which PC names have been synced this session
+const _auto_evaluated = new Set();
+let _eval_timer = null;
+let _eval_busy = false;
+let _eval_queued = false;
 
 function _parse_raw(str) {
 	if (!str) return {};
 	try { return JSON.parse(str); } catch(e) { return {}; }
+}
+
+function _can_auto_evaluate(frm) {
+	return frm.doc.name && !frm.doc.__islocal && frm.doc.docstatus === 0;
+}
+
+// ─── Evaluate entry points ───────────────────────────────────────────────────
+
+function _evaluate(frm, trigger, on_done) {
+	frappe.call({
+		method: `${API}.evaluate`,
+		args: { pricing_calculation_name: frm.doc.name, trigger: trigger || "preserve" },
+		callback(r) {
+			if (r.message && r.message.fetch_result) {
+				_pending_fetch_result = r.message.fetch_result;
+			}
+			frm.reload_doc().then(() => {
+				if (on_done) on_done();
+			});
+		},
+		error() {
+			if (on_done) on_done();
+		},
+	});
+}
+
+// Debounced save + evaluate after any costing field change.
+function _schedule_save_and_evaluate(frm, opts, debounce_ms = 400) {
+	if (!_can_auto_evaluate(frm)) return;
+	clearTimeout(_eval_timer);
+	_eval_timer = setTimeout(() => _run_save_and_evaluate(frm, opts), debounce_ms);
+}
+
+function _run_save_and_evaluate(frm, opts) {
+	if (!_can_auto_evaluate(frm)) return;
+
+	if (_eval_busy) {
+		_eval_queued = true;
+		return;
+	}
+	_eval_busy = true;
+
+	const finish = () => {
+		_eval_busy = false;
+		if (_eval_queued) {
+			_eval_queued = false;
+			_run_save_and_evaluate(frm, opts);
+		}
+	};
+
+	const do_evaluate = () => {
+		const next = () => _evaluate(frm, "preserve", finish);
+		if (opts && opts.before_evaluate) {
+			opts.before_evaluate(next);
+		} else {
+			next();
+		}
+	};
+
+	if (frm.is_dirty()) {
+		frm.save().then(do_evaluate).catch(finish);
+	} else {
+		do_evaluate();
+	}
+}
+
+// API mutation (revert) then immediate save + evaluate.
+function _mutate_then_evaluate(frm, method, args, on_before_evaluate) {
+	frappe.call({
+		method,
+		args,
+		callback() {
+			if (on_before_evaluate) on_before_evaluate();
+			clearTimeout(_eval_timer);
+			_run_save_and_evaluate(frm);
+		},
+	});
 }
 
 // ─── Initialisation ─────────────────────────────────────────────────────────
@@ -45,10 +125,10 @@ frappe.ui.form.on("Pricing Calculation", {
 			_pending_fetch_result = null;
 		}
 
-		// Auto-fetch fresh rates once per session when the form first opens (draft only)
+		// Auto-evaluate once per session on first form open (draft only)
 		if (!frm.doc.__islocal && frm.doc.docstatus === 0 && !_auto_evaluated.has(frm.doc.name)) {
 			_auto_evaluated.add(frm.doc.name);
-			_do_evaluate(frm);
+			_evaluate(frm, "preserve");
 		}
 	},
 
@@ -75,27 +155,41 @@ frappe.ui.form.on("Pricing Calculation", {
 
 	processor(frm) {
 		if (!frm.doc.processor || !frm.doc.item || frm.doc.__islocal) return;
-		const do_fetch = () => frappe.call({
-			method: `${API}.fetch_processing_charge`,
-			args: { pricing_calculation_name: frm.doc.name },
-			callback(r) {
-				if (r.message) {
-					frappe.show_alert({ message: __("Processing charge loaded"), indicator: "green" });
-					frm.reload_doc();
-				} else {
-					frappe.show_alert({ message: __("No processing charge found for this processor"), indicator: "orange" });
-				}
+		_schedule_save_and_evaluate(frm, {
+			before_evaluate: (next) => {
+				frappe.call({
+					method: `${API}.fetch_processing_charge`,
+					args: { pricing_calculation_name: frm.doc.name },
+					callback: () => next(),
+					error: () => next(),
+				});
 			},
 		});
-		if (frm.is_dirty()) {
-			frm.save().then(do_fetch);
-		} else {
-			do_fetch();
-		}
+	},
+
+	solids_content_pct(frm) {
+		_schedule_save_and_evaluate(frm);
 	},
 
 	production_days(frm) {
 		_apply_amber_indicators(frm);
+		_schedule_save_and_evaluate(frm);
+	},
+
+	supplier_financing_rate_pct(frm) {
+		_schedule_save_and_evaluate(frm);
+	},
+
+	customer_credit_rate_pct(frm) {
+		_schedule_save_and_evaluate(frm);
+	},
+
+	credit_days(frm) {
+		_schedule_save_and_evaluate(frm);
+	},
+
+	preferred_bom(frm) {
+		_schedule_save_and_evaluate(frm);
 	},
 
 });
@@ -116,6 +210,33 @@ frappe.ui.form.on("Costing Rate Line", {
 	working_supplier_credit_days(frm, cdt, cdn) {
 		_on_rate_line_change(frm, cdt, cdn);
 	},
+	override_reason(frm, cdt, cdn) {
+		_on_rate_line_change(frm, cdt, cdn);
+	},
+});
+
+frappe.ui.form.on("Costing Processing Line", {
+	working_charge_per_kg(frm) { _schedule_save_and_evaluate(frm); },
+	working_freight_per_unit(frm) { _schedule_save_and_evaluate(frm); },
+	working_includes_outward_freight(frm) { _schedule_save_and_evaluate(frm); },
+	override_reason(frm) { _schedule_save_and_evaluate(frm); },
+});
+
+frappe.ui.form.on("Costing Packaging Line", {
+	working_rate_per_unit(frm) { _schedule_save_and_evaluate(frm); },
+	fill_quantity_kg(frm) { _schedule_save_and_evaluate(frm); },
+});
+
+frappe.ui.form.on("Costing Delivery Line", {
+	working_freight_per_kg(frm) { _schedule_save_and_evaluate(frm); },
+	working_forex_rate(frm) { _schedule_save_and_evaluate(frm); },
+	working_currency(frm) { _schedule_save_and_evaluate(frm); },
+	override_reason(frm) { _schedule_save_and_evaluate(frm); },
+});
+
+frappe.ui.form.on("Costing Additional Charge", {
+	rate(frm) { _schedule_save_and_evaluate(frm); },
+	basis(frm) { _schedule_save_and_evaluate(frm); },
 });
 
 
@@ -129,37 +250,7 @@ function _on_rate_line_change(frm, cdt, cdn) {
 	const $row = $(frm.fields_dict.rate_lines.grid.get_row(cdn).$row);
 	$row.toggleClass("bg-amber-50", is_overridden);
 
-	if (!frm.doc.name || frm.doc.__islocal) return;
-
-	frappe.call({
-		method: `${API}.apply_rate_override`,
-		args: {
-			pricing_calculation_name: frm.doc.name,
-			item: row.item,
-			working_rate: row.working_rate,
-			working_supplier_credit_days: row.working_supplier_credit_days || 0,
-			reason: row.override_reason || "",
-		},
-		callback() { frm.reload_doc(); },
-	});
-}
-
-// ─── Auto-evaluation ─────────────────────────────────────────────────────────
-
-function _do_evaluate(frm) {
-	// Silent full rate-fetch — called once per session on form open
-	frappe.call({
-		method: `${API}.evaluate`,
-		args: { pricing_calculation_name: frm.doc.name, trigger: "preserve" },
-		callback(r) {
-			if (r.message && r.message.fetch_result) {
-				_pending_fetch_result = r.message.fetch_result;
-			}
-			// reload_doc is safe here — _auto_evaluated already has this name,
-			// so the next refresh will not trigger another evaluate
-			frm.reload_doc();
-		},
-	});
+	_schedule_save_and_evaluate(frm);
 }
 
 // ─── Request breadcrumb ──────────────────────────────────────────────────────
@@ -214,56 +305,79 @@ function _render_action_bar(frm) {
 
 
 	if (frm.doc.docstatus === 0) {
-		const _rate_ov = (frm.doc.rate_lines || []).filter(rl =>
-			Math.round((rl.working_rate || 0) * 100) / 100 !==
-			Math.round((rl.fetched_rate || 0) * 100) / 100
-		);
-		const _proc_ov = (frm.doc.processing_lines || []).filter(pl =>
-			pl.fetched_charge_per_kg &&
-			Math.round((pl.working_charge_per_kg || 0) * 100) / 100 !==
-			Math.round((pl.fetched_charge_per_kg || 0) * 100) / 100
-		);
-		if (_rate_ov.length + _proc_ov.length > 0) {
-			frm.add_custom_button(
-				`⚠ Overrides (${_rate_ov.length + _proc_ov.length})`,
-				() => _show_overrides_dialog(frm)
-			);
-		}
+		frm.add_custom_button(__("Evaluate"), () => _evaluate(frm, "manual"), __("Actions"));
 
-		const _freight_ov = (frm.doc.delivery_lines || []).filter(dl =>
-			(dl.rate_freshness === "Missing" && (dl.working_freight_per_kg || 0) > 0) ||
-			Math.round((dl.working_freight_per_kg || 0) * 10000) / 10000 !==
-			Math.round((dl.fetched_freight_per_kg || 0) * 10000) / 10000
-		);
-		if (_freight_ov.length > 0) {
+		const _rate_ov  = _get_rate_overrides(frm);
+		const _proc_ov  = _get_processing_overrides(frm);
+		const _param_ov = _get_param_overrides(frm);
+		const _frt_ov   = _get_freight_overrides(frm);
+		const _total_ov = _rate_ov.length + _proc_ov.length + _param_ov.length + _frt_ov.length;
+		if (_total_ov > 0) {
 			frm.add_custom_button(
-				`🚚 Save Freight to Master (${_freight_ov.length})`,
-				() => _show_freight_promote_dialog(frm, _freight_ov)
+				`⚠ Overrides (${_total_ov})`,
+				() => _show_overrides_dialog(frm)
 			);
 		}
 	}
 }
 
-// ─── Overrides dialog ────────────────────────────────────────────────────────
+// ─── Override helpers ────────────────────────────────────────────────────────
 
-function _show_overrides_dialog(frm) {
-	const rate_ov = (frm.doc.rate_lines || []).filter(rl =>
+function _get_rate_overrides(frm) {
+	return (frm.doc.rate_lines || []).filter(rl =>
 		Math.round((rl.working_rate || 0) * 100) / 100 !==
 		Math.round((rl.fetched_rate || 0) * 100) / 100
 	);
-	const proc_ov = (frm.doc.processing_lines || []).filter(pl =>
+}
+
+function _get_processing_overrides(frm) {
+	return (frm.doc.processing_lines || []).filter(pl =>
 		pl.fetched_charge_per_kg &&
 		Math.round((pl.working_charge_per_kg || 0) * 100) / 100 !==
 		Math.round((pl.fetched_charge_per_kg || 0) * 100) / 100
 	);
+}
 
-	const make_row = (label, fetched, working, reason, attrs) => {
+function _get_param_overrides(frm) {
+	const params = [
+		{ label: __("Production Days"),           field: "production_days",             fetched_field: "fetched_production_days",             unit: "days" },
+		{ label: __("Supplier Financing Rate %"),  field: "supplier_financing_rate_pct", fetched_field: "fetched_supplier_financing_rate_pct", unit: "%"    },
+		{ label: __("Customer Credit Rate %"),     field: "customer_credit_rate_pct",    fetched_field: "fetched_customer_credit_rate_pct",    unit: "%"    },
+	];
+	return params.filter(p => {
+		const fetched = frm.doc[p.fetched_field];
+		const working = frm.doc[p.field];
+		return fetched != null && fetched !== 0 && working !== fetched;
+	}).map(p => ({ ...p, fetched: frm.doc[p.fetched_field], working: frm.doc[p.field] }));
+}
+
+function _get_freight_overrides(frm) {
+	return (frm.doc.delivery_lines || []).filter(dl =>
+		dl.fetched_freight_per_kg != null &&
+		Math.round((dl.working_freight_per_kg || 0) * 10000) / 10000 !==
+		Math.round((dl.fetched_freight_per_kg || 0) * 10000) / 10000
+	);
+}
+
+// ─── Overrides dialog ────────────────────────────────────────────────────────
+
+function _show_overrides_dialog(frm) {
+	const rate_ov  = _get_rate_overrides(frm);
+	const proc_ov  = _get_processing_overrides(frm);
+	const param_ov = _get_param_overrides(frm);
+	const frt_ov   = _get_freight_overrides(frm);
+	const total    = rate_ov.length + proc_ov.length + param_ov.length + frt_ov.length;
+
+	// Generic row: label | fetched | working | Δ% | reason | revert button
+	const make_row = (label, fetched, working, reason, attrs, unit) => {
+		const is_currency = !unit || unit === "₹";
+		const fmt = v => is_currency ? `₹${(v || 0).toFixed(2)}` : `${(v || 0).toFixed(unit === "days" ? 0 : 2)}${unit !== "₹" ? " " + unit : ""}`;
 		const delta = fetched ? ((working - fetched) / fetched * 100).toFixed(1) : "—";
 		const up = (working || 0) > (fetched || 0);
 		return `<tr>
 			<td>${frappe.utils.escape_html(label)}</td>
-			<td class="text-right">₹${(fetched || 0).toFixed(2)}</td>
-			<td class="text-right">₹${(working || 0).toFixed(2)}</td>
+			<td class="text-right">${fmt(fetched)}</td>
+			<td class="text-right">${fmt(working)}</td>
 			<td class="text-right font-weight-bold" style="color:${up ? "#c62828" : "#2e7d32"}">
 				${up ? "↑" : "↓"}${Math.abs(parseFloat(delta)).toFixed(1)}%
 			</td>
@@ -277,13 +391,29 @@ function _show_overrides_dialog(frm) {
 			rl.item_name || rl.item,
 			rl.fetched_rate, rl.working_rate,
 			rl.override_reason,
-			`data-revert-item="${frappe.utils.escape_html(rl.item)}"`
+			`data-revert-item="${frappe.utils.escape_html(rl.item)}"`,
+			"₹"
 		)).join("") +
 		proc_ov.map(pl => make_row(
 			pl.processor || __("Processing"),
 			pl.fetched_charge_per_kg, pl.working_charge_per_kg,
 			pl.override_reason,
-			`data-revert-processing="1"`
+			`data-revert-processing="1"`,
+			"₹"
+		)).join("") +
+		param_ov.map(p => make_row(
+			p.label,
+			p.fetched, p.working,
+			"",
+			`data-revert-param="${frappe.utils.escape_html(p.field)}"`,
+			p.unit
+		)).join("") +
+		frt_ov.map(dl => make_row(
+			`${__("Freight")} — ${frappe.utils.escape_html(dl.destination_city || dl.destination_address || "—")}`,
+			dl.fetched_freight_per_kg, dl.working_freight_per_kg,
+			"",
+			`data-revert-freight="${frappe.utils.escape_html(dl.name)}"`,
+			"₹"
 		)).join("");
 
 	const html = `
@@ -291,7 +421,7 @@ function _show_overrides_dialog(frm) {
 			<thead class="thead-light">
 				<tr>
 					<th>${__("Item / Charge")}</th>
-					<th class="text-right">${__("Market")}</th>
+					<th class="text-right">${__("Market / Fetched")}</th>
 					<th class="text-right">${__("Working")}</th>
 					<th class="text-right">Δ</th>
 					<th>${__("Reason")}</th>
@@ -302,15 +432,14 @@ function _show_overrides_dialog(frm) {
 		</table>`;
 
 	const d = new frappe.ui.Dialog({
-		title: __(`Active Overrides (${rate_ov.length + proc_ov.length})`),
+		title: __(`Active Overrides (${total})`),
 		fields: [{ fieldtype: "HTML", fieldname: "content" }],
 		primary_action_label: __("Revert All"),
 		primary_action() {
-			frappe.call({
-				method: `${API}.revert_all_overrides`,
-				args: { pricing_calculation_name: frm.doc.name },
-				callback() { d.hide(); frm.reload_doc(); },
-			});
+			_mutate_then_evaluate(frm, `${API}.revert_all_overrides`,
+				{ pricing_calculation_name: frm.doc.name },
+				() => d.hide()
+			);
 		},
 	});
 
@@ -318,96 +447,33 @@ function _show_overrides_dialog(frm) {
 	$w.html(html);
 
 	$w.on("click", "[data-revert-item]", function () {
-		const item = $(this).data("revert-item");
-		frappe.call({
-			method: `${API}.revert_rate_override`,
-			args: { pricing_calculation_name: frm.doc.name, item },
-			callback() { d.hide(); frm.reload_doc(); },
-		});
+		_mutate_then_evaluate(frm, `${API}.revert_rate_override`,
+			{ pricing_calculation_name: frm.doc.name, item: $(this).data("revert-item") },
+			() => d.hide()
+		);
 	});
 
 	$w.on("click", "[data-revert-processing]", function () {
-		frappe.call({
-			method: `${API}.revert_all_overrides`,
-			args: { pricing_calculation_name: frm.doc.name },
-			callback() { d.hide(); frm.reload_doc(); },
-		});
+		_mutate_then_evaluate(frm, `${API}.revert_all_overrides`,
+			{ pricing_calculation_name: frm.doc.name },
+			() => d.hide()
+		);
 	});
 
-	d.show();
-}
-
-// ─── Freight promote-to-master dialog ───────────────────────────────────────
-
-function _show_freight_promote_dialog(frm, overridden_lines) {
-	const rows = overridden_lines.map(dl => {
-		const dest = frappe.utils.escape_html(dl.destination_city || dl.destination_address || "—");
-		const mode = frappe.utils.escape_html(dl.transport_mode || "Barrels");
-		const freshness_badge = dl.rate_freshness === "Missing"
-			? `<span class="badge badge-danger">${__("Missing")}</span>`
-			: `<span class="badge badge-warning">${__("Override")}</span>`;
-		return `<tr>
-			<td>${dest}</td>
-			<td>${mode}</td>
-			<td class="text-right">₹${(dl.working_freight_per_kg || 0).toFixed(4)}/kg</td>
-			<td>${freshness_badge}</td>
-		</tr>`;
-	}).join("");
-
-	const html = `
-		<p class="text-muted small mb-2">
-			${__("These freight rates will be saved as draft Freight Rate records. Review and submit them to make them active for future calculations.")}
-		</p>
-		<table class="table table-sm table-bordered mb-0">
-			<thead class="thead-light">
-				<tr>
-					<th>${__("Destination")}</th>
-					<th>${__("Mode")}</th>
-					<th class="text-right">${__("Rate Used")}</th>
-					<th>${__("Status")}</th>
-				</tr>
-			</thead>
-			<tbody>${rows}</tbody>
-		</table>
-		<div id="freight-promote-result" class="mt-2"></div>`;
-
-	const d = new frappe.ui.Dialog({
-		title: __("Save Freight Rates to Master"),
-		fields: [{ fieldtype: "HTML", fieldname: "content" }],
-		primary_action_label: __("Create Draft Freight Rate(s)"),
-		primary_action() {
-			d.set_primary_action(__("Creating…"), null);
-			frappe.call({
-				method: `${API}.promote_freight_overrides_to_master`,
-				args: { pricing_calculation_name: frm.doc.name },
-				callback(r) {
-					const res = r.message || {};
-					const created = res.created || [];
-					const skipped = res.skipped || [];
-
-					let msg = "";
-					if (created.length) {
-						const links = created.map(c =>
-							`<a href="/app/freight-rate/${encodeURIComponent(c.name)}" target="_blank">${frappe.utils.escape_html(c.name)}</a>`
-						).join(", ");
-						msg += `<div class="text-success mb-1">✓ ${__("Created")}: ${links}</div>`;
-					}
-					if (skipped.length) {
-						msg += `<div class="text-muted small">${__("Skipped (draft already exists)")}:
-							${skipped.map(s => frappe.utils.escape_html(s)).join(", ")}</div>`;
-					}
-					if (!created.length && !skipped.length) {
-						msg = `<div class="text-muted">${__("Nothing to promote — ensure the processor has a Dispatch Address set.")}</div>`;
-					}
-
-					d.fields_dict.content.$wrapper.find("#freight-promote-result").html(msg);
-					d.set_primary_action(__("Done"), () => { d.hide(); frm.reload_doc(); });
-				},
-			});
-		},
+	$w.on("click", "[data-revert-param]", function () {
+		_mutate_then_evaluate(frm, `${API}.revert_parameter_override`,
+			{ pricing_calculation_name: frm.doc.name, param_name: $(this).data("revert-param") },
+			() => d.hide()
+		);
 	});
 
-	d.fields_dict.content.$wrapper.html(html);
+	$w.on("click", "[data-revert-freight]", function () {
+		_mutate_then_evaluate(frm, `${API}.revert_freight_override`,
+			{ pricing_calculation_name: frm.doc.name, row_name: $(this).data("revert-freight") },
+			() => d.hide()
+		);
+	});
+
 	d.show();
 }
 
@@ -588,14 +654,17 @@ function _render_combinations(frm, combinations, raw) {
 			credit_days: raw.credit_days,
 			solids_content_pct: raw.solids_content_pct,
 		};
-		_render_cost_snapshot(snap_l, $wrapper);
+		_render_cost_snapshot(snap_l, $wrapper, { expandRm: is_submitted });
 	}
 }
 
 // ─── Unified cost snapshot (draft selected + submitted) ──────────────────────
 
-function _render_cost_snapshot(l, $wrapper) {
+function _render_cost_snapshot(l, $wrapper, opts) {
 	if (!l) return;
+
+	opts = opts || {};
+	const expandRm = !!opts.expandRm;
 
 	const uid = (l.formulation_id || l.bom || "").replace(/[^a-zA-Z0-9]/g, "_");
 
@@ -630,7 +699,6 @@ function _render_cost_snapshot(l, $wrapper) {
 	const comm     = l.commission_per_kg || 0;
 	const credit   = l.credit_charge_per_kg || 0;
 	const selling  = l.selling_price_per_kg || 0;
-	const has_selling = selling > 0;
 
 	const proc_detail = l.solids_content_pct && proc
 		? ` <span class="text-muted small">(${l.solids_content_pct}% solids)</span>`
@@ -650,17 +718,23 @@ function _render_cost_snapshot(l, $wrapper) {
 	};
 
 	// RM Cost row — clickable, toggles ingredient detail
+	const rmHiddenClass = expandRm ? "" : "d-none";
+	const rmIcon = expandRm ? "▼" : "▶";
+	const rmHint = expandRm
+		? ""
+		: ` <span class="text-muted small">${__("(click to expand)")}</span>`;
+
 	running += rm;
 	tbody += `<tr style="cursor:pointer;" onclick="(function(){
 		var d=document.getElementById('rmdet_${uid}');
 		d.classList.toggle('d-none');
 		document.getElementById('rmico_${uid}').textContent=d.classList.contains('d-none')?'▶':'▼';
 	})()">
-		<td style="padding:3px 8px;"><span id="rmico_${uid}">▶</span> <strong>${__("RM Cost")}</strong> <span class="text-muted small">${__("(click to expand)")}</span></td>
+		<td style="padding:3px 8px;"><span id="rmico_${uid}">${rmIcon}</span> <strong>${__("RM Cost")}</strong>${rmHint}</td>
 		<td class="text-right" style="padding:3px 8px;">₹${rm.toFixed(2)}/kg</td>
 		<td class="text-right text-muted" style="padding:3px 8px;border-left:1px solid #e0e0e0;">₹${running.toFixed(2)}</td>
 	</tr>
-	<tr id="rmdet_${uid}" class="d-none" style="background:#f9fbe7;">
+	<tr id="rmdet_${uid}" class="${rmHiddenClass}" style="background:#f9fbe7;">
 		<td colspan="3" class="p-0">
 			<table class="table table-sm mb-0" style="font-size:11px;">
 				<thead class="thead-light">
@@ -682,20 +756,18 @@ function _render_cost_snapshot(l, $wrapper) {
 	</tr>`;
 
 	tbody += _row(`${__("Processing")}${proc_detail}`, proc);
-	if (addl)    tbody += _row(__("Additional Charges"), addl);
-	if (pkg)     tbody += _row(__("Packaging"), pkg);
-	if (freight) tbody += _row(__("Freight"), freight);
+	tbody += _row(__("Additional Charges"), addl);
+	tbody += _row(__("Packaging"), pkg);
+	tbody += _row(__("Freight"), freight);
 
-	if (has_selling) {
-		if (margin) tbody += _row(__("Margin"), margin);
-		if (comm)   tbody += _row(__("Commission"), comm);
-		if (credit) tbody += _row(`${__("Credit Charge")} <span class="text-muted small">(${l.credit_days || 0}d @ ${l.customer_credit_rate_pct || 0}% pa)</span>`, credit);
-		tbody += `<tr style="background:#e3f2fd;border-top:2px solid #1565c0;">
+	tbody += _row(__("Margin"), margin);
+	tbody += _row(__("Commission"), comm);
+	tbody += _row(`${__("Credit Charge")} <span class="text-muted small">(${l.credit_days || 0}d @ ${l.customer_credit_rate_pct || 0}% pa)</span>`, credit);
+	tbody += `<tr style="background:#e3f2fd;border-top:2px solid #1565c0;">
 			<td class="font-weight-bold" style="padding:4px 8px;color:#1565c0;">${__("Selling Price")}</td>
 			<td class="text-right font-weight-bold" style="padding:4px 8px;color:#1565c0;">₹${selling.toFixed(2)}/kg</td>
 			<td style="padding:4px 8px;border-left:1px solid #e0e0e0;"></td>
 		</tr>`;
-	}
 
 	// ── Rate overrides section ────────────────────────────────────────────────
 	const rate_overrides = (l.material_lines || []).filter(ml => ml.is_overridden && !ml.is_scrap);
@@ -805,8 +877,16 @@ function _render_approval_banner(frm) {
 function _show_rate_summary(frm, fetch_result) {
 	if (!fetch_result) return;
 	const parts = [];
-	if (fetch_result.has_expired_rates) parts.push(`⚠ ${fetch_result.expired_items.length} rate(s) expired`);
-	if (fetch_result.has_missing_rates) parts.push(`✗ ${fetch_result.missing_items.length} rate(s) missing`);
+	if (fetch_result.has_expired_rates) parts.push(`⚠ ${fetch_result.expired_items.length} material rate(s) expired`);
+	if (fetch_result.has_missing_rates) parts.push(`✗ ${fetch_result.missing_items.length} material rate(s) missing`);
+	if (fetch_result.has_expired_freight) {
+		const n = (fetch_result.expired_freight_destinations || []).length;
+		parts.push(`⚠ ${n} freight rate(s) expired`);
+	}
+	if (fetch_result.has_missing_freight) {
+		const n = (fetch_result.missing_freight_destinations || []).length;
+		parts.push(`✗ ${n} freight rate(s) missing`);
+	}
 	if (parts.length) {
 		frm.dashboard.add_comment(parts.join("  ·  "), fetch_result.has_missing_rates ? "red" : "orange", true);
 	}
