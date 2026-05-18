@@ -2,6 +2,8 @@ frappe.ui.form.on("Customer Product", {
 	refresh(frm) {
 		_set_address_query(frm);
 		_set_section_visibility(frm);
+		_render_status_banner(frm);
+		_render_approve_button(frm);
 	},
 
 	customer(frm) {
@@ -65,6 +67,39 @@ function _set_default_address(frm) {
 			frm.set_value("delivery_address", addr);
 		}
 	});
+}
+
+function _render_status_banner(frm) {
+	const status = frm.doc.status || "Draft";
+	const map = {
+		"Draft": ["gray", __("Draft — awaiting formulations from R&D")],
+		"Formulations Added": ["blue", __("Formulations Added — awaiting Costing Approver approval")],
+		"Approved": ["green", __("Approved — available for customer quotes")],
+	};
+	const [indicator, message] = map[status] || ["blue", status];
+	if (message) {
+		frm.dashboard.set_headline_alert(message, indicator);
+	}
+}
+
+function _render_approve_button(frm) {
+	if (frm.is_new()) return;
+	if (frm.doc.status !== "Formulations Added") return;
+	if (!frappe.user.has_role("Costing Approver") && !frappe.user.has_role("System Manager")) return;
+
+	frm.add_custom_button(__("Approve"), () => {
+		frappe.call({
+			method: "mpd_customizations.costing.api.costing.approve_customer_product",
+			args: { name: frm.doc.name },
+			freeze: true,
+			freeze_message: __("Approving..."),
+		}).then(r => {
+			if (r.message && r.message.success) {
+				frappe.show_alert({ message: __("Customer Product approved"), indicator: "green" });
+				frm.reload_doc();
+			}
+		});
+	}, __("Actions"));
 }
 
 function _set_section_visibility(frm) {

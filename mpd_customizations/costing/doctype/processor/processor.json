@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "field:processor_name",
- "creation": "2024-01-01 00:00:00.000000",
+ "creation": "2024-01-01 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -32,11 +32,11 @@
    "reqd": 1
   },
   {
+   "description": "Physical dispatch location \u2014 used as the source address in freight rate lookups",
    "fieldname": "address",
    "fieldtype": "Link",
    "label": "Dispatch Address",
-   "options": "Address",
-   "description": "Physical dispatch location — used as the source address in freight rate lookups"
+   "options": "Address"
   },
   {
    "fieldname": "col_break_1",
@@ -66,7 +66,7 @@
   }
  ],
  "links": [],
- "modified": "2024-01-01 00:00:00.000000",
+ "modified": "2026-05-18 12:57:12.083132",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Processor",
@@ -114,8 +114,21 @@
    "report": 1,
    "role": "Costing Approver",
    "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Sales",
+   "share": 1,
+   "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "processor_name",
  "sort_order": "ASC",
  "states": [],

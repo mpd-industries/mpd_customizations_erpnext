@@ -384,6 +384,12 @@ class CostingEngine:
 
 
 def _get_customer_product_boms(customer_product_ref: str) -> List[Dict]:
+	cp_status = frappe.db.get_value("Customer Product", customer_product_ref, "status")
+	if cp_status != "Approved":
+		frappe.throw(
+			frappe._("Customer Product {0} must be Approved before costing.").format(customer_product_ref)
+		)
+
 	formulations = frappe.get_all(
 		"Customer Product Formulation",
 		filters={"parent": customer_product_ref, "parenttype": "Customer Product"},

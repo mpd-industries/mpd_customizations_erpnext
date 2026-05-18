@@ -13,6 +13,7 @@ _SALES_FIELDS = frozenset([
 class CustomerProduct(Document):
 	def validate(self):
 		self._compute_is_export()
+		self._sync_status_from_formulations()
 		self._enforce_field_ownership()
 		self._validate_formulation_solids()
 
@@ -21,6 +22,16 @@ class CustomerProduct(Document):
 		self.customer_product_label = f"{self.customer_name}-{self.customer_product_code}"
 	
 	
+	def _has_formulations(self):
+		return any(row.bom for row in (self.formulations or []))
+
+	def _sync_status_from_formulations(self):
+		if self.status == "Approved":
+			return
+		if not self.status:
+			self.status = "Draft"
+		self.status = "Formulations Added" if self._has_formulations() else "Draft"
+
 	def _compute_is_export(self):
 		if self.delivery_country:
 			india_names = frappe.get_all("Country", filters={"country_name": "India"}, fields=["name"], limit=1)

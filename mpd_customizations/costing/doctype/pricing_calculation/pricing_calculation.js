@@ -23,6 +23,12 @@ function _can_auto_evaluate(frm) {
 	return frm.doc.name && !frm.doc.__islocal && frm.doc.docstatus === 0;
 }
 
+function _set_customer_product_ref_query(frm) {
+	frm.set_query("customer_product_ref", () => ({
+		filters: { status: "Approved", is_active: 1 },
+	}));
+}
+
 // ─── Evaluate entry points ───────────────────────────────────────────────────
 
 function _evaluate(frm, trigger, on_done) {
@@ -106,6 +112,7 @@ frappe.ui.form.on("Pricing Calculation", {
 	},
 
 	refresh(frm) {
+		_set_customer_product_ref_query(frm);
 		_render_request_breadcrumb(frm);
 		_render_action_bar(frm);
 		_apply_amber_indicators(frm);

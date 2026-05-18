@@ -390,12 +390,13 @@
   {
    "fieldname": "costing_raw",
    "fieldtype": "JSON",
+   "hidden": 1,
    "label": "Costing Raw"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-14 12:04:06.231847",
+ "modified": "2026-05-18 11:28:53.053287",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Pricing Calculation",

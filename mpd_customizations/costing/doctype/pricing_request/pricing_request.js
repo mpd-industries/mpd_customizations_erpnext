@@ -8,6 +8,7 @@ frappe.ui.form.on("Pricing Request", {
 	},
 
 	refresh(frm) {
+		_set_customer_product_query(frm);
 		_render_pr_actions(frm);
 		_render_pr_cost_summary(frm);
 
@@ -30,6 +31,12 @@ frappe.ui.form.on("Pricing Request", {
 		_fetch_solids_from_customer_product(frm);
 	},
 });
+
+function _set_customer_product_query(frm) {
+	frm.set_query("customer_product", () => ({
+		filters: { status: "Approved", is_active: 1 },
+	}));
+}
 
 function _is_sales_view() {
 	return !frappe.user.has_role("Costing Approver") &&

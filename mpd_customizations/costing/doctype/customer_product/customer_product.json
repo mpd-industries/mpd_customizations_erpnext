@@ -5,6 +5,10 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "section_break_status",
+  "status",
+  "approved_by",
+  "approved_on",
   "section_break_identity",
   "customer",
   "customer_name",
@@ -38,6 +42,34 @@
   "formulations"
  ],
  "fields": [
+  {
+   "fieldname": "section_break_status",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nFormulations Added\nApproved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
   {
    "fieldname": "section_break_identity",
    "fieldtype": "Section Break",
@@ -187,12 +219,14 @@
    "fieldname": "margin_type",
    "fieldtype": "Select",
    "label": "MPD Margin Type",
-   "options": "\n% of Ex-Factory Cost\nPer kg of Output\nPer kg of Solids"
+   "options": "\n% of Ex-Factory Cost\nPer kg of Output\nPer kg of Solids",
+   "permlevel": 3
   },
   {
    "fieldname": "margin_rate",
    "fieldtype": "Float",
-   "label": "MPD Margin Rate"
+   "label": "MPD Margin Rate",
+   "permlevel": 3
   },
   {
    "fieldname": "section_break_commission",
@@ -214,7 +248,8 @@
    "fieldname": "formulations",
    "fieldtype": "Table",
    "label": "Formulations",
-   "options": "Customer Product Formulation"
+   "options": "Customer Product Formulation",
+   "permlevel": 2
   },
   {
    "fieldname": "customer_product_label",
@@ -228,7 +263,7 @@
   }
  ],
  "links": [],
- "modified": "2026-05-13 14:18:17.047376",
+ "modified": "2026-05-18 12:22:49.257311",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Customer Product",
@@ -276,7 +311,19 @@
    "read": 1,
    "report": 1,
    "role": "Costing Approver",
-   "share": 1
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 3,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Approver",
+   "share": 1,
+   "write": 1
   },
   {
    "email": 1,
@@ -286,6 +333,56 @@
    "report": 1,
    "role": "Costing User",
    "share": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 2,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 3,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 2,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "R&D Manager",
+   "share": 1,
+   "write": 1
   }
  ],
  "row_format": "Dynamic",
@@ -293,7 +390,20 @@
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Draft"
+  },
+  {
+   "color": "Blue",
+   "title": "Formulations Added"
+  },
+  {
+   "color": "Green",
+   "title": "Approved"
+  }
+ ],
  "title_field": "customer_product_label",
  "track_changes": 1
 }

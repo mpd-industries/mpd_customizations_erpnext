@@ -15,6 +15,11 @@ class PricingRequest(Document):
 		if not self.product and not self.customer_product:
 			frappe.throw(_("Either Product or Customer Product is required."))
 
+		if self.customer_product:
+			cp_status = frappe.db.get_value("Customer Product", self.customer_product, "status")
+			if cp_status != "Approved":
+				frappe.throw(_("Customer Product must be Approved before creating a quote."))
+
 		if self.solids_content_pct is not None:
 			if not (0 < self.solids_content_pct < 100):
 				frappe.throw(_("Solids Content % must be between 0 and 100 (exclusive)."))

@@ -230,6 +230,29 @@ def auto_expire_rate(rate_name: str, new_valid_to: str):
 
 
 @frappe.whitelist()
+def approve_customer_product(name: str):
+	if not set(frappe.get_roles()) & {"Costing Approver", "System Manager"}:
+		frappe.throw(_("Only Costing Approvers can approve."), frappe.PermissionError)
+
+	doc = frappe.get_doc("Customer Product", name)
+	if doc.status != "Formulations Added":
+		frappe.throw(
+			_("Customer Product must be in 'Formulations Added' status to approve. Current status: {0}").format(
+				doc.status or "Draft"
+			)
+		)
+	if not doc.margin_type or not doc.margin_rate:
+		frappe.throw(_("Margin type and rate are required before approval."))
+
+	doc.status = "Approved"
+	doc.approved_by = frappe.session.user
+	doc.approved_on = now_datetime()
+	doc.save()
+
+	return {"success": True, "status": doc.status}
+
+
+@frappe.whitelist()
 def approve_pricing_calculation(pricing_calculation_name: str):
 	if not set(frappe.get_roles()) & {"Costing Approver", "System Manager"}:
 		frappe.throw(_("Only Costing Approvers can approve."), frappe.PermissionError)

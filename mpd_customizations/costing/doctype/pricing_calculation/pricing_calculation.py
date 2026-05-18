@@ -26,6 +26,9 @@ class PricingCalculation(Document):
 			frappe.throw(_("Supplier Financing Rate must be positive."))
 
 		if self.customer_product_ref:
+			cp_status = frappe.db.get_value("Customer Product", self.customer_product_ref, "status")
+			if cp_status != "Approved":
+				frappe.throw(_("Customer Product must be Approved before creating a quote."))
 			# Customer Quote mode — sync export flag from Customer Product
 			cp_is_export = frappe.db.get_value("Customer Product", self.customer_product_ref, "is_export") or 0
 			self.is_export = cp_is_export
