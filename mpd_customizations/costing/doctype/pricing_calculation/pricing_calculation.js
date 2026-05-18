@@ -15,6 +15,10 @@ function _parse_raw(str) {
 	try { return JSON.parse(str); } catch(e) { return {}; }
 }
 
+function _item_display(row) {
+	return row.custom_item_label || row.item_name || row.item || "";
+}
+
 function _can_auto_evaluate(frm) {
 	return frm.doc.name && !frm.doc.__islocal && frm.doc.docstatus === 0;
 }
@@ -388,7 +392,7 @@ function _show_overrides_dialog(frm) {
 
 	const rows =
 		rate_ov.map(rl => make_row(
-			rl.item_name || rl.item,
+			_item_display(rl),
 			rl.fetched_rate, rl.working_rate,
 			rl.override_reason,
 			`data-revert-item="${frappe.utils.escape_html(rl.item)}"`,
@@ -681,7 +685,7 @@ function _render_cost_snapshot(l, $wrapper, opts) {
 			? ` <span class="text-warning" title="${__("Override active")}">⚠</span>`
 			: "";
 		return `<tr>
-			<td class="pl-3">${frappe.utils.escape_html(ml.item_name || ml.item)}${override_note}${is_scrap ? ' <em class="text-muted small">(scrap credit)</em>' : ""}</td>
+			<td class="pl-3">${frappe.utils.escape_html(_item_display(ml))}${override_note}${is_scrap ? ' <em class="text-muted small">(scrap credit)</em>' : ""}</td>
 			<td class="text-right text-muted small">${(ml.qty_per_kg_output || 0).toFixed(4)} × ₹${(ml.working_rate || 0).toFixed(2)}</td>
 			<td class="text-right">${amount_fmt}/kg</td>
 		</tr>`;
@@ -779,7 +783,7 @@ function _render_cost_snapshot(l, $wrapper, opts) {
 				: "—";
 			const up = (ml.working_rate || 0) > (ml.fetched_rate || 0);
 			return `<tr>
-				<td>${frappe.utils.escape_html(ml.item_name || ml.item)}</td>
+				<td>${frappe.utils.escape_html(_item_display(ml))}</td>
 				<td class="text-right">₹${(ml.fetched_rate || 0).toFixed(2)}</td>
 				<td class="text-right">₹${(ml.working_rate || 0).toFixed(2)}</td>
 				<td class="text-right font-weight-bold" style="color:${up ? "#c62828" : "#2e7d32"}">
@@ -861,7 +865,7 @@ function _render_approval_banner(frm) {
 		const diff_pct = ml.fetched_rate
 			? (((ml.working_rate - ml.fetched_rate) / ml.fetched_rate) * 100).toFixed(1)
 			: "—";
-		return `· ${ml.item_name || ml.item}: ₹${(ml.fetched_rate || 0).toFixed(2)} → ₹${(ml.working_rate || 0).toFixed(2)} (${diff_pct}%)`;
+		return `· ${_item_display(ml)}: ₹${(ml.fetched_rate || 0).toFixed(2)} → ₹${(ml.working_rate || 0).toFixed(2)} (${diff_pct}%)`;
 	}).join("<br>");
 
 	frm.dashboard.add_comment(`

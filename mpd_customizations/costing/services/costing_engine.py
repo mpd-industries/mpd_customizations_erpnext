@@ -85,6 +85,16 @@ class CostingEngine:
 		for si in all_scrap_items:
 			scrap_items_map.setdefault(si["parent"], []).append(si)
 
+		all_item_codes = {bi["item_code"] for bi in all_bom_items} | {si["item_code"] for si in all_scrap_items}
+		item_label_map: Dict[str, str] = {}
+		if all_item_codes:
+			for row in frappe.get_all(
+				"Item",
+				filters={"name": ["in", list(all_item_codes)]},
+				fields=["name", "custom_item_label"],
+			):
+				item_label_map[row.name] = row.custom_item_label or ""
+
 		prev_rm_costs = {}
 		preferred_bom_override = None
 		if doc.pricing_request:
@@ -191,6 +201,9 @@ class CostingEngine:
 					"pricing_calculation": pricing_calculation_name,
 					"item": bi["item_code"],
 					"item_name": bi["item_name"],
+					"custom_item_label": _material_item_label(
+						bi["item_code"], bi["item_name"], rl, item_label_map
+					),
 					"uom": bi["uom"],
 					"qty_per_kg_output": qty_per_kg,
 					"supplier": supplier,
@@ -216,6 +229,9 @@ class CostingEngine:
 					"pricing_calculation": pricing_calculation_name,
 					"item": si["item_code"],
 					"item_name": si["item_name"],
+					"custom_item_label": _material_item_label(
+						si["item_code"], si["item_name"], None, item_label_map
+					),
 					"uom": si["stock_uom"],
 					"qty_per_kg_output": qty_per_kg,
 					"supplier": None,
@@ -478,6 +494,19 @@ def build_cost_summary(combo: dict, raw: dict) -> dict:
 		"solids_content_pct": solids,
 		"heads": heads,
 	}
+
+
+def _material_item_label(
+	item_code: str,
+	item_name: str,
+	rate_line=None,
+	item_label_map: Optional[Dict[str, str]] = None,
+) -> str:
+	if rate_line and getattr(rate_line, "custom_item_label", None):
+		return rate_line.custom_item_label
+	if item_label_map and item_label_map.get(item_code):
+		return item_label_map[item_code]
+	return item_name or item_code
 
 
 def find_selected_combo(combinations: list, selected_bom: Optional[str] = None):
