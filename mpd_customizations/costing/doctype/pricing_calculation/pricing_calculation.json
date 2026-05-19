@@ -396,7 +396,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-18 11:28:53.053287",
+ "modified": "2026-05-19 10:20:06.134383",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Pricing Calculation",
@@ -433,9 +433,9 @@
    "email": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
    "report": 1,
    "role": "Costing Sales",
+   "select": 1,
    "share": 1
   }
  ],
