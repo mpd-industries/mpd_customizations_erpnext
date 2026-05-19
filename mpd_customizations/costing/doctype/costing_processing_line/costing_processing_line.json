@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "creation": "2024-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "processor",
+  "processing_charge_ref",
+  "fetched_charge_per_kg",
+  "fetched_freight_per_unit",
+  "fetched_includes_outward_freight",
+  "working_charge_per_kg",
+  "working_freight_per_unit",
+  "working_includes_outward_freight",
+  "override_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "processor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Processor",
+   "options": "Processor",
+   "read_only": 1
+  },
+  {
+   "fieldname": "processing_charge_ref",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Processing Charge Source"
+  },
+  {
+   "fieldname": "fetched_charge_per_kg",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Official Charge per kg"
+  },
+  {
+   "fieldname": "fetched_freight_per_unit",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Official Freight per Unit"
+  },
+  {
+   "default": "0",
+   "fieldname": "fetched_includes_outward_freight",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Official Includes Freight"
+  },
+  {
+   "fieldname": "working_charge_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Charge per kg to Use"
+  },
+  {
+   "fieldname": "working_freight_per_unit",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Freight per Unit to Use"
+  },
+  {
+   "default": "0",
+   "fieldname": "working_includes_outward_freight",
+   "fieldtype": "Check",
+   "label": "Includes Outward Freight"
+  },
+  {
+   "fieldname": "override_reason",
+   "fieldtype": "Small Text",
+   "label": "Override Reason"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-06 15:19:07.065555",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Processing Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

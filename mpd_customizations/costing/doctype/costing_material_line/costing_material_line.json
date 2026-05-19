@@ -1,0 +1,164 @@
+{
+ "actions": [],
+ "autoname": "CML-.YYYY.-.#####",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "pricing_calculation",
+  "combination",
+  "item",
+  "item_name",
+  "uom",
+  "qty_per_kg_output",
+  "supplier",
+  "city",
+  "rate_freshness",
+  "working_rate",
+  "working_supplier_credit_days",
+  "net_financed_days",
+  "amount_per_kg",
+  "financing_cost_per_kg",
+  "equalized_amount_per_kg",
+  "confidence_score",
+  "is_scrap"
+ ],
+ "fields": [
+  {
+   "fieldname": "pricing_calculation",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Pricing Calculation",
+   "options": "Pricing Calculation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "combination",
+   "fieldtype": "Link",
+   "label": "Combination",
+   "options": "Costing Combination",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name"
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM"
+  },
+  {
+   "fieldname": "qty_per_kg_output",
+   "fieldtype": "Float",
+   "label": "Qty per kg Output",
+   "precision": "6"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Link",
+   "label": "City",
+   "options": "City"
+  },
+  {
+   "fieldname": "rate_freshness",
+   "fieldtype": "Select",
+   "label": "Rate Freshness",
+   "options": "\nCurrent\nExpired\nMissing"
+  },
+  {
+   "fieldname": "working_rate",
+   "fieldtype": "Currency",
+   "label": "Rate Used"
+  },
+  {
+   "fieldname": "working_supplier_credit_days",
+   "fieldtype": "Int",
+   "label": "Credit Days Used"
+  },
+  {
+   "fieldname": "net_financed_days",
+   "fieldtype": "Int",
+   "label": "Net Financed Days"
+  },
+  {
+   "fieldname": "amount_per_kg",
+   "fieldtype": "Currency",
+   "label": "Amount per kg"
+  },
+  {
+   "fieldname": "financing_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Financing Cost per kg"
+  },
+  {
+   "fieldname": "equalized_amount_per_kg",
+   "fieldtype": "Currency",
+   "label": "Amount @ 60d Credit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "confidence_score",
+   "fieldtype": "Float",
+   "label": "Confidence Score"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_scrap",
+   "fieldtype": "Check",
+   "label": "Scrap Item",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Material Line",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Costing User"
+  },
+  {
+   "read": 1,
+   "role": "Costing Approver"
+  },
+  {
+   "read": 1,
+   "role": "Rate Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "creation": "2024-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "item",
+  "item_name",
+  "item_group",
+  "col_break_1",
+  "charge_per_kg",
+  "includes_outward_freight",
+  "fg_freight_per_unit",
+  "section_break_validity",
+  "valid_from",
+  "valid_to",
+  "col_break_validity",
+  "is_active",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item (Specific)",
+   "options": "Item"
+  },
+  {
+   "fetch_from": "item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Group (Fallback)",
+   "options": "Item Group"
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "charge_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Charge per kg of Solids (\u20b9)",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "includes_outward_freight",
+   "fieldtype": "Check",
+   "label": "Includes Outward Freight"
+  },
+  {
+   "depends_on": "eval:!doc.includes_outward_freight",
+   "fieldname": "fg_freight_per_unit",
+   "fieldtype": "Currency",
+   "label": "FG Freight per Unit (\u20b9)"
+  },
+  {
+   "fieldname": "section_break_validity",
+   "fieldtype": "Section Break",
+   "label": "Validity"
+  },
+  {
+   "fieldname": "valid_from",
+   "fieldtype": "Datetime",
+   "label": "Valid From",
+   "reqd": 1
+  },
+  {
+   "fieldname": "valid_to",
+   "fieldtype": "Datetime",
+   "label": "Valid To"
+  },
+  {
+   "fieldname": "col_break_validity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-12 14:42:01.237114",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Processing Charge",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

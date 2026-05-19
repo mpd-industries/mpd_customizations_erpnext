@@ -1,0 +1,144 @@
+{
+ "actions": [],
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "engine_version",
+  "section_break_production",
+  "production_days",
+  "section_break_rates",
+  "supplier_financing_rate_pct",
+  "actual_cost_of_capital_pct",
+  "credit_benefit_rate_pct",
+  "customer_credit_rate_pct",
+  "section_break_formulation",
+  "auto_exclusion_threshold_pct",
+  "formulation_switch_threshold_pct",
+  "section_break_validity",
+  "default_valid_to",
+  "default_valid_to_days",
+  "rate_expiry_warning_days"
+ ],
+ "fields": [
+  {
+   "fieldname": "engine_version",
+   "fieldtype": "Data",
+   "label": "Engine Version",
+   "default": "1.0.0"
+  },
+  {
+   "fieldname": "section_break_production",
+   "fieldtype": "Section Break",
+   "label": "Production"
+  },
+  {
+   "default": "30",
+   "fieldname": "production_days",
+   "fieldtype": "Int",
+   "label": "Production Days"
+  },
+  {
+   "fieldname": "section_break_rates",
+   "fieldtype": "Section Break",
+   "label": "Interest Rates"
+  },
+  {
+   "default": "12",
+   "fieldname": "supplier_financing_rate_pct",
+   "fieldtype": "Float",
+   "label": "Supplier Financing Rate % pa"
+  },
+  {
+   "default": "9",
+   "fieldname": "actual_cost_of_capital_pct",
+   "fieldtype": "Float",
+   "label": "Actual Cost of Capital % pa",
+   "permlevel": 1
+  },
+  {
+   "default": "8",
+   "fieldname": "credit_benefit_rate_pct",
+   "fieldtype": "Float",
+   "label": "Credit Benefit Rate % pa (>60d)"
+  },
+  {
+   "default": "16",
+   "fieldname": "customer_credit_rate_pct",
+   "fieldtype": "Float",
+   "label": "Customer Credit Rate % pa"
+  },
+  {
+   "fieldname": "section_break_formulation",
+   "fieldtype": "Section Break",
+   "label": "Formulation Selection"
+  },
+  {
+   "default": "15",
+   "fieldname": "auto_exclusion_threshold_pct",
+   "fieldtype": "Float",
+   "label": "Auto Exclusion Threshold %"
+  },
+  {
+   "default": "5",
+   "fieldname": "formulation_switch_threshold_pct",
+   "fieldtype": "Float",
+   "label": "Formulation Switch Alert Threshold %"
+  },
+  {
+   "fieldname": "section_break_validity",
+   "fieldtype": "Section Break",
+   "label": "Rate Validity"
+  },
+  {
+   "default": "End of Month",
+   "fieldname": "default_valid_to",
+   "fieldtype": "Select",
+   "label": "Default Valid To",
+   "options": "End of Month\nEnd of Quarter\nCustom Days"
+  },
+  {
+   "default": "30",
+   "fieldname": "default_valid_to_days",
+   "fieldtype": "Int",
+   "label": "Default Valid To Days"
+  },
+  {
+   "default": "30",
+   "fieldname": "rate_expiry_warning_days",
+   "fieldtype": "Int",
+   "label": "Rate Expiry Warning Days"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Configuration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "permlevel": 0,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "System Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

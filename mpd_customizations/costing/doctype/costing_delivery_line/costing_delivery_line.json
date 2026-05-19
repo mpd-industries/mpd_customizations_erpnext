@@ -1,0 +1,161 @@
+{
+ "actions": [],
+ "creation": "2026-05-11 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "source_address",
+  "source_city",
+  "destination_address",
+  "destination_country",
+  "destination_city",
+  "is_export",
+  "transport_mode",
+  "incoterms",
+  "freight_rate_ref",
+  "fetched_freight_per_kg",
+  "fetched_forex_rate",
+  "fetched_currency",
+  "rate_freshness",
+  "working_freight_per_kg",
+  "working_forex_rate",
+  "working_currency",
+  "override_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_address",
+   "fieldtype": "Link",
+   "label": "Source Address",
+   "options": "Address",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "source_city",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Source City",
+   "options": "City",
+   "read_only": 1
+  },
+  {
+   "fieldname": "destination_address",
+   "fieldtype": "Link",
+   "label": "Destination Address",
+   "options": "Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "destination_country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "destination_city",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "City",
+   "options": "City",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_export",
+   "fieldtype": "Check",
+   "label": "Export",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "default": "Barrels",
+   "fieldname": "transport_mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Transport Mode",
+   "options": "\nBarrels\nBags\nMS Tanker\nSS Tanker"
+  },
+  {
+   "columns": 2,
+   "fieldname": "incoterms",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Incoterms",
+   "options": "Incoterm",
+   "read_only": 1
+  },
+  {
+   "fieldname": "freight_rate_ref",
+   "fieldtype": "Link",
+   "label": "Rate Source",
+   "options": "Freight Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fetched_freight_per_kg",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Official Freight per kg"
+  },
+  {
+   "fieldname": "fetched_forex_rate",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Official Forex Rate"
+  },
+  {
+   "fieldname": "fetched_currency",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Official Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "rate_freshness",
+   "fieldtype": "Select",
+   "label": "Freshness",
+   "options": "\nCurrent\nExpired\nMissing",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "working_freight_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Freight per kg (INR)"
+  },
+  {
+   "fieldname": "working_forex_rate",
+   "fieldtype": "Float",
+   "label": "Forex Rate (INR/unit)",
+   "description": "INR per 1 unit of foreign currency. Leave 0 for domestic."
+  },
+  {
+   "fieldname": "working_currency",
+   "fieldtype": "Link",
+   "label": "Quote Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "override_reason",
+   "fieldtype": "Small Text",
+   "label": "Override Reason"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-12 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing Delivery Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

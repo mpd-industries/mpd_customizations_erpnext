@@ -1,0 +1,410 @@
+{
+ "actions": [],
+ "autoname": "CPR-.YYYY.-.#####",
+ "creation": "2026-05-11 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_status",
+  "status",
+  "approved_by",
+  "approved_on",
+  "section_break_identity",
+  "customer",
+  "customer_name",
+  "customer_product_code",
+  "customer_product_label",
+  "col_break_identity",
+  "product_description",
+  "is_active",
+  "additional_notes",
+  "section_break_packaging",
+  "packaging_material",
+  "fill_quantity_kg",
+  "col_break_packaging",
+  "packaging_description",
+  "section_break_delivery",
+  "delivery_address",
+  "delivery_city",
+  "delivery_country",
+  "col_break_delivery",
+  "is_export",
+  "section_break_terms",
+  "incoterms",
+  "credit_days",
+  "transport_mode",
+  "col_break_terms",
+  "margin_type",
+  "margin_rate",
+  "section_break_commission",
+  "commissions",
+  "section_break_formulations",
+  "formulations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_status",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nFormulations Added\nApproved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_identity",
+   "fieldtype": "Section Break",
+   "label": "Product Identity"
+  },
+  {
+   "bold": 1,
+   "columns": 2,
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "columns": 3,
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "columns": 2,
+   "fieldname": "customer_product_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer Product Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "product_description",
+   "fieldtype": "Small Text",
+   "label": "Product Description"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "fieldname": "section_break_packaging",
+   "fieldtype": "Section Break",
+   "label": "Default Packaging"
+  },
+  {
+   "fieldname": "packaging_material",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Packaging Material",
+   "options": "Packaging Material"
+  },
+  {
+   "description": "Default fill quantity \u2014 can be adjusted per quote",
+   "fieldname": "fill_quantity_kg",
+   "fieldtype": "Float",
+   "label": "Fill Quantity (kg/pkg)"
+  },
+  {
+   "fieldname": "col_break_packaging",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "packaging_description",
+   "fieldtype": "Small Text",
+   "label": "Packaging Notes"
+  },
+  {
+   "fieldname": "section_break_delivery",
+   "fieldtype": "Section Break",
+   "label": "Delivery Destination"
+  },
+  {
+   "description": "Filtered to this customer's addresses",
+   "fieldname": "delivery_address",
+   "fieldtype": "Link",
+   "label": "Delivery Address",
+   "options": "Address"
+  },
+  {
+   "fieldname": "delivery_city",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "City",
+   "options": "City",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_country",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Country",
+   "options": "Country",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_delivery",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_export",
+   "fieldtype": "Check",
+   "label": "Export Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_terms",
+   "fieldtype": "Section Break",
+   "label": "Commercial Terms"
+  },
+  {
+   "fieldname": "incoterms",
+   "fieldtype": "Link",
+   "label": "Incoterms",
+   "options": "Incoterm"
+  },
+  {
+   "default": "0",
+   "description": "0 = advance payment \u00b7 \u226430 = no charge \u00b7 >30 = interest charged on extra days",
+   "fieldname": "credit_days",
+   "fieldtype": "Int",
+   "label": "Credit Days"
+  },
+  {
+   "fieldname": "transport_mode",
+   "fieldtype": "Select",
+   "label": "Default Transport Mode",
+   "options": "\nBarrels\nBags\nMS Tanker\nSS Tanker"
+  },
+  {
+   "fieldname": "col_break_terms",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "margin_type",
+   "fieldtype": "Select",
+   "label": "MPD Margin Type",
+   "options": "\n% of Ex-Factory Cost\nPer kg of Output\nPer kg of Solids",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "margin_rate",
+   "fieldtype": "Float",
+   "label": "MPD Margin Rate",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "section_break_commission",
+   "fieldtype": "Section Break",
+   "label": "Commission"
+  },
+  {
+   "fieldname": "commissions",
+   "fieldtype": "Table",
+   "label": "Commissions",
+   "options": "Customer Product Commission"
+  },
+  {
+   "fieldname": "section_break_formulations",
+   "fieldtype": "Section Break",
+   "label": "Valid Formulations"
+  },
+  {
+   "fieldname": "formulations",
+   "fieldtype": "Table",
+   "label": "Formulations",
+   "options": "Customer Product Formulation",
+   "permlevel": 2
+  },
+  {
+   "fieldname": "customer_product_label",
+   "fieldtype": "Data",
+   "label": "Customer Product Label",
+   "read_only": 1
+  },
+  {
+   "fieldname": "additional_notes",
+   "fieldtype": "Small Text",
+   "label": "Additional Notes"
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-18 13:25:12.447412",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Customer Product",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Sales",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "R&D Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Approver",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 3,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Approver",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing User",
+   "share": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 2,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 3,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 2,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "R&D Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "customer_product_label",
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Draft"
+  },
+  {
+   "color": "Blue",
+   "title": "Formulations Added"
+  },
+  {
+   "color": "Green",
+   "title": "Approved"
+  }
+ ],
+ "title_field": "customer_product_label",
+ "track_changes": 1
+}

@@ -1,0 +1,447 @@
+{
+ "actions": [],
+ "autoname": "PC-.YYYY.-.#####",
+ "creation": "2026-05-07 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_header",
+  "pricing_request",
+  "customer_product_ref",
+  "customer",
+  "customer_product_code",
+  "col_break_customer",
+  "is_export",
+  "item",
+  "item_name",
+  "city",
+  "col_break_header",
+  "solids_content_pct",
+  "processor",
+  "processor_name",
+  "section_break_parameters",
+  "production_days",
+  "fetched_production_days",
+  "credit_days",
+  "col_break_params",
+  "supplier_financing_rate_pct",
+  "fetched_supplier_financing_rate_pct",
+  "customer_credit_rate_pct",
+  "fetched_customer_credit_rate_pct",
+  "section_break_processing",
+  "processing_lines",
+  "section_break_rates",
+  "rate_lines",
+  "section_break_scrap",
+  "scrap_lines",
+  "section_break_previous",
+  "preferred_bom",
+  "section_break_packaging",
+  "packaging_lines",
+  "section_break_delivery",
+  "delivery_lines",
+  "section_break_additional",
+  "additional_charges",
+  "section_break_state",
+  "mode",
+  "costing_raw",
+  "selected_combination",
+  "confirmed_selling_price_per_kg",
+  "valid_until",
+  "last_evaluated_on",
+  "engine_version_used",
+  "formulation_switch_alert",
+  "section_break_panels",
+  "combinations_html",
+  "cost_breakdown_html",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_header",
+   "fieldtype": "Section Break",
+   "label": "Request Details"
+  },
+  {
+   "fieldname": "pricing_request",
+   "fieldtype": "Link",
+   "label": "Pricing Request",
+   "options": "Pricing Request",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "customer_product_ref",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer Product",
+   "options": "Customer Product",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "columns": 2,
+   "depends_on": "eval:doc.customer_product_ref",
+   "fetch_from": "customer_product_ref.customer",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "depends_on": "eval:doc.customer_product_ref",
+   "fetch_from": "customer_product_ref.customer_product_code",
+   "fieldname": "customer_product_code",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Customer Product Code",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "col_break_customer",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.customer_product_ref",
+   "fieldname": "is_export",
+   "fieldtype": "Check",
+   "label": "Export Order",
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "columns": 2,
+   "depends_on": "eval:!doc.customer_product_ref",
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Product",
+   "mandatory_depends_on": "eval:!doc.customer_product_ref",
+   "options": "Item",
+   "search_index": 1
+  },
+  {
+   "columns": 4,
+   "depends_on": "eval:!doc.customer_product_ref",
+   "fetch_from": "item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Product Name",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "city",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "City",
+   "options": "City",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "col_break_header",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "solids_content_pct",
+   "fieldtype": "Float",
+   "label": "Solids Content %",
+   "reqd": 1
+  },
+  {
+   "fieldname": "processor",
+   "fieldtype": "Link",
+   "label": "Processor",
+   "options": "Processor"
+  },
+  {
+   "fetch_from": "processor.processor_name",
+   "fieldname": "processor_name",
+   "fieldtype": "Data",
+   "label": "Processor Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_parameters",
+   "fieldtype": "Section Break",
+   "label": "Parameters"
+  },
+  {
+   "fieldname": "production_days",
+   "fieldtype": "Int",
+   "label": "Production Days",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fetched_production_days",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Fetched Production Days"
+  },
+  {
+   "depends_on": "eval:doc.customer_product_ref",
+   "fieldname": "credit_days",
+   "fieldtype": "Int",
+   "label": "Credit Days"
+  },
+  {
+   "fieldname": "col_break_params",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "supplier_financing_rate_pct",
+   "fieldtype": "Float",
+   "label": "Supplier Financing Rate % pa",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fetched_supplier_financing_rate_pct",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Fetched Supplier Financing Rate"
+  },
+  {
+   "depends_on": "eval:doc.customer_product_ref",
+   "fieldname": "customer_credit_rate_pct",
+   "fieldtype": "Float",
+   "label": "Customer Credit Rate % pa"
+  },
+  {
+   "depends_on": "eval:doc.customer_product_ref",
+   "fieldname": "fetched_customer_credit_rate_pct",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Fetched Customer Credit Rate"
+  },
+  {
+   "fieldname": "section_break_previous",
+   "fieldtype": "Section Break",
+   "label": "Preferred Formulation"
+  },
+  {
+   "fieldname": "preferred_bom",
+   "fieldtype": "Link",
+   "label": "Preferred Formulation",
+   "options": "BOM"
+  },
+  {
+   "depends_on": "eval:doc.customer_product_ref",
+   "fieldname": "section_break_packaging",
+   "fieldtype": "Section Break",
+   "label": "Packaging"
+  },
+  {
+   "depends_on": "eval:doc.customer_product_ref",
+   "fieldname": "packaging_lines",
+   "fieldtype": "Table",
+   "label": "Packaging",
+   "options": "Costing Packaging Line"
+  },
+  {
+   "depends_on": "eval:doc.customer_product_ref",
+   "fieldname": "section_break_delivery",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "depends_on": "eval:doc.customer_product_ref",
+   "fieldname": "delivery_lines",
+   "fieldtype": "Table",
+   "label": "Delivery",
+   "options": "Costing Delivery Line"
+  },
+  {
+   "fieldname": "section_break_additional",
+   "fieldtype": "Section Break",
+   "label": "Additional Charges"
+  },
+  {
+   "fieldname": "additional_charges",
+   "fieldtype": "Table",
+   "label": "Additional Charges",
+   "options": "Costing Additional Charge"
+  },
+  {
+   "fieldname": "section_break_rates",
+   "fieldtype": "Section Break",
+   "label": "Rates"
+  },
+  {
+   "fieldname": "rate_lines",
+   "fieldtype": "Table",
+   "label": "Material Rates",
+   "options": "Costing Rate Line"
+  },
+  {
+   "fieldname": "section_break_scrap",
+   "fieldtype": "Section Break",
+   "label": "Scrap / Byproducts"
+  },
+  {
+   "fieldname": "scrap_lines",
+   "fieldtype": "Table",
+   "label": "Scrap / Byproducts",
+   "options": "Costing Scrap Line"
+  },
+  {
+   "fieldname": "section_break_processing",
+   "fieldtype": "Section Break",
+   "label": "Processing"
+  },
+  {
+   "fieldname": "processing_lines",
+   "fieldtype": "Table",
+   "label": "Processing Charge",
+   "options": "Costing Processing Line"
+  },
+  {
+   "fieldname": "section_break_state",
+   "fieldtype": "Section Break",
+   "label": "State"
+  },
+  {
+   "fieldname": "selected_combination",
+   "fieldtype": "Link",
+   "label": "Selected Formulation",
+   "options": "BOM",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "depends_on": "eval:doc.customer_product_ref",
+   "fieldname": "confirmed_selling_price_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Confirmed Selling Price per kg",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "valid_until",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Quote Valid Until"
+  },
+  {
+   "columns": 2,
+   "default": "Draft",
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Mode",
+   "options": "Draft\nReady for Working\nReady to Quote\nApproved\nRejected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_evaluated_on",
+   "fieldtype": "Datetime",
+   "label": "Last Evaluated On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "engine_version_used",
+   "fieldtype": "Data",
+   "label": "Engine Version Used",
+   "read_only": 1
+  },
+  {
+   "fieldname": "formulation_switch_alert",
+   "fieldtype": "Small Text",
+   "label": "Formulation Alert",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_panels",
+   "fieldtype": "Section Break",
+   "label": "Panels"
+  },
+  {
+   "fieldname": "combinations_html",
+   "fieldtype": "HTML",
+   "label": "Formulation Comparison"
+  },
+  {
+   "fieldname": "cost_breakdown_html",
+   "fieldtype": "HTML",
+   "label": "Cost Breakdown"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Pricing Calculation",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "costing_raw",
+   "fieldtype": "JSON",
+   "hidden": 1,
+   "label": "Costing Raw"
+  }
+ ],
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-05-19 10:20:06.134383",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Pricing Calculation",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Costing Approver",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "role": "Costing Sales",
+   "select": 1,
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

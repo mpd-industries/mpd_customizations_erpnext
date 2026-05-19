@@ -1,0 +1,258 @@
+{
+ "charts": [],
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pricing Request\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pricing Calculation\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer Product\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Material Rate\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Packaging Rate\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Freight Rate\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Rate History\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Costing</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Costing\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Rates\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+ "creation": "2024-01-01 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "manufacturing",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Costing",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Costing",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Pricing Request",
+   "link_count": 0,
+   "link_to": "Pricing Request",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Pricing Calculation",
+   "link_count": 0,
+   "link_to": "Pricing Calculation",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Customer Product",
+   "link_count": 0,
+   "link_to": "Customer Product",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Rates",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Material Rate",
+   "link_count": 0,
+   "link_to": "Material Rate",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Packaging Rate",
+   "link_count": 0,
+   "link_to": "Packaging Rate",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Freight Rate",
+   "link_count": 0,
+   "link_to": "Freight Rate",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Processing Charge",
+   "link_count": 0,
+   "link_to": "Processing Charge",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Masters",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Packaging Material",
+   "link_count": 0,
+   "link_to": "Packaging Material",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "City",
+   "link_count": 0,
+   "link_to": "City",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Processor",
+   "link_count": 0,
+   "link_to": "Processor",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Costing Configuration",
+   "link_count": 0,
+   "link_to": "Costing Configuration",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Item Rate History",
+   "link_count": 0,
+   "link_to": "Item Rate History",
+   "link_type": "Report",
+   "onboard": 1,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-05-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Costing",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Costing User"
+  },
+  {
+   "role": "Costing Approver"
+  },
+  {
+   "role": "Costing Sales"
+  },
+  {
+   "role": "Rate Manager"
+  },
+  {
+   "role": "R&D Manager"
+  },
+  {
+   "role": "Dispatch Manager"
+  }
+ ],
+ "sequence_id": 21.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "label": "Pricing Request",
+   "link_to": "Pricing Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "label": "Pricing Calculation",
+   "link_to": "Pricing Calculation",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "Customer Product",
+   "link_to": "Customer Product",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "label": "Material Rate",
+   "link_to": "Material Rate",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "label": "Packaging Rate",
+   "link_to": "Packaging Rate",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "label": "Freight Rate",
+   "link_to": "Freight Rate",
+   "type": "DocType"
+  },
+  {
+   "label": "Item Rate History",
+   "link_to": "Item Rate History",
+   "type": "Report"
+  }
+ ],
+ "title": "Costing"
+}
