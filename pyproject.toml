@@ -12,6 +12,7 @@ dependencies = [
     "scikit-learn==1.8.0",
     "mcp>=1.0",
     "sarvamai==0.1.28",
+    "pypdf>=6.8.0"
     # "frappe~=15.0.0" # Installed and managed by bench.
 ]
 

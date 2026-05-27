@@ -14,16 +14,22 @@ def _ascii_header(val):
 
 def call_llm(config, system_prompt, user_prompt,
              reference_doctype=None, reference_name=None,
-             attached_file_data=None, attached_mime=None):
+             attached_file_data=None, attached_mime=None,
+             attached_filename="document.pdf"):
     """
     Makes a LiteLLM call using the given AI Task Config.
     Logs the result to LLM Review Log (best-effort).
     Returns parsed dict.
 
+    attached_filename is used as the filename hint when sending PDFs to
+    OpenRouter (which accepts any model and converts PDFs server-side).
     """
     provider = frappe.get_doc("LLM Provider", config.llm_provider)
 
-    user_content = _build_user_content(user_prompt, attached_file_data, attached_mime, config.model)
+    user_content = _build_user_content(
+        user_prompt, attached_file_data, attached_mime, config.model,
+        provider=provider, filename=attached_filename,
+    )
 
     completion_kwargs = {
         "model": config.model,
@@ -130,20 +136,28 @@ def _openrouter_extra_headers(provider, model):
     return None
 
 
-def _build_user_content(user_prompt, file_data, mime, model):
+def _is_openrouter(provider, model):
+    base = (provider.api_base or "").lower() if provider else ""
+    m = (model or "").lower()
+    return "openrouter.ai" in base or m.startswith("openrouter/")
+
+
+def _build_user_content(user_prompt, file_data, mime, model, provider=None, filename="document.pdf"):
     if not file_data or not mime:
         return user_prompt
 
     if mime == "application/pdf":
-        if not litellm.supports_pdf_input(model=model):
-            frappe.log_error(
-                title=f"Model {model} does not support PDF input - sending text only",
-            )
-            return user_prompt
-        return [
-            {"type": "text", "text": user_prompt},
-            {"type": "file", "file": {"file_data": file_data}},
-        ]
+        # OpenRouter converts PDFs server-side for any model — bypass the
+        # litellm.supports_pdf_input gate which returns False for most models.
+        if _is_openrouter(provider, model) or litellm.supports_pdf_input(model=model):
+            return [
+                {"type": "text", "text": user_prompt},
+                {"type": "file", "file": {"filename": filename, "file_data": file_data}},
+            ]
+        frappe.log_error(
+            title=f"Model {model} does not support PDF input - sending text only",
+        )
+        return user_prompt
 
     if mime.startswith("image/"):
         return [

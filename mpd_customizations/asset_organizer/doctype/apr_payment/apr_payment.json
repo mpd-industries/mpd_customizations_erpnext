@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "creation": "2026-05-26 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "payment_type",
+  "reference_number",
+  "payment_evidence",
+  "extraction_status",
+  "column_break_extracted",
+  "payment_date",
+  "amount_paid",
+  "invoice_reference_in_pdf",
+  "is_matched",
+  "extraction_error"
+ ],
+ "fields": [
+  {
+   "fieldname": "payment_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Payment Type",
+   "options": "\nAdvance\nPart Payment\nFull Settlement",
+   "reqd": 1
+  },
+  {
+   "fieldname": "payment_evidence",
+   "fieldtype": "Attach",
+   "label": "Bank Advice / Statement"
+  },
+  {
+   "default": "Queued",
+   "fieldname": "extraction_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Extraction Status",
+   "options": "Queued\nProcessing\nExtracted\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_extracted",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Payment Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount_paid",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount Paid",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "UTR / RTGS / Cheque No.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoice_reference_in_pdf",
+   "fieldtype": "Data",
+   "label": "Invoice Ref in PDF",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_matched",
+   "fieldtype": "Check",
+   "label": "Reference Matched",
+   "read_only": 1
+  },
+  {
+   "fieldname": "extraction_error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-27 14:13:28.204304",
+ "modified_by": "Administrator",
+ "module": "asset_organizer",
+ "name": "APR Payment",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

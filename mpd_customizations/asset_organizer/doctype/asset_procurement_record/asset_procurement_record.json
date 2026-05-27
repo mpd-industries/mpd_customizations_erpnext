@@ -1,0 +1,380 @@
+{
+ "actions": [],
+ "autoname": "APR-.YYYY.-.#####",
+ "creation": "2026-05-26 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_header",
+  "asset_label",
+  "asset_description",
+  "record_status",
+  "ai_description_suggestion",
+  "section_break_supplier",
+  "supplier_doctype",
+  "supplier_link",
+  "column_break_supplier2",
+  "supplier_gstin",
+  "supplier_name_raw",
+  "section_break_milestones",
+  "quote_date",
+  "po_date",
+  "po_number",
+  "column_break_milestones2",
+  "invoice_date",
+  "invoice_number",
+  "igp_date",
+  "igp_number",
+  "section_break_financials",
+  "quote_total_value",
+  "po_total_value",
+  "invoice_taxable_value",
+  "invoice_gst_amount",
+  "column_break_financials2",
+  "invoice_total_value",
+  "total_amount_paid",
+  "outstanding_balance",
+  "section_break_location",
+  "current_location",
+  "final_location",
+  "column_break_location2",
+  "installation_status",
+  "installation_date",
+  "erpnext_asset_link",
+  "section_break_uploads",
+  "uploaded_documents",
+  "section_break_evidence",
+  "evidence_documents",
+  "section_break_items",
+  "item_lines",
+  "section_break_payments",
+  "payments",
+  "section_break_location_log",
+  "location_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_header",
+   "fieldtype": "Section Break",
+   "label": "Asset Details"
+  },
+  {
+   "fieldname": "asset_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Asset Label"
+  },
+  {
+   "fieldname": "asset_description",
+   "fieldtype": "Data",
+   "label": "Asset Description"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "record_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nQuotation Captured\nPO Raised\nInvoiced\nGoods on Site\nPayment Pending\nPartially Paid\nFully Settled\nInsurance Ready\nAsset Commissioned",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_description_suggestion",
+   "fieldtype": "Small Text",
+   "label": "AI Suggested Description",
+   "read_only": 1,
+   "depends_on": "eval:!doc.asset_description && doc.ai_description_suggestion"
+  },
+  {
+   "fieldname": "section_break_supplier",
+   "fieldtype": "Section Break",
+   "label": "Supplier"
+  },
+  {
+   "fieldname": "supplier_doctype",
+   "fieldtype": "Select",
+   "label": "Supplier Type",
+   "options": "\nSupplier\nStaged Supplier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier_link",
+   "fieldtype": "Dynamic Link",
+   "label": "Supplier",
+   "options": "supplier_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_supplier2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "supplier_gstin",
+   "fieldtype": "Data",
+   "label": "Supplier GSTIN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier_name_raw",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Supplier Name (from Document)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_milestones",
+   "fieldtype": "Section Break",
+   "label": "Milestones"
+  },
+  {
+   "fieldname": "quote_date",
+   "fieldtype": "Date",
+   "label": "Quote Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "po_date",
+   "fieldtype": "Date",
+   "label": "PO Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "po_number",
+   "fieldtype": "Data",
+   "label": "PO Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_milestones2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "invoice_date",
+   "fieldtype": "Date",
+   "label": "Invoice Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "invoice_number",
+   "fieldtype": "Data",
+   "label": "Invoice Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "igp_date",
+   "fieldtype": "Date",
+   "label": "Gate Pass Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "igp_number",
+   "fieldtype": "Data",
+   "label": "Gate Pass Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_financials",
+   "fieldtype": "Section Break",
+   "label": "Financials"
+  },
+  {
+   "fieldname": "quote_total_value",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Quote Total Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "po_total_value",
+   "fieldtype": "Currency",
+   "label": "PO Total Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "invoice_taxable_value",
+   "fieldtype": "Currency",
+   "label": "Invoice Taxable Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "invoice_gst_amount",
+   "fieldtype": "Currency",
+   "label": "GST Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_financials2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "invoice_total_value",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Invoice Total (Claimable)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_amount_paid",
+   "fieldtype": "Currency",
+   "label": "Total Paid",
+   "read_only": 1
+  },
+  {
+   "fieldname": "outstanding_balance",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Outstanding Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_location",
+   "fieldtype": "Section Break",
+   "label": "Location & Installation"
+  },
+  {
+   "fieldname": "current_location",
+   "fieldtype": "Data",
+   "label": "Current Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "final_location",
+   "fieldtype": "Data",
+   "label": "Intended Final Location"
+  },
+  {
+   "fieldname": "column_break_location2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "installation_status",
+   "fieldtype": "Select",
+   "label": "Installation Status",
+   "options": "\nIn Transit\nIn Storage\nBeing Installed\nCommissioned"
+  },
+  {
+   "fieldname": "installation_date",
+   "fieldtype": "Date",
+   "label": "Installation Date"
+  },
+  {
+   "fieldname": "erpnext_asset_link",
+   "fieldtype": "Link",
+   "label": "ERPNext Asset",
+   "options": "Asset"
+  },
+  {
+   "fieldname": "section_break_uploads",
+   "fieldtype": "Section Break",
+   "label": "Upload Documents"
+  },
+  {
+   "fieldname": "uploaded_documents",
+   "fieldtype": "Table",
+   "label": "Uploaded Documents",
+   "options": "Asset Documentation"
+  },
+  {
+   "fieldname": "section_break_evidence",
+   "fieldtype": "Section Break",
+   "label": "Extracted Documents"
+  },
+  {
+   "cannot_add_rows": 1,
+   "cannot_delete_rows": 1,
+   "fieldname": "evidence_documents",
+   "fieldtype": "Table",
+   "label": "Extracted Documents",
+   "options": "APR Evidence Document",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_items",
+   "fieldtype": "Section Break",
+   "label": "Item Lines"
+  },
+  {
+   "fieldname": "item_lines",
+   "fieldtype": "Table",
+   "label": "Item Lines",
+   "options": "APR Item Line"
+  },
+  {
+   "fieldname": "section_break_payments",
+   "fieldtype": "Section Break",
+   "label": "Payments"
+  },
+  {
+   "fieldname": "payments",
+   "fieldtype": "Table",
+   "label": "Payments",
+   "options": "APR Payment"
+  },
+  {
+   "fieldname": "section_break_location_log",
+   "fieldtype": "Section Break",
+   "label": "Location History"
+  },
+  {
+   "fieldname": "location_log",
+   "fieldtype": "Table",
+   "label": "Location History",
+   "options": "APR Location Log"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-26 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "asset_organizer",
+ "name": "Asset Procurement Record",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Stock Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "asset_label",
+ "track_changes": 1
+}

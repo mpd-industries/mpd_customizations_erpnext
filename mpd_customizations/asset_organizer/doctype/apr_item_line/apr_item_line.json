@@ -1,0 +1,121 @@
+{
+ "actions": [],
+ "creation": "2026-05-26 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_document_ref",
+  "source_category",
+  "raw_description",
+  "hsn_code",
+  "column_break_qty",
+  "qty",
+  "uom",
+  "rate",
+  "line_total",
+  "section_break_match",
+  "item_doctype",
+  "item_reference",
+  "match_confidence"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_document_ref",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Source Document Ref",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "\nPO\nInvoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "raw_description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Raw Description",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hsn_code",
+   "fieldtype": "Data",
+   "label": "HSN Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qty",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Data",
+   "label": "UOM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "label": "Unit Rate (Pre-tax)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "line_total",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Line Total",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_match",
+   "fieldtype": "Section Break",
+   "label": "Item Match"
+  },
+  {
+   "fieldname": "item_doctype",
+   "fieldtype": "Select",
+   "label": "Item Type",
+   "options": "\nItem\nItem Request",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_reference",
+   "fieldtype": "Dynamic Link",
+   "label": "Item",
+   "options": "item_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "match_confidence",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Match Status",
+   "options": "\nExact Match\nFuzzy Match\nNo Match - Request Created",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-26 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "asset_organizer",
+ "name": "APR Item Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
