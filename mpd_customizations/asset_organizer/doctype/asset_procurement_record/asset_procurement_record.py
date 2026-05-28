@@ -61,20 +61,32 @@ class AssetProcurementRecord(Document):
 
     def _enqueue_new_upload_rows(self):
         """Enqueue background segmentation for any newly uploaded document."""
-        for row in self.uploaded_documents:
-            if row.upload_status == "Queued" and row.upload_file:
-                frappe.db.set_value(
-                    "Asset Documentation", row.name, "upload_status", "Processing"
-                )
-                frappe.enqueue(
-                    "mpd_customizations.asset_organizer.ai.apr_extraction.run_segmentation_job",
-                    queue="long",
-                    apr_name=self.name,
-                    upload_row_name=row.name,
-                )
-                logger.info(
-                    f"APR {self.name}: enqueued segmentation for upload row {row.name}"
-                )
+        from mpd_customizations.asset_organizer.ai.apr_extraction import (
+            increment_pending_segmentations,
+        )
+
+        to_enqueue = [
+            row for row in self.uploaded_documents
+            if row.upload_status == "Queued" and row.upload_file
+        ]
+        if not to_enqueue:
+            return
+
+        increment_pending_segmentations(self.name, len(to_enqueue))
+
+        for row in to_enqueue:
+            frappe.db.set_value(
+                "Asset Documentation", row.name, "upload_status", "Processing"
+            )
+            frappe.enqueue(
+                "mpd_customizations.asset_organizer.ai.apr_extraction.run_segmentation_job",
+                queue="long",
+                apr_name=self.name,
+                upload_row_name=row.name,
+            )
+            logger.info(
+                f"APR {self.name}: enqueued segmentation for upload row {row.name}"
+            )
 
     def _enqueue_new_payment_rows(self):
         """Enqueue payment extraction for any payment row with a new file."""

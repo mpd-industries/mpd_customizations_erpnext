@@ -4,12 +4,14 @@ import base64
 import io
 import json
 import os
-import re
-import unicodedata
 
 import frappe
 from frappe.utils import now_datetime
 
+from mpd_customizations.mpd_base.item_ai.dedup import (
+    check_item_duplicates,
+    check_item_duplicates_and_set_status,
+)
 from mpd_customizations.mpd_base.item_ai.llm_call import call_llm
 from mpd_customizations.asset_organizer.ai.schemas import (
     CATEGORY_SCHEMA_MAP,
@@ -114,54 +116,6 @@ def _get_task_config(task_key: str):
     if not name:
         raise ValueError(f"No active AI Task Config found for task_key={task_key!r}")
     return frappe.get_doc("AI Task Config", name)
-
-
-# ---------------------------------------------------------------------------
-# Normalised string similarity for item catalog matching
-# ---------------------------------------------------------------------------
-
-def _normalise(text: str) -> set[str]:
-    """Lowercase, strip punctuation/accents, return set of significant words."""
-    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
-    text = re.sub(r"[^a-z0-9 ]", " ", text.lower())
-    stop = {"the", "a", "an", "of", "and", "or", "for", "with", "to", "in", "at", "by"}
-    return {w for w in text.split() if w and w not in stop and len(w) > 1}
-
-
-def _match_item(raw_description: str) -> tuple[str | None, str | None]:
-    """
-    Search tabItem for a catalog match.
-    Returns (item_name, confidence_label) or (None, None).
-    """
-    needle_words = _normalise(raw_description)
-    if not needle_words:
-        return None, None
-
-    # Fetch candidates via LIKE on the first significant word
-    first_word = next(iter(sorted(needle_words, key=len, reverse=True)))
-    candidates = frappe.db.sql(
-        "SELECT name, item_name FROM `tabItem` WHERE item_name LIKE %s LIMIT 50",
-        (f"%{first_word}%",),
-        as_dict=True,
-    )
-
-    best_name = None
-    best_score = 0.0
-    for row in candidates:
-        haystack_words = _normalise(row.item_name)
-        if not haystack_words:
-            continue
-        intersection = needle_words & haystack_words
-        score = len(intersection) / max(len(needle_words), len(haystack_words))
-        if score > best_score:
-            best_score = score
-            best_name = row.name
-
-    if best_score >= 0.85:
-        return best_name, "Exact Match"
-    if best_score >= 0.5:
-        return best_name, "Fuzzy Match"
-    return None, None
 
 
 # ---------------------------------------------------------------------------
@@ -319,17 +273,290 @@ def _resolve_supplier(apr_name: str, data: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Item line resolution
+# Item line resolution (PO / Invoice only; dedup retrieves, LLM decides)
 # ---------------------------------------------------------------------------
+
+def _line_qty_rate_total(line: dict) -> tuple[float, float, float]:
+    qty = float(line.get("qty") or 0)
+    rate = float(line.get("rate") or 0)
+    return qty, rate, round(qty * rate, 2)
+
+
+def _format_prompt_line(index: str | int, line: dict, source_category: str = "") -> str:
+    qty, rate, total = _line_qty_rate_total(line)
+    hsn = (line.get("hsn_code") or "—").strip() or "—"
+    desc = (line.get("raw_description") or "").strip()
+    src = source_category or line.get("source_category") or ""
+    src_bit = f" | {src}" if src else ""
+    return (
+        f"  [{index}] {desc}{src_bit} | qty {qty} | total {total} | "
+        f"rate {rate} | hsn {hsn}"
+    )
+
+
+def _row_to_line_dict(row) -> dict:
+    return {
+        "raw_description": row.raw_description,
+        "source_category": row.source_category,
+        "source_document_ref": row.source_document_ref,
+        "hsn_code": row.hsn_code,
+        "qty": row.qty,
+        "uom": row.uom,
+        "rate": row.rate,
+        "line_total": row.line_total,
+        "name": row.name,
+    }
+
+
+def _is_same_source_row(row, category: str, ref_no: str) -> bool:
+    return (
+        (row.source_category or "") == category
+        and (row.source_document_ref or "") == ref_no
+    )
+
+
+def _existing_rows_for_merge(apr_doc, category: str, ref_no: str) -> list[dict]:
+    """Existing APR lines from other documents, labelled A, B, C…"""
+    rows = []
+    label = ord("A")
+    for row in apr_doc.item_lines:
+        if not (row.raw_description or "").strip():
+            continue
+        if _is_same_source_row(row, category, ref_no):
+            continue
+        rows.append({
+            **_row_to_line_dict(row),
+            "prompt_index": chr(label),
+            "row": row,
+        })
+        label += 1
+    return rows
+
+
+def _preferred_description_on_merge(
+    existing: dict,
+    new_line: dict,
+    category: str,
+    llm_preferred: str | None,
+) -> str:
+    """Invoice wording wins over PO when merging lines on the APR."""
+    if category == "Invoice":
+        return (new_line.get("raw_description") or "").strip()
+    if (existing.get("source_category") or "") == "Invoice":
+        return (existing.get("raw_description") or "").strip()
+    if llm_preferred:
+        return llm_preferred.strip()
+    return (new_line.get("raw_description") or existing.get("raw_description") or "").strip()
+
+
+def _preferred_hsn_on_merge(existing: dict, new_line: dict, category: str) -> str | None:
+    if category == "Invoice":
+        return new_line.get("hsn_code") or existing.get("hsn_code")
+    if (existing.get("source_category") or "") == "Invoice":
+        return existing.get("hsn_code") or new_line.get("hsn_code")
+    return new_line.get("hsn_code") or existing.get("hsn_code")
+
+
+def _llm_batch_resolve_apr_lines(
+    apr_name: str,
+    category: str,
+    ref_no: str,
+    new_lines: list[dict],
+    existing_rows: list[dict],
+) -> list[dict]:
+    """One LLM call: map each new line to add or same-as-existing on this APR."""
+    new_block = "\n".join(
+        _format_prompt_line(i, line) for i, line in enumerate(new_lines)
+    )
+    existing_block = "\n".join(
+        _format_prompt_line(r["prompt_index"], r) for r in existing_rows
+    )
+    user_prompt = (
+        f"NEW LINES (from {category} ref {ref_no}):\n{new_block}\n\n"
+        f"EXISTING LINES (already on this APR):\n{existing_block}\n\n"
+        "Return a decision for every new_line_index."
+    )
+
+    try:
+        config = _get_task_config("apr_item_line_merge")
+        result = call_llm(
+            config=config,
+            system_prompt=config.system_prompt,
+            user_prompt=user_prompt,
+            reference_doctype="Asset Procurement Record",
+            reference_name=apr_name,
+        )
+        decisions = result.get("decisions") or []
+        if isinstance(decisions, list) and decisions:
+            return decisions
+    except Exception as exc:
+        logger.warning(
+            f"APR {apr_name}: batch item merge LLM failed: {exc} — defaulting to add"
+        )
+        frappe.log_error(
+            title=f"APR Item Line Merge Failed [{apr_name}]",
+            message=frappe.get_traceback(),
+        )
+
+    return [{"new_line_index": i, "action": "add"} for i in range(len(new_lines))]
+
+
+def _find_existing_by_prompt_index(existing_rows: list[dict], index: str) -> dict | None:
+    for row in existing_rows:
+        if row.get("prompt_index") == index:
+            return row
+    return None
+
+
+def _update_existing_apr_row(
+    existing_entry: dict,
+    new_line: dict,
+    category: str,
+    preferred_description: str,
+) -> None:
+    row = existing_entry["row"]
+    row.raw_description = preferred_description
+    hsn = _preferred_hsn_on_merge(existing_entry, new_line, category)
+    if hsn and not row.hsn_code:
+        row.hsn_code = hsn
+    if new_line.get("uom") and not row.uom:
+        row.uom = new_line.get("uom")
+    if new_line.get("rate") and not row.rate:
+        row.rate = new_line.get("rate")
+    qty, rate, total = _line_qty_rate_total(new_line)
+    if qty and not row.qty:
+        row.qty = qty
+    if total and not row.line_total:
+        row.line_total = total
+
+
+def _format_catalog_candidates(candidates: list[dict]) -> str:
+    lines = []
+    for c in candidates:
+        hsn = c.get("gst_hsn_code") or "—"
+        score = c.get("similarity_score", "")
+        lines.append(
+            f"  - {c.get('name')}: {c.get('item_name')} "
+            f"[{c.get('item_group', '')}] (score {score}, hsn {hsn})"
+        )
+    return "\n".join(lines) if lines else "  (none above threshold)"
+
+
+def _llm_resolve_catalog_item(
+    apr_name: str,
+    line: dict,
+    candidates: list[dict],
+) -> tuple[str | None, bool]:
+    """
+    LLM picks an Item from dedup candidates or declares a new product.
+    Returns (item_code, is_existing_item).
+    """
+    qty, rate, total = _line_qty_rate_total(line)
+    desc = (line.get("raw_description") or "").strip()
+    hsn = line.get("hsn_code") or "—"
+    user_prompt = (
+        f"LINE:\n{_format_prompt_line('?', line)}\n\n"
+        f"CANDIDATES (from similarity search):\n"
+        f"{_format_catalog_candidates(candidates)}\n"
+    )
+
+    try:
+        config = _get_task_config("apr_item_catalog_match")
+        result = call_llm(
+            config=config,
+            system_prompt=config.system_prompt,
+            user_prompt=user_prompt,
+            reference_doctype="Asset Procurement Record",
+            reference_name=apr_name,
+        )
+        if result.get("is_existing_item"):
+            code = (result.get("matched_item_code") or "").strip()
+            valid = {c.get("name") for c in candidates}
+            if code and code in valid:
+                return code, True
+            logger.warning(
+                f"APR {apr_name}: catalog LLM returned invalid item {code!r} for '{desc}'"
+            )
+        return None, False
+    except Exception as exc:
+        logger.warning(f"APR {apr_name}: catalog match LLM failed for '{desc}': {exc}")
+        frappe.log_error(
+            title=f"APR Catalog Match Failed [{apr_name}]",
+            message=frappe.get_traceback(),
+        )
+        return None, False
+
+
+def _link_catalog_or_item_request(
+    apr_name: str,
+    apr_row,
+    line: dict,
+) -> None:
+    """dedup.py retrieves candidates; LLM confirms Item link or Item Request."""
+    if (apr_row.item_doctype or "") == "Item" and apr_row.item_reference:
+        return
+
+    desc = (line.get("raw_description") or "").strip()
+    if not desc:
+        return
+
+    candidates = check_item_duplicates(
+        description=desc,
+        hsn_code=line.get("hsn_code"),
+    )
+    item_code, is_existing = _llm_resolve_catalog_item(apr_name, line, candidates)
+
+    if is_existing and item_code:
+        apr_row.item_doctype = "Item"
+        apr_row.item_reference = item_code
+        apr_row.match_confidence = "Exact Match"
+        logger.info(f"APR {apr_name}: catalog LLM linked '{desc}' → {item_code}")
+        return
+
+    ir = frappe.get_doc({
+        "doctype": "Item Request",
+        "requester_description": desc,
+        "gst_hsn_code": line.get("hsn_code"),
+        "reference_doctype": "Asset Procurement Record",
+        "reference_name": apr_name,
+        "requested_by": "Administrator",
+        "status": "Draft",
+    })
+    ir.insert(ignore_permissions=True)
+    check_item_duplicates_and_set_status(
+        ir.name,
+        desc,
+        hsn_code=line.get("hsn_code"),
+    )
+    apr_row.item_doctype = "Item Request"
+    apr_row.item_reference = ir.name
+    apr_row.match_confidence = "No Match - Request Created"
+    logger.info(f"APR {apr_name}: created Item Request {ir.name} for '{desc}'")
+
+
+def _append_apr_item_line(apr_doc, category: str, ref_no: str, line: dict):
+    qty, rate, total = _line_qty_rate_total(line)
+    row = apr_doc.append("item_lines", {
+        "source_document_ref": ref_no,
+        "source_category": category,
+        "raw_description": (line.get("raw_description") or "").strip(),
+        "hsn_code": line.get("hsn_code"),
+        "qty": qty,
+        "uom": line.get("uom"),
+        "rate": rate,
+        "line_total": total,
+    })
+    line_with_desc = {**line, "raw_description": row.raw_description}
+    _link_catalog_or_item_request(apr_doc.name, row, line_with_desc)
+    return row
+
 
 def _resolve_item_lines(apr_name: str, category: str, data: dict) -> None:
     """
-    For Quote, PO, and Invoice categories, match each item line against the Item
-    catalog. Before creating a new row, check whether the line is a duplicate of
-    an existing APR item line using TF-IDF pre-filter + LLM confirmation.
-    Create Item Request records for genuinely new, unmatched lines.
+    PO and Invoice only. Batch LLM merges against existing APR lines; dedup.py +
+    catalog LLM links Items or creates Item Requests for new lines.
     """
-    if category not in ("Quote", "PO", "Invoice"):
+    if category not in ("PO", "Invoice"):
         return
 
     item_lines = data.get("item_lines") or []
@@ -337,73 +564,64 @@ def _resolve_item_lines(apr_name: str, category: str, data: dict) -> None:
 
     apr_doc = frappe.get_doc("Asset Procurement Record", apr_name)
 
+    new_lines: list[dict] = []
     for line in item_lines:
         raw_desc = (line.get("raw_description") or "").strip()
         if not raw_desc:
             continue
-
-        # Idempotency: skip if this exact line from this ref already exists
-        already = any(
-            (r.source_document_ref or "") == ref_no and (r.raw_description or "") == raw_desc
+        if any(
+            _is_same_source_row(r, category, ref_no)
+            and (r.raw_description or "").strip() == raw_desc
             for r in apr_doc.item_lines
-        )
-        if already:
+        ):
             continue
+        new_lines.append(line)
 
-        # Dedup check: does this line refer to an item already recorded on this APR
-        # from a different source document? (e.g. PO line matches a Quote line)
-        existing_descs = [
-            r.raw_description
-            for r in apr_doc.item_lines
-            if (r.raw_description or "").strip() and (r.source_document_ref or "") != ref_no
-        ]
-        if existing_descs:
-            candidates = _find_duplicate_apr_item_line(raw_desc, existing_descs)
-            if candidates and _llm_confirm_item_merge(apr_name, raw_desc, candidates):
-                logger.info(
-                    f"APR {apr_name}: merged '{raw_desc}' into existing line(s) "
-                    f"{candidates[:2]} — skipping new row"
+    if not new_lines:
+        return
+
+    existing_rows = _existing_rows_for_merge(apr_doc, category, ref_no)
+
+    if existing_rows:
+        decisions = _llm_batch_resolve_apr_lines(
+            apr_name, category, ref_no, new_lines, existing_rows
+        )
+    else:
+        decisions = [{"new_line_index": i, "action": "add"} for i in range(len(new_lines))]
+
+    matched_existing_indices: set[str] = set()
+
+    for decision in decisions:
+        idx = decision.get("new_line_index")
+        if idx is None or idx < 0 or idx >= len(new_lines):
+            continue
+        new_line = new_lines[idx]
+        action = (decision.get("action") or "add").strip().lower()
+
+        if action == "same":
+            matched_idx = (decision.get("matched_existing_index") or "").strip()
+            existing_entry = _find_existing_by_prompt_index(existing_rows, matched_idx)
+            if not existing_entry or matched_idx in matched_existing_indices:
+                logger.warning(
+                    f"APR {apr_name}: invalid merge index {matched_idx!r} — adding line"
                 )
+                _append_apr_item_line(apr_doc, category, ref_no, new_line)
                 continue
-
-        item_name_match, confidence = _match_item(raw_desc)
-
-        qty = line.get("qty") or 0
-        rate = line.get("rate") or 0
-
-        new_row = apr_doc.append("item_lines", {
-            "source_document_ref": ref_no,
-            "source_category": category,
-            "raw_description": raw_desc,
-            "hsn_code": line.get("hsn_code"),
-            "qty": qty,
-            "uom": line.get("uom"),
-            "rate": rate,
-            "line_total": round((qty or 0) * (rate or 0), 2),
-        })
-
-        if item_name_match and confidence:
-            new_row.item_doctype = "Item"
-            new_row.item_reference = item_name_match
-            new_row.match_confidence = confidence
-            logger.info(f"APR {apr_name}: matched item '{raw_desc}' → {item_name_match} ({confidence})")
+            matched_existing_indices.add(matched_idx)
+            preferred = _preferred_description_on_merge(
+                existing_entry,
+                new_line,
+                category,
+                decision.get("preferred_description"),
+            )
+            _update_existing_apr_row(existing_entry, new_line, category, preferred)
+            merge_line = {**new_line, "raw_description": preferred}
+            _link_catalog_or_item_request(apr_name, existing_entry["row"], merge_line)
+            logger.info(
+                f"APR {apr_name}: merged line [{idx}] into existing [{matched_idx}]"
+            )
         else:
-            # Create Item Request for genuinely new, unrecognised items
-            ir = frappe.get_doc({
-                "doctype": "Item Request",
-                "requester_description": raw_desc,
-                "gst_hsn_code": line.get("hsn_code"),
-                "reference_doctype": "Asset Procurement Record",
-                "reference_name": apr_name,
-                "requested_by": "Administrator",
-                "status": "Draft",
-            })
-            ir.insert(ignore_permissions=True)
-            frappe.db.commit()
-            new_row.item_doctype = "Item Request"
-            new_row.item_reference = ir.name
-            new_row.match_confidence = "No Match - Request Created"
-            logger.info(f"APR {apr_name}: created Item Request {ir.name} for '{raw_desc}'")
+            _append_apr_item_line(apr_doc, category, ref_no, new_line)
 
     apr_doc.save(ignore_permissions=True)
     frappe.db.commit()
@@ -510,68 +728,6 @@ def run_label_generation_job(apr_name: str, trigger_category: str, schema_dict: 
 
 
 # ---------------------------------------------------------------------------
-# Item line deduplication helpers
-# ---------------------------------------------------------------------------
-
-def _find_duplicate_apr_item_line(new_desc: str, existing_descs: list[str]) -> list[str]:
-    """
-    TF-IDF cosine similarity on existing APR item_lines (in-memory, no Redis).
-    Returns list of existing raw_descriptions with similarity score >= 0.3.
-    """
-    if not existing_descs:
-        return []
-
-    try:
-        import numpy as np
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        from sklearn.metrics.pairwise import cosine_similarity
-
-        corpus = existing_descs + [new_desc]
-        vectorizer = TfidfVectorizer(analyzer="word", ngram_range=(1, 2), min_df=1, sublinear_tf=True)
-        matrix = vectorizer.fit_transform(corpus)
-
-        query_vec = matrix[-1]
-        existing_matrix = matrix[:-1]
-        scores = cosine_similarity(query_vec, existing_matrix).flatten()
-
-        return [
-            existing_descs[i]
-            for i, score in enumerate(scores)
-            if float(score) >= 0.3
-        ]
-    except Exception as exc:
-        logger.warning(f"TF-IDF item line check failed: {exc}")
-        return []
-
-
-def _llm_confirm_item_merge(apr_name: str, new_desc: str, candidates: list[str]) -> bool:
-    """
-    Asks the LLM whether new_desc refers to the same physical item as any of the candidates.
-    Returns True if the LLM confirms a match. On any exception → returns False (safe default).
-    """
-    candidates_text = "\n".join(f"- {c}" for c in candidates)
-    user_prompt = (
-        f"New item line: \"{new_desc}\"\n\n"
-        f"Existing item lines:\n{candidates_text}\n\n"
-        "Is the new item line the same physical item as any of the existing ones?"
-    )
-
-    try:
-        config = _get_task_config("apr_item_line_merge")
-        result = call_llm(
-            config=config,
-            system_prompt=config.system_prompt,
-            user_prompt=user_prompt,
-            reference_doctype="Asset Procurement Record",
-            reference_name=apr_name,
-        )
-        return bool(result.get("is_same_item"))
-    except Exception as exc:
-        logger.warning(f"APR {apr_name}: item merge LLM check failed: {exc} — creating new row")
-        return False
-
-
-# ---------------------------------------------------------------------------
 # State machine
 # ---------------------------------------------------------------------------
 
@@ -639,6 +795,146 @@ def _split_pdf(pdf_bytes: bytes, pages: list[int]) -> bytes:
     buf = io.BytesIO()
     writer.write(buf)
     return buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# Extraction ordering (APR-level chain)
+# ---------------------------------------------------------------------------
+
+CATEGORY_PRIORITY: dict[str, int] = {
+    "Quote": 1,
+    "PO": 2,
+    "IGP": 3,
+    "Weighment Slip": 4,
+    "Invoice": 5,
+    "Lorry Receipt": 6,
+    "E-Way Bill": 7,
+    "Payment": 8,
+    "Other": 9,
+}
+_DEFAULT_CATEGORY_PRIORITY = 10
+
+_CACHE_PENDING_SEGMENTS = "apr_pending_segments:{apr_name}"
+_CACHE_CHAIN_ACTIVE = "apr_extraction_chain_active:{apr_name}"
+
+
+def _category_priority(category: str | None) -> int:
+    return CATEGORY_PRIORITY.get(category or "", _DEFAULT_CATEGORY_PRIORITY)
+
+
+def _source_pages_sort_key(source_pages: str | None) -> tuple:
+    """Sort page ranges like '1', '2-3' numerically by first page."""
+    if not source_pages:
+        return (0,)
+    first = str(source_pages).split("-")[0].strip()
+    try:
+        return (int(first), source_pages)
+    except ValueError:
+        return (0, source_pages or "")
+
+
+def _sort_evidence_rows(rows: list[dict]) -> list[dict]:
+    return sorted(
+        rows,
+        key=lambda r: (
+            _category_priority(r.get("detected_category")),
+            _source_pages_sort_key(r.get("source_pages")),
+            r.get("name") or "",
+        ),
+    )
+
+
+def set_pending_segmentations(apr_name: str, count: int) -> None:
+    frappe.cache().set(_CACHE_PENDING_SEGMENTS.format(apr_name=apr_name), int(count))
+
+
+def increment_pending_segmentations(apr_name: str, count: int) -> None:
+    key = _CACHE_PENDING_SEGMENTS.format(apr_name=apr_name)
+    existing = int(frappe.cache().get(key) or 0)
+    frappe.cache().set(key, existing + int(count))
+
+
+def _on_segmentation_complete(apr_name: str) -> None:
+    key = _CACHE_PENDING_SEGMENTS.format(apr_name=apr_name)
+    pending = frappe.cache().get(key)
+    if pending is not None:
+        pending = int(pending)
+        if pending > 1:
+            frappe.cache().set(key, pending - 1)
+            logger.info(
+                f"APR {apr_name}: segmentation complete, {pending - 1} upload(s) still pending"
+            )
+            return
+        frappe.cache().delete(key)
+        logger.info(f"APR {apr_name}: all segmentations complete — starting extraction chain")
+    start_apr_extraction_chain(apr_name)
+
+
+def _is_extraction_chain_active(apr_name: str) -> bool:
+    return bool(frappe.cache().get(_CACHE_CHAIN_ACTIVE.format(apr_name=apr_name)))
+
+
+def start_apr_extraction_chain(apr_name: str) -> None:
+    """Begin ordered evidence extraction for all Queued rows on this APR."""
+    chain_key = _CACHE_CHAIN_ACTIVE.format(apr_name=apr_name)
+    if frappe.cache().get(chain_key):
+        logger.info(f"APR {apr_name}: extraction chain already active")
+        return
+
+    queued = frappe.get_all(
+        "APR Evidence Document",
+        filters={"parent": apr_name, "extraction_status": "Queued"},
+        fields=["name"],
+        limit=1,
+    )
+    if not queued:
+        logger.info(f"APR {apr_name}: no queued evidence rows — skipping chain start")
+        return
+
+    frappe.cache().set(chain_key, 1)
+    _enqueue_next_evidence(apr_name)
+
+
+def _clear_extraction_chain(apr_name: str) -> None:
+    frappe.cache().delete(_CACHE_CHAIN_ACTIVE.format(apr_name=apr_name))
+
+
+def _enqueue_next_evidence(apr_name: str) -> None:
+    """Enqueue the next Queued evidence row in category priority order."""
+    if not _is_extraction_chain_active(apr_name):
+        return
+
+    rows = frappe.get_all(
+        "APR Evidence Document",
+        filters={"parent": apr_name, "extraction_status": "Queued"},
+        fields=["name", "detected_category", "source_pages"],
+    )
+    if not rows:
+        _clear_extraction_chain(apr_name)
+        logger.info(f"APR {apr_name}: extraction chain complete")
+        return
+
+    next_row = _sort_evidence_rows(rows)[0]
+    frappe.db.set_value("APR Evidence Document", next_row.name, {
+        "extraction_status": "Processing",
+        "extraction_error": None,
+    })
+    frappe.enqueue(
+        "mpd_customizations.asset_organizer.ai.apr_extraction.run_evidence_extraction",
+        queue="long",
+        apr_name=apr_name,
+        evidence_row_name=next_row.name,
+        continue_chain=True,
+    )
+    logger.info(
+        f"APR {apr_name}: chained extraction → {next_row.name} "
+        f"({next_row.detected_category}, pages {next_row.source_pages})"
+    )
+
+
+def _maybe_continue_extraction_chain(apr_name: str, continue_chain: bool) -> None:
+    if continue_chain and _is_extraction_chain_active(apr_name):
+        _enqueue_next_evidence(apr_name)
 
 
 def _save_split_file(apr_name: str, pdf_bytes: bytes, filename: str) -> str:
@@ -729,17 +1025,6 @@ def _handle_segmentation(
                     "asset_description", first_seg.asset_description_suggestion,
                 )
 
-    # Enqueue extraction for each new evidence row
-    for row in saved_rows:
-        frappe.db.set_value("APR Evidence Document", row.name, "extraction_status", "Processing")
-        frappe.enqueue(
-            "mpd_customizations.asset_organizer.ai.apr_extraction.run_evidence_extraction",
-            queue="long",
-            apr_name=apr_name,
-            evidence_row_name=row.name,
-        )
-        logger.info(f"APR {apr_name}: enqueued extraction for evidence row {row.name} (pages {row.source_pages})")
-
     frappe.db.commit()
 
 
@@ -750,209 +1035,217 @@ def _handle_segmentation(
 def run_segmentation_job(apr_name: str, upload_row_name: str) -> None:
     """
     Background job: segment an uploaded PDF into logical documents.
-    Creates one APR Evidence Document row per segment, then enqueues
-    run_evidence_extraction for each.
+    Creates one APR Evidence Document row per segment; extraction is started
+    via the APR-level chain when all pending segmentations for this batch finish.
     """
     logger.info(f"run_segmentation_job start: APR={apr_name} upload={upload_row_name}")
 
     try:
-        upload_row = frappe.get_doc("Asset Documentation", upload_row_name)
-    except frappe.DoesNotExistError:
-        logger.error(f"Upload row {upload_row_name} not found")
-        return
+        try:
+            upload_row = frappe.get_doc("Asset Documentation", upload_row_name)
+        except frappe.DoesNotExistError:
+            logger.error(f"Upload row {upload_row_name} not found")
+            return
 
-    file_url = upload_row.upload_file
-    if not file_url:
-        frappe.db.set_value("Asset Documentation", upload_row_name, {
-            "upload_status": "Failed",
-            "upload_error": "No file attached.",
-        })
-        return
+        file_url = upload_row.upload_file
+        if not file_url:
+            frappe.db.set_value("Asset Documentation", upload_row_name, {
+                "upload_status": "Failed",
+                "upload_error": "No file attached.",
+            })
+            return
 
-    # Read file bytes (needed for splitting later)
-    try:
-        file_data_url, filename = _read_file_as_base64(file_url)
-        # Decode base64 back to raw bytes for pypdf
-        b64_data = file_data_url.split(",", 1)[1]
-        pdf_bytes = base64.b64decode(b64_data)
-    except Exception as exc:
-        frappe.db.set_value("Asset Documentation", upload_row_name, {
-            "upload_status": "Failed",
-            "upload_error": f"Could not read file: {exc}",
-        })
-        logger.error(f"APR {apr_name}: file read failed for upload {upload_row_name}: {exc}")
-        return
+        try:
+            file_data_url, filename = _read_file_as_base64(file_url)
+            b64_data = file_data_url.split(",", 1)[1]
+            pdf_bytes = base64.b64decode(b64_data)
+        except Exception as exc:
+            frappe.db.set_value("Asset Documentation", upload_row_name, {
+                "upload_status": "Failed",
+                "upload_error": f"Could not read file: {exc}",
+            })
+            logger.error(f"APR {apr_name}: file read failed for upload {upload_row_name}: {exc}")
+            return
 
-    # Record page count
-    try:
-        from pypdf import PdfReader
-        page_count = len(PdfReader(io.BytesIO(pdf_bytes)).pages)
-        frappe.db.set_value("Asset Documentation", upload_row_name, "page_count", page_count)
-    except Exception:
-        page_count = None
+        try:
+            from pypdf import PdfReader
+            page_count = len(PdfReader(io.BytesIO(pdf_bytes)).pages)
+            frappe.db.set_value("Asset Documentation", upload_row_name, "page_count", page_count)
+        except Exception:
+            page_count = None
 
-    # Segmentation LLM call
-    try:
-        segment_config = _get_task_config("apr_document_segment")
-        segment_raw = call_llm(
-            config=segment_config,
-            system_prompt=segment_config.system_prompt,
-            user_prompt=(
-                f"Segment this PDF document. It has {page_count or 'an unknown number of'} page(s). "
-                "Identify every distinct logical document by page range."
-            ),
-            reference_doctype="Asset Procurement Record",
-            reference_name=apr_name,
-            attached_file_data=file_data_url,
-            attached_mime="application/pdf",
-            attached_filename=filename,
+        try:
+            segment_config = _get_task_config("apr_document_segment")
+            segment_raw = call_llm(
+                config=segment_config,
+                system_prompt=segment_config.system_prompt,
+                user_prompt=(
+                    f"Segment this PDF document. It has {page_count or 'an unknown number of'} "
+                    "page(s). Identify every distinct logical document by page range."
+                ),
+                reference_doctype="Asset Procurement Record",
+                reference_name=apr_name,
+                attached_file_data=file_data_url,
+                attached_mime="application/pdf",
+                attached_filename=filename,
+            )
+            segmentation = SegmentationSchema(**segment_raw)
+        except Exception as exc:
+            frappe.db.set_value("Asset Documentation", upload_row_name, {
+                "upload_status": "Failed",
+                "upload_error": f"Segmentation LLM call failed: {exc}",
+            })
+            logger.error(f"APR {apr_name}: segmentation failed for upload {upload_row_name}: {exc}")
+            frappe.log_error(title="APR Segmentation Failed", message=frappe.get_traceback())
+            return
+
+        _handle_segmentation(apr_name, upload_row_name, pdf_bytes, filename, segmentation)
+
+        frappe.db.set_value("Asset Documentation", upload_row_name, "upload_status", "Segmented")
+        logger.info(
+            f"run_segmentation_job complete: APR={apr_name} upload={upload_row_name} "
+            f"segments={len(segmentation.segments)}"
         )
-        segmentation = SegmentationSchema(**segment_raw)
-    except Exception as exc:
-        frappe.db.set_value("Asset Documentation", upload_row_name, {
-            "upload_status": "Failed",
-            "upload_error": f"Segmentation LLM call failed: {exc}",
-        })
-        logger.error(f"APR {apr_name}: segmentation failed for upload {upload_row_name}: {exc}")
-        frappe.log_error(title="APR Segmentation Failed", message=frappe.get_traceback())
-        return
-
-    # Split + create evidence rows
-    _handle_segmentation(apr_name, upload_row_name, pdf_bytes, filename, segmentation)
-
-    frappe.db.set_value("Asset Documentation", upload_row_name, "upload_status", "Segmented")
-    logger.info(
-        f"run_segmentation_job complete: APR={apr_name} upload={upload_row_name} "
-        f"segments={len(segmentation.segments)}"
-    )
+    finally:
+        _on_segmentation_complete(apr_name)
 
 
 # ---------------------------------------------------------------------------
 # Main evidence extraction job
 # ---------------------------------------------------------------------------
 
-def run_evidence_extraction(apr_name: str, evidence_row_name: str) -> None:
+def run_evidence_extraction(
+    apr_name: str,
+    evidence_row_name: str,
+    continue_chain: bool = False,
+) -> None:
     """
     Background job: full LLM extraction for a single APR Evidence Document row.
     Rows are created by run_segmentation_job and already have detected_category set.
+    When continue_chain=True, the next Queued row is enqueued after this job finishes.
     """
     logger.info(f"run_evidence_extraction start: APR={apr_name} row={evidence_row_name}")
 
     try:
-        ev_row = frappe.get_doc("APR Evidence Document", evidence_row_name)
-    except frappe.DoesNotExistError:
-        logger.error(f"Evidence row {evidence_row_name} not found")
-        return
+        try:
+            ev_row = frappe.get_doc("APR Evidence Document", evidence_row_name)
+        except frappe.DoesNotExistError:
+            logger.error(f"Evidence row {evidence_row_name} not found")
+            return
 
-    file_url = ev_row.evidence_file
-    if not file_url:
+        file_url = ev_row.evidence_file
+        if not file_url:
+            frappe.db.set_value("APR Evidence Document", evidence_row_name, {
+                "extraction_status": "Failed",
+                "extraction_error": "No file attached to this evidence row.",
+            })
+            return
+
+        try:
+            file_data, filename = _read_file_as_base64(file_url)
+        except Exception as exc:
+            frappe.db.set_value("APR Evidence Document", evidence_row_name, {
+                "extraction_status": "Failed",
+                "extraction_error": f"Could not read file: {exc}",
+            })
+            logger.error(f"APR {apr_name}: file read failed for {file_url}: {exc}")
+            return
+
+        detected_category = ev_row.detected_category
+        if not detected_category:
+            frappe.db.set_value("APR Evidence Document", evidence_row_name, {
+                "extraction_status": "Failed",
+                "extraction_error": "No detected_category set on this evidence row.",
+            })
+            return
+
+        if detected_category == "Payment":
+            logger.info(
+                f"APR {apr_name}: evidence row {evidence_row_name} is Payment — "
+                "routing to payment extractor"
+            )
+            frappe.enqueue(
+                "mpd_customizations.asset_organizer.ai.apr_extraction.run_payment_extraction",
+                queue="long",
+                apr_name=apr_name,
+                payment_row_name=evidence_row_name,
+            )
+            return
+
+        task_key = CATEGORY_TASK_KEY_MAP.get(detected_category)
+        SchemaClass = CATEGORY_SCHEMA_MAP.get(detected_category)
+
+        if not task_key or not SchemaClass:
+            frappe.db.set_value("APR Evidence Document", evidence_row_name, {
+                "extraction_status": "Failed",
+                "extraction_error": f"No extraction schema for category: {detected_category}",
+            })
+            return
+
+        try:
+            extract_config = _get_task_config(task_key)
+            extract_raw = call_llm(
+                config=extract_config,
+                system_prompt=extract_config.system_prompt,
+                user_prompt="Extract all fields from this document according to the schema.",
+                reference_doctype="Asset Procurement Record",
+                reference_name=apr_name,
+                attached_file_data=file_data,
+                attached_mime="application/pdf",
+                attached_filename=filename,
+            )
+            schema_instance = SchemaClass(**extract_raw)
+        except Exception as exc:
+            frappe.db.set_value("APR Evidence Document", evidence_row_name, {
+                "extraction_status": "Failed",
+                "extraction_error": str(exc),
+            })
+            logger.error(f"APR {apr_name}: extraction pass failed ({task_key}): {exc}")
+            frappe.log_error(
+                title=f"APR Extraction Failed [{task_key}]",
+                message=frappe.get_traceback(),
+            )
+            return
+
+        schema_dict = schema_instance.model_dump(mode="json")
+
+        html_summary = _render_html_summary(detected_category, schema_dict)
+        generic_data_map = ""
+        if detected_category == "Other":
+            generic_data_map = json.dumps(schema_dict.get("generic_data_map", {}))
+
         frappe.db.set_value("APR Evidence Document", evidence_row_name, {
-            "extraction_status": "Failed",
-            "extraction_error": "No file attached to this evidence row.",
+            "extraction_status": "Extracted",
+            "extracted_json_vault": json.dumps(schema_dict, indent=2, default=str),
+            "extracted_html_summary": html_summary,
+            "extracted_date": schema_dict.get("extracted_date"),
+            "extracted_ref_no": schema_dict.get("extracted_ref_no"),
+            "generic_data_map": generic_data_map,
+            "ai_model_used": extract_config.model,
+            "extracted_at": now_datetime(),
         })
-        return
+        frappe.db.commit()
 
-    try:
-        file_data, filename = _read_file_as_base64(file_url)
-    except Exception as exc:
-        frappe.db.set_value("APR Evidence Document", evidence_row_name, {
-            "extraction_status": "Failed",
-            "extraction_error": f"Could not read file: {exc}",
-        })
-        logger.error(f"APR {apr_name}: file read failed for {file_url}: {exc}")
-        return
+        _write_parent_fields(apr_name, detected_category, schema_dict)
+        _resolve_supplier(apr_name, schema_dict)
+        _resolve_item_lines(apr_name, detected_category, schema_dict)
+        _advance_state_machine(apr_name)
 
-    # detected_category is set by the segmentation job — read it directly
-    detected_category = ev_row.detected_category
-    if not detected_category:
-        frappe.db.set_value("APR Evidence Document", evidence_row_name, {
-            "extraction_status": "Failed",
-            "extraction_error": "No detected_category set on this evidence row.",
-        })
-        return
+        if detected_category in ("Quote", "PO"):
+            frappe.enqueue(
+                "mpd_customizations.asset_organizer.ai.apr_extraction.run_label_generation_job",
+                queue="default",
+                apr_name=apr_name,
+                trigger_category=detected_category,
+                schema_dict=schema_dict,
+            )
 
-    # If Payment category — route to payment extraction instead
-    if detected_category == "Payment":
-        logger.info(f"APR {apr_name}: evidence row {evidence_row_name} is Payment — routing to payment extractor")
-        frappe.enqueue(
-            "mpd_customizations.asset_organizer.ai.apr_extraction.run_payment_extraction",
-            queue="long",
-            apr_name=apr_name,
-            payment_row_name=evidence_row_name,
+        logger.info(
+            f"run_evidence_extraction complete: APR={apr_name} row={evidence_row_name} "
+            f"cat={detected_category}"
         )
-        return
-
-    # ------------------------------------------------------------------
-    # Full extraction
-    # ------------------------------------------------------------------
-    task_key = CATEGORY_TASK_KEY_MAP.get(detected_category)
-    SchemaClass = CATEGORY_SCHEMA_MAP.get(detected_category)
-
-    if not task_key or not SchemaClass:
-        frappe.db.set_value("APR Evidence Document", evidence_row_name, {
-            "extraction_status": "Failed",
-            "extraction_error": f"No extraction schema for category: {detected_category}",
-        })
-        return
-
-    try:
-        extract_config = _get_task_config(task_key)
-        extract_raw = call_llm(
-            config=extract_config,
-            system_prompt=extract_config.system_prompt,
-            user_prompt="Extract all fields from this document according to the schema.",
-            reference_doctype="Asset Procurement Record",
-            reference_name=apr_name,
-            attached_file_data=file_data,
-            attached_mime="application/pdf",
-            attached_filename=filename,
-        )
-        schema_instance = SchemaClass(**extract_raw)
-    except Exception as exc:
-        frappe.db.set_value("APR Evidence Document", evidence_row_name, {
-            "extraction_status": "Failed",
-            "extraction_error": str(exc),
-        })
-        logger.error(f"APR {apr_name}: extraction pass failed ({task_key}): {exc}")
-        frappe.log_error(title=f"APR Extraction Failed [{task_key}]", message=frappe.get_traceback())
-        return
-
-    schema_dict = schema_instance.model_dump(mode="json")
-
-    html_summary = _render_html_summary(detected_category, schema_dict)
-    generic_data_map = ""
-    if detected_category == "Other":
-        generic_data_map = json.dumps(schema_dict.get("generic_data_map", {}))
-
-    frappe.db.set_value("APR Evidence Document", evidence_row_name, {
-        "extraction_status": "Extracted",
-        "extracted_json_vault": json.dumps(schema_dict, indent=2, default=str),
-        "extracted_html_summary": html_summary,
-        "extracted_date": schema_dict.get("extracted_date"),
-        "extracted_ref_no": schema_dict.get("extracted_ref_no"),
-        "generic_data_map": generic_data_map,
-        "ai_model_used": extract_config.model,
-        "extracted_at": now_datetime(),
-    })
-    frappe.db.commit()
-
-    # Side effects
-    _write_parent_fields(apr_name, detected_category, schema_dict)
-    _resolve_supplier(apr_name, schema_dict)
-    _resolve_item_lines(apr_name, detected_category, schema_dict)
-    _advance_state_machine(apr_name)
-
-    # Label generation — only for Quote and PO; enqueued so it doesn't block extraction
-    if detected_category in ("Quote", "PO"):
-        frappe.enqueue(
-            "mpd_customizations.asset_organizer.ai.apr_extraction.run_label_generation_job",
-            queue="default",
-            apr_name=apr_name,
-            trigger_category=detected_category,
-            schema_dict=schema_dict,
-        )
-
-    logger.info(f"run_evidence_extraction complete: APR={apr_name} row={evidence_row_name} cat={detected_category}")
+    finally:
+        _maybe_continue_extraction_chain(apr_name, continue_chain)
 
 
 # ---------------------------------------------------------------------------

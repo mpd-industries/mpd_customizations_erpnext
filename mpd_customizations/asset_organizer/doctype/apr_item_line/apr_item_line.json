@@ -101,7 +101,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Match Status",
-   "options": "\nExact Match\nFuzzy Match\nNo Match - Request Created",
+   "options": "\nExact Match\nNo Match - Request Created",
    "read_only": 1
   }
  ],

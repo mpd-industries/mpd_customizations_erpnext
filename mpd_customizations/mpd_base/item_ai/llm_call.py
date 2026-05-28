@@ -3,6 +3,7 @@ import re
 
 import frappe
 import litellm
+from litellm.utils import supports_pdf_input
 
 
 def _ascii_header(val):
@@ -148,8 +149,8 @@ def _build_user_content(user_prompt, file_data, mime, model, provider=None, file
 
     if mime == "application/pdf":
         # OpenRouter converts PDFs server-side for any model — bypass the
-        # litellm.supports_pdf_input gate which returns False for most models.
-        if _is_openrouter(provider, model) or litellm.supports_pdf_input(model=model):
+        # supports_pdf_input gate returns False for most models without native PDF.
+        if _is_openrouter(provider, model) or supports_pdf_input(model=model):
             return [
                 {"type": "text", "text": user_prompt},
                 {"type": "file", "file": {"filename": filename, "file_data": file_data}},

@@ -400,27 +400,56 @@ TARGET JSON SCHEMA:
 _ITEM_MERGE_PROMPT = """\
 You are a procurement item matching assistant.
 
-Your task: decide whether a new item line from a document is the SAME physical item as one
-or more existing item lines already recorded for this procurement.
+Your task: for EACH new line from a PO or Invoice, decide whether it is the SAME physical
+item as one existing line already on this Asset Procurement Record, or whether it should
+be added as a new line.
 
-"Same item" means: referring to the same physical product, even if the wording, abbreviations,
-units, or order of words differ. Examples of same item:
-  - "UPS 20 KVA" and "UPS-20kVA 3Phase Input"
-  - "SS Reactor 30 KL" and "Stainless Steel Reactor 30000 Litre"
-  - "Cable Tray 150mm" and "150 MM Cable Tray GI"
-
-"Different item" means: clearly distinct products (e.g. "Cable Tray" vs "Junction Box").
+"Same item" = same physical product even when wording differs (e.g. "M.S. FLANGE ASA 150 25 MM"
+vs "Ms Flange 1\" R/F" with the same qty and line total).
 
 RULES:
 - Return ONLY valid JSON. No preamble, no commentary, no markdown fences.
-- If is_same_item is true, set matched_description to the existing line that matches.
-- If is_same_item is false, set matched_description to null.
-- When in doubt, prefer false (safe default — a new row will be created).
+- Every new_line_index must appear exactly once in decisions.
+- At most one new line may match each matched_existing_index.
+- Prefer Invoice wording in preferred_description when merging PO into an Invoice line.
+- Same qty + line_total + compatible HSN strongly suggest same item.
+- action "add" only for genuinely new products on this APR.
 
 TARGET JSON SCHEMA:
 {
-  "is_same_item": boolean,
-  "matched_description": string or null
+  "decisions": [
+    {
+      "new_line_index": 0,
+      "action": "same",
+      "matched_existing_index": "A",
+      "preferred_description": "M.S. FLANGE ASA 150 25 MM"
+    },
+    {
+      "new_line_index": 1,
+      "action": "add"
+    }
+  ]
+}
+"""
+
+_ITEM_CATALOG_MATCH_PROMPT = """\
+You are an ERP item catalog matching assistant.
+
+You receive a procurement line description and up to 5 candidate Items from a similarity search.
+Decide whether the line refers to ONE of those existing Items, or is a genuinely new product.
+
+RULES:
+- Return ONLY valid JSON. No preamble, no commentary, no markdown fences.
+- Pick matched_item_code only from the candidate list when is_existing_item is true.
+- Consider HSN compatibility (7307 vs 73072100 may be the same product class).
+- When none of the candidates are the same physical item, set is_existing_item to false.
+- Do not invent item codes not listed in candidates.
+
+TARGET JSON SCHEMA:
+{
+  "is_existing_item": boolean,
+  "matched_item_code": string or null,
+  "confidence_note": string or null
 }
 """
 
@@ -500,9 +529,17 @@ CONFIGS = [
     {
         "task_key":     "apr_item_line_merge",
         "task_label":   "APR Item Line Merge Check",
-        "description":  "Decides whether a new item line from a document is the same physical item as an existing APR item line.",
+        "description":  "Batch: maps new PO/Invoice lines to existing APR item lines (add vs same).",
         "system_prompt": _ITEM_MERGE_PROMPT,
-        "max_tokens":   200,
+        "max_tokens":   800,
+        "temperature":  0.0,
+    },
+    {
+        "task_key":     "apr_item_catalog_match",
+        "task_label":   "APR Item Catalog Match",
+        "description":  "Reviews dedup.py similarity candidates and confirms ERP Item link or new product.",
+        "system_prompt": _ITEM_CATALOG_MATCH_PROMPT,
+        "max_tokens":   300,
         "temperature":  0.0,
     },
 ]

@@ -42,6 +42,7 @@ def run_item_review(request_name):
             tally_name=doc.tally_name,
             tally_alias=doc.tally_alias,
             legacy_material_code=doc.legacy_material_code,
+            hsn_code=doc.gst_hsn_code,
         )
 
         # Build prompt

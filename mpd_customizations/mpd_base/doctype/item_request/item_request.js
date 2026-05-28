@@ -177,6 +177,7 @@ function run_dedup_check(frm) {
                 tally_name:           frm.doc.tally_name           || null,
                 tally_alias:          frm.doc.tally_alias          || null,
                 legacy_material_code: frm.doc.legacy_material_code || null,
+                hsn_code:             frm.doc.gst_hsn_code           || null,
             },
             callback(r) {
                 const candidates = r.message || [];
