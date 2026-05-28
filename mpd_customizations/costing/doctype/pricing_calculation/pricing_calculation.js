@@ -700,6 +700,9 @@ function _render_cost_snapshot(l, $wrapper, opts) {
 
 	// ── Totals for each component ─────────────────────────────────────────────
 	const rm       = l.rm_cost_per_kg || 0;
+	const process_loss_pct = l.process_loss_pct || 0;
+	const process_loss_amt = l.process_loss_amount_per_kg || 0;
+	const rm_base = rm - process_loss_amt;
 	const proc     = l.processing_cost_per_kg || 0;
 	const addl     = l.additional_charges_per_kg
 		|| (l.additional_charges || []).reduce((s, c) => s + (c.amount_per_kg || 0), 0)
@@ -735,14 +738,14 @@ function _render_cost_snapshot(l, $wrapper, opts) {
 		? ""
 		: ` <span class="text-muted small">${__("(click to expand)")}</span>`;
 
-	running += rm;
+	running += rm_base;
 	tbody += `<tr style="cursor:pointer;" onclick="(function(){
 		var d=document.getElementById('rmdet_${uid}');
 		d.classList.toggle('d-none');
 		document.getElementById('rmico_${uid}').textContent=d.classList.contains('d-none')?'▶':'▼';
 	})()">
 		<td style="padding:3px 8px;"><span id="rmico_${uid}">${rmIcon}</span> <strong>${__("RM Cost")}</strong>${rmHint}</td>
-		<td class="text-right" style="padding:3px 8px;">₹${rm.toFixed(2)}/kg</td>
+		<td class="text-right" style="padding:3px 8px;">₹${rm_base.toFixed(2)}/kg</td>
 		<td class="text-right text-muted" style="padding:3px 8px;border-left:1px solid #e0e0e0;">₹${running.toFixed(2)}</td>
 	</tr>
 	<tr id="rmdet_${uid}" class="${rmHiddenClass}" style="background:#f9fbe7;">
@@ -765,6 +768,12 @@ function _render_cost_snapshot(l, $wrapper, opts) {
 			</table>
 		</td>
 	</tr>`;
+	if (process_loss_amt) {
+		const lossLabel = process_loss_pct
+			? `${__("Process Loss on RM")} <span class="text-muted small">(${process_loss_pct.toFixed(2)}%)</span>`
+			: __("Process Loss on RM");
+		tbody += _row(lossLabel, process_loss_amt);
+	}
 
 	tbody += _row(`${__("Processing")}${proc_detail}`, proc);
 	tbody += _row(__("Additional Charges"), addl);

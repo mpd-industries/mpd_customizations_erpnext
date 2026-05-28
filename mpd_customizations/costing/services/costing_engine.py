@@ -59,7 +59,14 @@ class CostingEngine:
 			boms = frappe.get_all(
 				"BOM",
 				filters={"item": doc.item},
-				fields=["name", "item", "quantity", "custom_formulation_id", "custom_formulation_description"],
+				fields=[
+					"name",
+					"item",
+					"quantity",
+					"custom_formulation_id",
+					"custom_formulation_description",
+					"process_loss_percentage",
+				],
 			)
 			fetch_result = RateFetcher.fetch(doc, preserve_overrides=True)
 
@@ -170,7 +177,8 @@ class CostingEngine:
 			bom_item_list = bom_items_map.get(bom["name"], [])
 			bom_qty = bom["quantity"] or 1
 			material_lines_data = []
-			rm_cost = 0.0
+			gross_rm_cost = 0.0
+			scrap_credits = 0.0
 			missing_items = []
 			expired_items = []
 
@@ -190,7 +198,7 @@ class CostingEngine:
 				is_overridden = bool(rl and _wr != _fr and (_fr > 0 or _wr > 0))
 
 				amount = compute_rm_line_amount(qty_per_kg, working_rate)
-				rm_cost += amount
+				gross_rm_cost += amount
 
 				if freshness == "Missing":
 					missing_items.append(bi["item_code"])
@@ -223,7 +231,7 @@ class CostingEngine:
 				sl = scrap_lines_map.get(si["item_code"])
 				scrap_rate = (sl.rate_per_kg or 0) if sl else 0.0
 				scrap_amount = -1 * compute_rm_line_amount(qty_per_kg, scrap_rate)
-				rm_cost += scrap_amount
+				scrap_credits += scrap_amount
 
 				material_lines_data.append({
 					"pricing_calculation": pricing_calculation_name,
@@ -242,6 +250,10 @@ class CostingEngine:
 					"is_scrap": 1,
 					"confidence_score": 0.0,
 				})
+
+			process_loss_pct = max(float(bom.get("process_loss_percentage") or 0), 0.0)
+			process_loss_amount = gross_rm_cost * (process_loss_pct / 100.0)
+			rm_cost = gross_rm_cost + process_loss_amount + scrap_credits
 
 			processing_cost = 0.0
 			processing_charge_ref = None
@@ -288,6 +300,10 @@ class CostingEngine:
 				"formulation_id": bom.get("custom_formulation_id") or "",
 				"formulation_description": bom.get("custom_formulation_description") or "",
 				"prev_rm_cost_per_kg": prev_rm_costs.get(bom["name"], 0) or 0,
+				"gross_rm_cost_per_kg": gross_rm_cost,
+				"process_loss_pct": process_loss_pct,
+				"process_loss_amount_per_kg": process_loss_amount,
+				"scrap_credits_per_kg": scrap_credits,
 				"rm_cost_per_kg": rm_cost,
 				"processing_cost_per_kg": processing_cost,
 				"additional_charges_per_kg": additional_charges_per_kg,
@@ -402,7 +418,14 @@ def _get_customer_product_boms(customer_product_ref: str) -> List[Dict]:
 	boms = frappe.get_all(
 		"BOM",
 		filters={"name": ["in", bom_names]},
-		fields=["name", "item", "quantity", "custom_formulation_id", "custom_formulation_description"],
+		fields=[
+			"name",
+			"item",
+			"quantity",
+			"custom_formulation_id",
+			"custom_formulation_description",
+			"process_loss_percentage",
+		],
 	)
 	return boms
 

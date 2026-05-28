@@ -123,3 +123,117 @@ class TestCostingEngine(unittest.TestCase):
 		from mpd_customizations.costing.services.cost_calculator import compute_processing_cost
 		result = compute_processing_cost(70.0, 18.0)
 		self.assertAlmostEqual(result, 12.6)
+
+	def _build_rate_line(self, item_code: str, rate: float):
+		row = MagicMock()
+		row.item = item_code
+		row.working_rate = rate
+		row.fetched_rate = rate
+		row.rate_freshness = "Current"
+		row.supplier = None
+		row.override_reason = ""
+		row.confidence_score = 100.0
+		return row
+
+	@patch("mpd_customizations.costing.services.costing_engine.RateFetcher")
+	@patch("mpd_customizations.costing.services.costing_engine.frappe")
+	def test_evaluate_applies_bom_process_loss_on_gross_rm(self, mock_frappe, mock_fetcher):
+		doc = self._mock_doc()
+		doc.city = "Indore"
+		doc.processor = None
+		doc.customer_product_ref = None
+		doc.pricing_request = None
+		doc.selected_combination = None
+		doc.packaging_lines = []
+		doc.delivery_lines = []
+		doc.scrap_lines = []
+		doc.customer_credit_rate_pct = 10.0
+		doc.credit_days = 0
+		doc.rate_lines = [self._build_rate_line("RM-1", 50.0)]
+		doc.save = MagicMock()
+		mock_frappe.get_doc.return_value = doc
+		mock_frappe._.side_effect = lambda x, *a: x
+		mock_frappe.db.exists.return_value = "BOM-001"
+		mock_frappe.db.get_value.return_value = None
+		mock_frappe.db.has_column.return_value = False
+		mock_frappe.parse_json.return_value = {}
+		mock_frappe.as_json.return_value = "{}"
+
+		mock_fetcher.fetch.return_value = MagicMock(
+			has_missing_rates=False, missing_items=[],
+			has_expired_rates=False, expired_items=[],
+			overrides_detected=False, overrides_changed=[],
+		)
+
+		mock_frappe.get_all.side_effect = [
+			[{
+				"name": "BOM-001",
+				"item": "PAINT-001",
+				"quantity": 1.0,
+				"custom_formulation_id": "F1",
+				"custom_formulation_description": "Base",
+				"process_loss_percentage": 1.0,
+			}],
+			[{"parent": "BOM-001", "item_code": "RM-1", "item_name": "RM 1", "qty": 1.0, "uom": "Kg"}],
+			[],
+			[],
+		]
+
+		result = self.engine.evaluate("CR-001")
+		combo = result["combinations"][0]
+
+		self.assertAlmostEqual(combo["gross_rm_cost_per_kg"], 50.0)
+		self.assertAlmostEqual(combo["process_loss_pct"], 1.0)
+		self.assertAlmostEqual(combo["process_loss_amount_per_kg"], 0.5)
+		self.assertAlmostEqual(combo["rm_cost_per_kg"], 50.5)
+
+	@patch("mpd_customizations.costing.services.costing_engine.RateFetcher")
+	@patch("mpd_customizations.costing.services.costing_engine.frappe")
+	def test_evaluate_zero_process_loss_keeps_rm_unchanged(self, mock_frappe, mock_fetcher):
+		doc = self._mock_doc()
+		doc.city = "Indore"
+		doc.processor = None
+		doc.customer_product_ref = None
+		doc.pricing_request = None
+		doc.selected_combination = None
+		doc.packaging_lines = []
+		doc.delivery_lines = []
+		doc.scrap_lines = []
+		doc.customer_credit_rate_pct = 10.0
+		doc.credit_days = 0
+		doc.rate_lines = [self._build_rate_line("RM-1", 50.0)]
+		doc.save = MagicMock()
+		mock_frappe.get_doc.return_value = doc
+		mock_frappe._.side_effect = lambda x, *a: x
+		mock_frappe.db.exists.return_value = "BOM-001"
+		mock_frappe.db.get_value.return_value = None
+		mock_frappe.db.has_column.return_value = False
+		mock_frappe.parse_json.return_value = {}
+		mock_frappe.as_json.return_value = "{}"
+
+		mock_fetcher.fetch.return_value = MagicMock(
+			has_missing_rates=False, missing_items=[],
+			has_expired_rates=False, expired_items=[],
+			overrides_detected=False, overrides_changed=[],
+		)
+
+		mock_frappe.get_all.side_effect = [
+			[{
+				"name": "BOM-001",
+				"item": "PAINT-001",
+				"quantity": 1.0,
+				"custom_formulation_id": "F1",
+				"custom_formulation_description": "Base",
+				"process_loss_percentage": 0.0,
+			}],
+			[{"parent": "BOM-001", "item_code": "RM-1", "item_name": "RM 1", "qty": 1.0, "uom": "Kg"}],
+			[],
+			[],
+		]
+
+		result = self.engine.evaluate("CR-001")
+		combo = result["combinations"][0]
+
+		self.assertAlmostEqual(combo["gross_rm_cost_per_kg"], 50.0)
+		self.assertAlmostEqual(combo["process_loss_amount_per_kg"], 0.0)
+		self.assertAlmostEqual(combo["rm_cost_per_kg"], 50.0)
