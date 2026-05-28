@@ -141,6 +141,10 @@ class POExtractionSchema(BaseExtractionSchema):
     po_number: Optional[str] = None
     po_date: Optional[date] = None
     po_total_value: Optional[float] = None
+    main_location: Optional[str] = None
+    level_1_location: Optional[str] = None
+    level_2_location: Optional[str] = None
+    level_3_location: Optional[str] = None
     item_lines: List[ItemLineSchema] = []
 
 

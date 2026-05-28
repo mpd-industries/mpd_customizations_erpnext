@@ -36,7 +36,7 @@
   },
   {
    "fieldname": "raw_description",
-   "fieldtype": "Data",
+   "fieldtype": "Text",
    "in_list_view": 1,
    "label": "Raw Description",
    "read_only": 1

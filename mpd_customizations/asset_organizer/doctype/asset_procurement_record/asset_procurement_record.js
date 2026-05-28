@@ -8,6 +8,7 @@ frappe.ui.form.on("Asset Procurement Record", {
     refresh(frm) {
         _set_status_indicator(frm);
         _show_ai_description_prompt(frm);
+        _set_location_queries(frm);
         _add_extraction_buttons(frm);
     },
 
@@ -17,6 +18,32 @@ frappe.ui.form.on("Asset Procurement Record", {
 
     ai_description_suggestion(frm) {
         _show_ai_description_prompt(frm);
+    },
+
+    main_location(frm) {
+        _clear_parent_location_levels(frm, 1);
+    },
+
+    level_1_location(frm) {
+        _clear_parent_location_levels(frm, 2);
+    },
+
+    level_2_location(frm) {
+        _clear_parent_location_levels(frm, 3);
+    },
+});
+
+frappe.ui.form.on("APR Evidence Document", {
+    main_location(frm, cdt, cdn) {
+        _clear_child_location_levels(cdt, cdn, 1);
+    },
+
+    level_1_location(frm, cdt, cdn) {
+        _clear_child_location_levels(cdt, cdn, 2);
+    },
+
+    level_2_location(frm, cdt, cdn) {
+        _clear_child_location_levels(cdt, cdn, 3);
     },
 });
 
@@ -70,6 +97,65 @@ function _show_ai_description_prompt(frm) {
             },
         },
     });
+}
+
+function _set_location_queries(frm) {
+    // Parent section filters (Location & Installation)
+    frm.set_query("main_location", () => ({
+        filters: { location_name: "MPD Ujjain" },
+    }));
+    frm.set_query("level_1_location", () => ({
+        filters: { parent_location: frm.doc.main_location || "__none__" },
+    }));
+    frm.set_query("level_2_location", () => ({
+        filters: { parent_location: frm.doc.level_1_location || "__none__" },
+    }));
+    frm.set_query("level_3_location", () => ({
+        filters: { parent_location: frm.doc.level_2_location || "__none__" },
+    }));
+
+    // Child table filters (APR Evidence Document rows)
+    frm.set_query("main_location", "evidence_documents", () => ({
+        filters: { location_name: "MPD Ujjain" },
+    }));
+    frm.set_query("level_1_location", "evidence_documents", (doc, cdt, cdn) => {
+        const row = locals[cdt][cdn] || {};
+        return { filters: { parent_location: row.main_location || "__none__" } };
+    });
+    frm.set_query("level_2_location", "evidence_documents", (doc, cdt, cdn) => {
+        const row = locals[cdt][cdn] || {};
+        return { filters: { parent_location: row.level_1_location || "__none__" } };
+    });
+    frm.set_query("level_3_location", "evidence_documents", (doc, cdt, cdn) => {
+        const row = locals[cdt][cdn] || {};
+        return { filters: { parent_location: row.level_2_location || "__none__" } };
+    });
+}
+
+function _clear_parent_location_levels(frm, changed_level) {
+    if (changed_level <= 1) {
+        frm.set_value("level_1_location", null);
+        frm.set_value("level_2_location", null);
+        frm.set_value("level_3_location", null);
+    } else if (changed_level === 2) {
+        frm.set_value("level_2_location", null);
+        frm.set_value("level_3_location", null);
+    } else if (changed_level === 3) {
+        frm.set_value("level_3_location", null);
+    }
+}
+
+function _clear_child_location_levels(cdt, cdn, changed_level) {
+    if (changed_level <= 1) {
+        frappe.model.set_value(cdt, cdn, "level_1_location", null);
+        frappe.model.set_value(cdt, cdn, "level_2_location", null);
+        frappe.model.set_value(cdt, cdn, "level_3_location", null);
+    } else if (changed_level === 2) {
+        frappe.model.set_value(cdt, cdn, "level_2_location", null);
+        frappe.model.set_value(cdt, cdn, "level_3_location", null);
+    } else if (changed_level === 3) {
+        frappe.model.set_value(cdt, cdn, "level_3_location", null);
+    }
 }
 
 // ---------------------------------------------------------------------------

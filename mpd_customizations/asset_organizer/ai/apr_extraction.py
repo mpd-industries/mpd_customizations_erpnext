@@ -4,6 +4,7 @@ import base64
 import io
 import json
 import os
+import re
 
 import frappe
 from frappe.utils import now_datetime
@@ -116,6 +117,63 @@ def _get_task_config(task_key: str):
     if not name:
         raise ValueError(f"No active AI Task Config found for task_key={task_key!r}")
     return frappe.get_doc("AI Task Config", name)
+
+
+# ---------------------------------------------------------------------------
+# PO location tree context (for first PO extraction)
+# ---------------------------------------------------------------------------
+
+_LOCATION_ROOT = "MPD Ujjain"
+
+
+def _location_tree_nodes(root_name: str = _LOCATION_ROOT) -> dict[str, dict]:
+    root = frappe.db.get_value("Location", {"location_name": root_name}, ["name", "lft", "rgt"], as_dict=True)
+    if not root:
+        return {}
+    rows = frappe.get_all(
+        "Location",
+        filters={"lft": [">=", root.lft], "rgt": ["<=", root.rgt]},
+        fields=["name", "location_name", "parent_location", "lft"],
+        order_by="lft asc",
+    )
+    return {r.name: r for r in rows}
+
+
+def _build_location_tree_payload(root_name: str = _LOCATION_ROOT) -> dict:
+    """
+    Build compact nested tree payload for prompt context:
+    {"name": "...", "children": [{"name": "...", "children": [...]}, ...]}
+    """
+    nodes = _location_tree_nodes(root_name)
+    if not nodes:
+        return {}
+
+    children_by_parent: dict[str | None, list[dict]] = {}
+    for node in nodes.values():
+        parent = node.get("parent_location")
+        children_by_parent.setdefault(parent, []).append(node)
+
+    for lst in children_by_parent.values():
+        lst.sort(key=lambda n: (n.get("location_name") or n.get("name") or "").lower())
+
+    root_node = None
+    for name, node in nodes.items():
+        if (node.get("location_name") or "") == root_name:
+            root_node = {**node, "name": name}
+            break
+    if not root_node:
+        return {}
+
+    def _walk(node: dict) -> dict:
+        node_name = node.get("name")
+        label = node.get("location_name") or node_name
+        kids = children_by_parent.get(node_name, [])
+        return {
+            "name": label,
+            "children": [_walk(k) for k in kids],
+        }
+
+    return _walk(root_node)
 
 
 # ---------------------------------------------------------------------------
@@ -487,6 +545,169 @@ def _llm_resolve_catalog_item(
         return None, False
 
 
+def _extract_source_item_code(raw_description: str) -> str | None:
+    """Extract a leading equipment/item code like VCS00001."""
+    desc = (raw_description or "").strip()
+    if not desc:
+        return None
+    first_line = desc.splitlines()[0].strip()
+    match = re.match(r"^([A-Z]{2,}[A-Z0-9\-_/]{2,})\b", first_line)
+    return match.group(1) if match else None
+
+
+def _normalize_desc_lines(text: str) -> list[str]:
+    lines: list[str] = []
+    for raw in (text or "").splitlines():
+        cleaned = re.sub(r"\s+", " ", raw).strip()
+        if cleaned:
+            lines.append(cleaned)
+    return lines
+
+
+def _description_token_set(text: str) -> set[str]:
+    return {
+        t.lower()
+        for t in re.findall(r"[A-Za-z0-9]+", text or "")
+        if len(t) > 2
+    }
+
+
+def _collect_evidence_description_variants(
+    apr_name: str,
+    primary_description: str,
+    source_item_code: str | None,
+) -> list[str]:
+    """Collect related PO/Invoice item descriptions from extracted evidence JSON."""
+    variants: list[str] = []
+    primary_tokens = _description_token_set(primary_description)
+    rows = frappe.get_all(
+        "APR Evidence Document",
+        filters={
+            "parent": apr_name,
+            "extraction_status": "Extracted",
+            "detected_category": ["in", ["PO", "Invoice"]],
+        },
+        fields=["name", "extracted_json_vault"],
+    )
+    for row in rows:
+        payload = row.extracted_json_vault
+        if not payload:
+            continue
+        try:
+            data = json.loads(payload)
+        except Exception:
+            continue
+        for item_line in (data.get("item_lines") or []):
+            desc = (item_line.get("raw_description") or "").strip()
+            if not desc:
+                continue
+            if source_item_code and source_item_code.lower() in desc.lower():
+                variants.append(desc)
+                continue
+            overlap = primary_tokens.intersection(_description_token_set(desc))
+            if len(overlap) >= 2:
+                variants.append(desc)
+    return variants
+
+
+def _build_canonical_item_request_description(
+    apr_name: str,
+    apr_row,
+    line: dict,
+) -> tuple[str, str | None]:
+    """
+    Build a rich Item Request description using merged line context:
+    consolidated APR line + related PO/Invoice evidence variants.
+    """
+    primary = (line.get("raw_description") or "").strip()
+    source_item_code = _extract_source_item_code(primary)
+
+    variant_pool = [primary]
+    # Include current APR row description (may already be merged by PO/Invoice logic)
+    row_desc = (apr_row.raw_description or "").strip()
+    if row_desc:
+        variant_pool.append(row_desc)
+    variant_pool.extend(
+        _collect_evidence_description_variants(apr_name, primary, source_item_code)
+    )
+
+    # Deduplicate while preserving order
+    unique_variants: list[str] = []
+    seen: set[str] = set()
+    for variant in variant_pool:
+        key = re.sub(r"\s+", " ", variant).strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        unique_variants.append(variant.strip())
+
+    lead_text = unique_variants[0] if unique_variants else primary
+    if source_item_code:
+        lead_text = re.sub(
+            rf"^\s*{re.escape(source_item_code)}\s*[-:|]?\s*",
+            "",
+            lead_text,
+            flags=re.IGNORECASE,
+        ).strip()
+    headline = (
+        f"{source_item_code} - {lead_text}" if source_item_code and lead_text else lead_text
+    )
+
+    detail_lines: list[str] = []
+    for variant in unique_variants:
+        if source_item_code:
+            variant = re.sub(
+                rf"^\s*{re.escape(source_item_code)}\s*[-:|]?\s*",
+                "",
+                variant,
+                flags=re.IGNORECASE,
+            ).strip()
+        for ln in _normalize_desc_lines(variant):
+            if ln and ln.lower() != (headline or "").lower():
+                detail_lines.append(ln)
+
+    # Unique detail lines
+    final_details: list[str] = []
+    seen_details: set[str] = set()
+    for ln in detail_lines:
+        key = ln.lower()
+        if key in seen_details:
+            continue
+        seen_details.add(key)
+        final_details.append(ln)
+
+    qty, rate, line_total = _line_qty_rate_total(line)
+    hsn = (line.get("hsn_code") or "").strip()
+    uom = (line.get("uom") or "").strip()
+    source_ref = (apr_row.source_document_ref or "").strip()
+    source_cat = (apr_row.source_category or "").strip()
+
+    meta_parts = []
+    if hsn:
+        meta_parts.append(f"HSN: {hsn}")
+    if qty:
+        qty_text = f"{qty:g}"
+        if uom:
+            qty_text = f"{qty_text} {uom}"
+        meta_parts.append(f"Qty: {qty_text}")
+    if rate:
+        meta_parts.append(f"Rate: {rate:g}")
+    if line_total:
+        meta_parts.append(f"Line Total: {line_total:g}")
+    if source_ref:
+        source_label = f"{source_cat} " if source_cat else ""
+        meta_parts.append(f"Source: {source_label}{source_ref}".strip())
+
+    parts = [headline] if headline else []
+    if final_details:
+        parts.append("\n".join(final_details[:20]))
+    if meta_parts:
+        parts.append(" | ".join(meta_parts))
+
+    canonical_description = "\n".join(p for p in parts if p).strip()
+    return canonical_description or primary, source_item_code
+
+
 def _link_catalog_or_item_request(
     apr_name: str,
     apr_row,
@@ -513,10 +734,19 @@ def _link_catalog_or_item_request(
         logger.info(f"APR {apr_name}: catalog LLM linked '{desc}' → {item_code}")
         return
 
+    canonical_desc, source_item_code = _build_canonical_item_request_description(
+        apr_name,
+        apr_row,
+        line,
+    )
+
     ir = frappe.get_doc({
         "doctype": "Item Request",
-        "requester_description": desc,
+        "requester_description": canonical_desc,
+        "combined_asset_description": canonical_desc,
+        "source_item_code": source_item_code,
         "gst_hsn_code": line.get("hsn_code"),
+        "is_fixed_asset": 1,
         "reference_doctype": "Asset Procurement Record",
         "reference_name": apr_name,
         "requested_by": "Administrator",
@@ -525,7 +755,7 @@ def _link_catalog_or_item_request(
     ir.insert(ignore_permissions=True)
     check_item_duplicates_and_set_status(
         ir.name,
-        desc,
+        canonical_desc,
         hsn_code=line.get("hsn_code"),
     )
     apr_row.item_doctype = "Item Request"
@@ -645,6 +875,10 @@ def _write_parent_fields(apr_name: str, category: str, data: dict) -> None:
             ("po_date",        data.get("po_date") or data.get("extracted_date")),
             ("po_number",      data.get("po_number") or data.get("extracted_ref_no")),
             ("po_total_value", data.get("po_total_value")),
+            ("main_location", data.get("main_location")),
+            ("level_1_location", data.get("level_1_location")),
+            ("level_2_location", data.get("level_2_location")),
+            ("level_3_location", data.get("level_3_location")),
         ],
         "Invoice": [
             ("invoice_date",           data.get("invoice_date") or data.get("extracted_date")),
@@ -1184,10 +1418,21 @@ def run_evidence_extraction(
 
         try:
             extract_config = _get_task_config(task_key)
+            user_prompt = "Extract all fields from this document according to the schema."
+            if detected_category == "PO":
+                location_tree = _build_location_tree_payload(_LOCATION_ROOT)
+                if location_tree:
+                    user_prompt = (
+                        "Extract all fields from this purchase order according to the schema.\n\n"
+                        "Use the LOCATION TREE below for location fields. "
+                        "Choose location values only from this tree. "
+                        "If no reliable match is present in the document, set those fields to null.\n\n"
+                        f"LOCATION TREE (JSON):\n{json.dumps(location_tree, ensure_ascii=False)}"
+                    )
             extract_raw = call_llm(
                 config=extract_config,
                 system_prompt=extract_config.system_prompt,
-                user_prompt="Extract all fields from this document according to the schema.",
+                user_prompt=user_prompt,
                 reference_doctype="Asset Procurement Record",
                 reference_name=apr_name,
                 attached_file_data=file_data,
@@ -1220,6 +1465,10 @@ def run_evidence_extraction(
             "extracted_html_summary": html_summary,
             "extracted_date": schema_dict.get("extracted_date"),
             "extracted_ref_no": schema_dict.get("extracted_ref_no"),
+            "main_location": schema_dict.get("main_location"),
+            "level_1_location": schema_dict.get("level_1_location"),
+            "level_2_location": schema_dict.get("level_2_location"),
+            "level_3_location": schema_dict.get("level_3_location"),
             "generic_data_map": generic_data_map,
             "ai_model_used": extract_config.model,
             "extracted_at": now_datetime(),

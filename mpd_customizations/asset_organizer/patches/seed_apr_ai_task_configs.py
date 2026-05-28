@@ -110,6 +110,10 @@ TARGET JSON SCHEMA:
   "po_number": string or null,
   "po_date": string (YYYY-MM-DD) or null,
   "po_total_value": number or null — total PO value in INR,
+  "main_location": string or null — top location (assume MPD Ujjain hierarchy),
+  "level_1_location": string or null — first sublocation level under main,
+  "level_2_location": string or null — second sublocation level under main,
+  "level_3_location": string or null — third sublocation level under main,
   "item_lines": [
     {
       "raw_description": string — exact description from document,
@@ -122,6 +126,13 @@ TARGET JSON SCHEMA:
   "summary": string or null — brief plain-English summary of the document,
   "extra_fields": { "key": "value", ... } — any other labelled fields not covered above; empty object if none
 }
+
+LOCATION EXTRACTION RULES:
+- Prefer destination text from PO fields such as Destination / Indent / Project Phase.
+- Location options will be provided as a nested LOCATION TREE JSON in the user prompt.
+- Choose location values ONLY from nodes present in that provided tree.
+- Use the deepest valid matched node from document wording (e.g. phase/reactor), then fill parent levels accordingly.
+- If unclear, set location fields to null.
 """
 
 _INVOICE_PROMPT = _BASE_INSTRUCTIONS + """

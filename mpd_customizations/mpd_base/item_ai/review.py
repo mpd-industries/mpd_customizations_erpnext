@@ -3,6 +3,14 @@ import frappe
 from frappe.utils import now_datetime
 
 
+def _canonical_request_description(doc) -> str:
+    """Prefer canonical combined description; fallback to requester text."""
+    return (
+        (doc.combined_asset_description or "").strip()
+        or (doc.requester_description or "").strip()
+    )
+
+
 # ─── Enqueue ──────────────────────────────────────────────────────────────────
 
 @frappe.whitelist()
@@ -37,8 +45,9 @@ def run_item_review(request_name):
 
         # Get top 5 candidates from similarity search for LLM context
         from mpd_customizations.mpd_base.item_ai.dedup import check_item_duplicates
+        canonical_desc = _canonical_request_description(doc)
         top_candidates = check_item_duplicates(
-            description=doc.requester_description,
+            description=canonical_desc,
             tally_name=doc.tally_name,
             tally_alias=doc.tally_alias,
             legacy_material_code=doc.legacy_material_code,
@@ -175,9 +184,10 @@ def build_prompt(doc, top_candidates):
     )
     uom_block = "\n".join(f"- {u.name}" for u in uom_rows)
 
+    canonical_desc = _canonical_request_description(doc)
     prompt = f"""
 ITEM REQUEST:
-  Description:           {doc.requester_description}
+  Description:           {canonical_desc}
   Is Fixed Asset:        {"Yes" if doc.is_fixed_asset else "No"}
   Is Stock Item:         {"Yes" if doc.is_stock_item else "No"}
   HSN Code:              {doc.gst_hsn_code or "Not provided"}
@@ -442,6 +452,7 @@ def _build_and_insert_item(doc):
 
     stock_uom = _resolve_stock_uom_for_item(doc)
     gst_link = _resolve_gst_hsn_link_for_item(doc)
+    canonical_desc = _canonical_request_description(doc)
 
     if doc.is_fixed_asset and not doc.ai_asset_category_suggestion:
         frappe.throw("Asset Category is required for Fixed Asset items — AI suggestion is missing.")
@@ -450,6 +461,7 @@ def _build_and_insert_item(doc):
         "doctype":           "Item",
         "item_code":         item_code,
         "item_name":         doc.ai_item_name_suggestion,
+        "description":       canonical_desc,
         "item_group":        doc.ai_item_group_suggestion,
         "is_stock_item":     doc.is_stock_item,
         "is_fixed_asset":    doc.is_fixed_asset,

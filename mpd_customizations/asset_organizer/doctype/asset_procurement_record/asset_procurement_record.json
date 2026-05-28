@@ -41,6 +41,10 @@
   "total_amount_paid",
   "outstanding_balance",
   "section_break_location",
+  "main_location",
+  "level_1_location",
+  "level_2_location",
+  "level_3_location",
   "current_location",
   "final_location",
   "column_break_location2",
@@ -233,6 +237,30 @@
    "fieldname": "section_break_location",
    "fieldtype": "Section Break",
    "label": "Location & Installation"
+  },
+  {
+   "fieldname": "main_location",
+   "fieldtype": "Link",
+   "label": "Main Location",
+   "options": "Location"
+  },
+  {
+   "fieldname": "level_1_location",
+   "fieldtype": "Link",
+   "label": "Level 1 Location",
+   "options": "Location"
+  },
+  {
+   "fieldname": "level_2_location",
+   "fieldtype": "Link",
+   "label": "Level 2 Location",
+   "options": "Location"
+  },
+  {
+   "fieldname": "level_3_location",
+   "fieldtype": "Link",
+   "label": "Level 3 Location",
+   "options": "Location"
   },
   {
    "fieldname": "current_location",

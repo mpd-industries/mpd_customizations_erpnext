@@ -10,6 +10,10 @@
   "column_break_dates",
   "extracted_date",
   "extracted_ref_no",
+  "main_location",
+  "level_1_location",
+  "level_2_location",
+  "level_3_location",
   "source_pages",
   "source_upload",
   "section_break_status",
@@ -59,6 +63,30 @@
    "fieldtype": "Data",
    "label": "Reference Number",
    "read_only": 1
+  },
+  {
+   "fieldname": "main_location",
+   "fieldtype": "Link",
+   "label": "Main Location",
+   "options": "Location"
+  },
+  {
+   "fieldname": "level_1_location",
+   "fieldtype": "Link",
+   "label": "Level 1 Location",
+   "options": "Location"
+  },
+  {
+   "fieldname": "level_2_location",
+   "fieldtype": "Link",
+   "label": "Level 2 Location",
+   "options": "Location"
+  },
+  {
+   "fieldname": "level_3_location",
+   "fieldtype": "Link",
+   "label": "Level 3 Location",
+   "options": "Location"
   },
   {
    "fieldname": "section_break_status",

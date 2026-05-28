@@ -156,9 +156,15 @@ For each new or merged row without an **Item** link:
 1. **`check_item_duplicates(description, hsn_code=...)`** — [`dedup.py`](../mpd_base/item_ai/dedup.py) Redis TF-IDF index (includes item name, tally fields, legacy code, HSN).
 2. **`apr_item_catalog_match` LLM** — line + candidate list → `is_existing_item` + `matched_item_code` (must be one of the candidates).
 3. **If existing Item** — set `item_doctype = Item`, `item_reference`, `match_confidence = Exact Match`.
-4. **If new product** — create **Item Request** (Invoice description + HSN), run **`check_item_duplicates_and_set_status`** so the Item Request UI shows similar Items (`Pending Dedup Check` or `Dedup Confirmed`).
+4. **If new product** — create **Item Request** from merged APR context:
+   - `requester_description` is overwritten with a canonical merged PO+Invoice description
+   - `combined_asset_description` stores the same canonical text (used by Item AI review + Item.description on creation)
+   - `source_item_code` stores extracted lead code when present (e.g. `VCS00001`)
+   - run **`check_item_duplicates_and_set_status`** so the Item Request UI shows similar Items (`Pending Dedup Check` or `Dedup Confirmed`).
 
-Item Request review (“Generate AI Suggestion”) already uses the same dedup index via [`review.py`](../mpd_base/item_ai/review.py).
+Item Request review (“Generate AI Suggestion”) uses the same dedup index via [`review.py`](../mpd_base/item_ai/review.py), now preferring `combined_asset_description` and falling back to `requester_description`.
+
+Serial/chassis/model extraction is not a dedicated step in this flow; the description quality comes from merged PO+Invoice line context plus normalized technical text.
 
 ### Example (same physical item, two wordings)
 
@@ -196,6 +202,13 @@ After a successful extract in `run_evidence_extraction`, the pipeline runs in or
 | **Resolve item lines** | `_resolve_item_lines` | **PO, Invoice only** |
 | Update `record_status` | `_advance_state_machine` | All |
 | Asset label (async) | `run_label_generation_job` | Quote, PO |
+
+For PO extraction, the first extraction prompt includes the full `MPD Ujjain` location tree.
+The LLM selects `main_location`, `level_1_location`, `level_2_location`, `level_3_location` directly from that tree and those values are written to:
+- Evidence row fields: `main_location`, `level_1_location`, `level_2_location`, `level_3_location`
+- Parent APR fields in **Location & Installation**: same fields, populated only when blank
+
+These fields remain editable for manual corrections.
 
 ### LLM configuration (`AI Task Config`)
 
@@ -335,7 +348,7 @@ To fix item lines after code or config updates:
 | Category | Adds APR `item_lines`? | Key extracted fields |
 |---|---|---|
 | **Quote** | No (header/label only) | Supplier, date, total; may extract lines in JSON for label |
-| **PO** | **Yes** | PO number, date, supplier GSTIN, item lines, total |
+| **PO** | **Yes** | PO number, date, supplier GSTIN, item lines, total, resolved location hierarchy (`main_location`, `level_1/2/3_location`) |
 | **Invoice** | **Yes** | Invoice number, date, taxable value, GST, item lines, total |
 | **IGP** | No | IGP number, date, vehicle; may list items in JSON only |
 | **Weighment Slip** | No | Weights, vehicle, material |

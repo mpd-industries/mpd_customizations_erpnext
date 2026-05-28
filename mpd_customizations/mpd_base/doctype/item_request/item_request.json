@@ -9,6 +9,8 @@
   "status",
   "requested_by",
   "requester_description",
+  "source_item_code",
+  "combined_asset_description",
   "column_break_hints",
   "gst_hsn_code",
   "stock_uom",
@@ -86,6 +88,19 @@
    "label": "Description",
    "placeholder": "Describe the item \u2014 include grade, purity, specification, intended use",
    "reqd": 1
+  },
+  {
+   "description": "Extracted source equipment/item code (e.g. VCS00001) when available.",
+   "fieldname": "source_item_code",
+   "fieldtype": "Data",
+   "label": "Source Item Code",
+   "read_only": 1
+  },
+  {
+   "description": "Canonical merged PO + invoice description used for AI review and Item description.",
+   "fieldname": "combined_asset_description",
+   "fieldtype": "Text",
+   "label": "Combined Asset Description"
   },
   {
    "fieldname": "column_break_hints",
