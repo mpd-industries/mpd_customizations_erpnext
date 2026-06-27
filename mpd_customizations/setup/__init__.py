@@ -12,22 +12,24 @@ from mpd_customizations.setup.llm_fixtures import (
 
 
 def after_install():
-    seed_item_category_codes()
-    seed_llm_fixtures()
-    backfill_item_labels()
-    _sync_cities()
+	seed_item_category_codes()
+	seed_llm_fixtures()
+	backfill_item_labels()
+	_sync_cities()
+	_seed_xfloor_kit_rates()
 
 
 def after_migrate():
-    """Ensure LLM fixtures exist on upgraded sites (idempotent)."""
-    seed_llm_fixtures()
-    sync_oth_reclassification_config()
-    backfill_item_labels()
-    backfill_item_solids()
-    _migrate_pending_rate_items()
-    _sync_cities()
-    if os.environ.get("MPD_SYNC_ITEM_AI_PROMPT") == "1":
-        sync_item_classification_system_prompt_from_code()
+	"""Ensure LLM fixtures exist on upgraded sites (idempotent)."""
+	seed_llm_fixtures()
+	sync_oth_reclassification_config()
+	backfill_item_labels()
+	backfill_item_solids()
+	_migrate_pending_rate_items()
+	_sync_cities()
+	_seed_xfloor_kit_rates()
+	if os.environ.get("MPD_SYNC_ITEM_AI_PROMPT") == "1":
+		sync_item_classification_system_prompt_from_code()
 
 
 def backfill_item_labels():
@@ -98,11 +100,21 @@ def backfill_item_solids():
 
 
 def _sync_cities():
-    try:
-        from mpd_customizations.costing.doctype.city.city import sync_cities_from_addresses
-        sync_cities_from_addresses()
-    except Exception:
-        pass  # City table may not exist yet on first install before migrate
+	try:
+		from mpd_customizations.costing.doctype.city.city import sync_cities_from_addresses
+		sync_cities_from_addresses()
+	except Exception:
+		pass  # City table may not exist yet on first install before migrate
+
+
+def _seed_xfloor_kit_rates():
+	"""Seed Kit rates singleton defaults after migrate (idempotent)."""
+	try:
+		from mpd_customizations.xfloor_costing.seed import run as seed_xfloor_kit_rates
+
+		seed_xfloor_kit_rates()
+	except Exception:
+		pass  # DocType may not exist yet on first install before migrate
 
 
 def _migrate_pending_rate_items():

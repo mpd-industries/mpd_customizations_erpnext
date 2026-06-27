@@ -1,0 +1,135 @@
+{
+ "actions": [],
+ "creation": "2026-06-25 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_coverage",
+  "coverage_effective_date",
+  "top_coat_500_coverage",
+  "top_coat_1mm_coverage",
+  "top_coat_2mm_coverage",
+  "screed_500_coverage",
+  "screed_1mm_coverage",
+  "screed_2mm_coverage",
+  "primer_coverage",
+  "section_history",
+  "coverage_revisions"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_coverage",
+   "fieldtype": "Section Break",
+   "label": "Coverage (sqft / kit)"
+  },
+  {
+   "fieldname": "coverage_effective_date",
+   "fieldtype": "Date",
+   "label": "Coverage Effective Date"
+  },
+  {
+   "default": "193",
+   "fieldname": "top_coat_500_coverage",
+   "fieldtype": "Float",
+   "label": "Top Coat 500 Micron Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "139",
+   "fieldname": "top_coat_1mm_coverage",
+   "fieldtype": "Float",
+   "label": "Top Coat 1mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "107",
+   "fieldname": "top_coat_2mm_coverage",
+   "fieldtype": "Float",
+   "label": "Top Coat 2mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "150",
+   "fieldname": "screed_500_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 500 Micron Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "129",
+   "fieldname": "screed_1mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 1mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "96",
+   "fieldname": "screed_2mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 2mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "750",
+   "fieldname": "primer_coverage",
+   "fieldtype": "Float",
+   "label": "Primer Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_history",
+   "fieldtype": "Section Break",
+   "label": "Revision History"
+  },
+  {
+   "fieldname": "coverage_revisions",
+   "fieldtype": "Table",
+   "label": "Coverage Revisions",
+   "options": "Kit Coverage Revision",
+   "read_only": 1
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-06-25 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "XFloor Costing",
+ "name": "Kit Coverage",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "XFloor Costing Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

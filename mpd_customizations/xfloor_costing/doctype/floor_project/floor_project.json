@@ -1,0 +1,235 @@
+{
+ "actions": [],
+ "autoname": "XFP-.YYYY.-.#####",
+ "creation": "2026-06-25 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_header",
+  "project_number",
+  "customer",
+  "party_name",
+  "erp_project",
+  "status",
+  "section_inputs",
+  "sqft",
+  "rate_per_sqft",
+  "top_coat_option",
+  "screed_option",
+  "coving_kits",
+  "hibuild_kits",
+  "applicator_rate",
+  "section_budget",
+  "contract_value",
+  "total_cost",
+  "profit_loss",
+  "margin_pct",
+  "cost_per_sqft",
+  "budget_json",
+  "section_actual",
+  "dispatch_lines",
+  "section_compare",
+  "comparison_json",
+  "comparison_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_header",
+   "fieldtype": "Section Break",
+   "label": "Project Details"
+  },
+  {
+   "fieldname": "project_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Project Number"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "party_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Party Name"
+  },
+  {
+   "fieldname": "erp_project",
+   "fieldtype": "Link",
+   "label": "ERP Project",
+   "options": "Project"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nActive\nClosed"
+  },
+  {
+   "fieldname": "section_inputs",
+   "fieldtype": "Section Break",
+   "label": "Inputs"
+  },
+  {
+   "fieldname": "sqft",
+   "fieldtype": "Float",
+   "label": "Square Feet",
+   "precision": "2"
+  },
+  {
+   "fieldname": "rate_per_sqft",
+   "fieldtype": "Float",
+   "label": "Rate Per Sqft",
+   "precision": "2"
+  },
+  {
+   "default": "1mm",
+   "fieldname": "top_coat_option",
+   "fieldtype": "Select",
+   "label": "Top Coat Option",
+   "options": "500 micron\n1mm\n2mm"
+  },
+  {
+   "default": "1mm",
+   "fieldname": "screed_option",
+   "fieldtype": "Select",
+   "label": "Screed Option",
+   "options": "500 micron\n1mm\n2mm"
+  },
+  {
+   "fieldname": "coving_kits",
+   "fieldtype": "Float",
+   "label": "Coving Kits",
+   "precision": "2"
+  },
+  {
+   "fieldname": "hibuild_kits",
+   "fieldtype": "Float",
+   "label": "Hi-build Kits",
+   "precision": "2"
+  },
+  {
+   "fieldname": "applicator_rate",
+   "fieldtype": "Float",
+   "label": "Applicator Rate",
+   "precision": "2"
+  },
+  {
+   "fieldname": "section_budget",
+   "fieldtype": "Section Break",
+   "label": "Budget P&L"
+  },
+  {
+   "fieldname": "contract_value",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Contract Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_cost",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "profit_loss",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Profit/Loss",
+   "read_only": 1
+  },
+  {
+   "fieldname": "margin_pct",
+   "fieldtype": "Percent",
+   "label": "Margin %",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_per_sqft",
+   "fieldtype": "Float",
+   "label": "Cost Per Sqft",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "budget_json",
+   "fieldtype": "Long Text",
+   "hidden": 1,
+   "label": "Budget JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_actual",
+   "fieldtype": "Section Break",
+   "label": "Actual Dispatches"
+  },
+  {
+   "fieldname": "dispatch_lines",
+   "fieldtype": "Table",
+   "label": "Dispatch Lines",
+   "options": "Floor Dispatch Line"
+  },
+  {
+   "fieldname": "section_compare",
+   "fieldtype": "Section Break",
+   "label": "Compare"
+  },
+  {
+   "fieldname": "comparison_json",
+   "fieldtype": "Long Text",
+   "hidden": 1,
+   "label": "Comparison JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "comparison_html",
+   "fieldtype": "HTML",
+   "label": "Comparison"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "XFloor Costing",
+ "name": "Floor Project",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "XFloor Costing Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

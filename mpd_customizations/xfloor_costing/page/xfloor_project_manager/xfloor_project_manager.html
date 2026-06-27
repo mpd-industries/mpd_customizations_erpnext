@@ -1,0 +1,33 @@
+<div class="xfloor-pl-app">
+	<div class="xfloor-sidebar">
+		<div class="xfloor-brand">Xfloor Project P&amp;L</div>
+		<button class="btn btn-default btn-sm xfloor-dash-btn" id="xfloor-show-dashboard">
+			<i class="fa fa-dashboard"></i> Dashboard
+		</button>
+		<button class="btn btn-primary btn-sm xfloor-new" id="xfloor-new-project">New Project</button>
+		<div class="xfloor-project-list" id="xfloor-project-list"></div>
+	</div>
+	<div class="xfloor-main">
+		<div class="xfloor-header">
+			<div>
+				<h3 id="xfloor-title">Dashboard</h3>
+				<span class="xfloor-badge" id="xfloor-badge" style="display:none"></span>
+			</div>
+			<div class="xfloor-header-actions">
+				<button class="btn btn-default btn-sm" id="xfloor-open-kit-coverage" style="display:none">Kit Coverage</button>
+				<button class="btn btn-default btn-sm" id="xfloor-open-kit-rates" style="display:none">Kit Rates</button>
+			</div>
+		</div>
+		<div id="xfloor-dashboard"></div>
+		<div id="xfloor-editor" style="display:none">
+			<div class="xfloor-tabs" id="xfloor-tabs">
+				<button class="xfloor-tab active" data-tab="input">Input</button>
+				<button class="xfloor-tab" data-tab="budget">Budget P&amp;L</button>
+				<button class="xfloor-tab" data-tab="actual">Actual</button>
+				<button class="xfloor-tab" data-tab="compare">Compare</button>
+			</div>
+			<div id="xfloor-tab-content"></div>
+			<div class="xfloor-action-bar" id="xfloor-action-bar"></div>
+		</div>
+	</div>
+</div>

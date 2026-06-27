@@ -1,0 +1,114 @@
+{
+ "actions": [],
+ "creation": "2026-06-25 13:17:16.364461",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_rates",
+  "rates_effective_date",
+  "top_coat_rate",
+  "screed_rate",
+  "primer_rate",
+  "hibuild_rate",
+  "coving_rate",
+  "section_history",
+  "rate_revisions"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_rates",
+   "fieldtype": "Section Break",
+   "label": "Kit Rates"
+  },
+  {
+   "fieldname": "rates_effective_date",
+   "fieldtype": "Date",
+   "label": "Rates Effective Date"
+  },
+  {
+   "default": "4230",
+   "fieldname": "top_coat_rate",
+   "fieldtype": "Float",
+   "label": "Top Coat Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "3580",
+   "fieldname": "screed_rate",
+   "fieldtype": "Float",
+   "label": "Screed Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "2012",
+   "fieldname": "primer_rate",
+   "fieldtype": "Float",
+   "label": "Primer Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "1650",
+   "fieldname": "hibuild_rate",
+   "fieldtype": "Float",
+   "label": "Hi-build Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "2800",
+   "fieldname": "coving_rate",
+   "fieldtype": "Float",
+   "label": "Coving Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_history",
+   "fieldtype": "Section Break",
+   "label": "Revision History"
+  },
+  {
+   "fieldname": "rate_revisions",
+   "fieldtype": "Table",
+   "label": "Rate Revisions",
+   "options": "Kit Rate Revision",
+   "read_only": 1
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-06-25 13:17:16.364461",
+ "modified_by": "Administrator",
+ "module": "XFloor Costing",
+ "name": "Kit rates",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "XFloor Costing Manager",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

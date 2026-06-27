@@ -175,6 +175,25 @@
    "link_type": "DocType",
    "onboard": 1,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sales Tools",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Floor Project P&L",
+   "link_count": 0,
+   "link_to": "xfloor-project-manager",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
  "modified": "2026-04-23 00:00:00.000000",
@@ -250,6 +269,12 @@
    "label": "Gallery",
    "link_to": "XF Gallery Item",
    "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "Floor Project P&L",
+   "link_to": "xfloor-project-manager",
+   "type": "Page"
   }
  ],
  "title": "Xfloor CMS"

@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "creation": "2026-06-25 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "effective_date",
+  "top_coat_500_coverage",
+  "top_coat_1mm_coverage",
+  "top_coat_2mm_coverage",
+  "screed_500_coverage",
+  "screed_1mm_coverage",
+  "screed_2mm_coverage",
+  "primer_coverage"
+ ],
+ "fields": [
+  {
+   "fieldname": "effective_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Effective Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "top_coat_500_coverage",
+   "fieldtype": "Float",
+   "label": "Top Coat 500 Micron Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "top_coat_1mm_coverage",
+   "fieldtype": "Float",
+   "label": "Top Coat 1mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "top_coat_2mm_coverage",
+   "fieldtype": "Float",
+   "label": "Top Coat 2mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "screed_500_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 500 Micron Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "screed_1mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 1mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "screed_2mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 2mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "primer_coverage",
+   "fieldtype": "Float",
+   "label": "Primer Coverage",
+   "precision": "2"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "module": "XFloor Costing",
+ "name": "Kit Coverage Revision",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}

@@ -48,6 +48,9 @@ doctype_js = {
     "Item": "public/js/item_custom.js",
     "Meeting Note": "meeting_notes/doctype/meeting_note/meeting_note.js",
     "Project": "public/js/project_custom.js",
+    "Floor Project": "xfloor_costing/doctype/floor_project/floor_project.js",
+    "Kit rates": "xfloor_costing/doctype/kit_rates/kit_rates.js",
+    "Kit Coverage": "xfloor_costing/doctype/kit_coverage/kit_coverage.js",
 }
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
@@ -135,9 +138,9 @@ doctype_js = {
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+	"File": "mpd_customizations.overrides.file.CustomFile",
+}
 
 # Document Events
 # ---------------
@@ -167,13 +170,14 @@ doc_events = {
 fixtures = [
     {"dt": "Custom Field", "filters": [["dt", "in", ["Task"]]]},
     {"dt": "Property Setter", "filters": [["doc_type", "=", "Task"], ["field_name", "=", "description"]]},
-    {"dt": "Role", "filters": [["name", "in", ["Xfloor CMS Manager"]]]},
+    {"dt": "Role", "filters": [["name", "in", ["Xfloor CMS Manager", "XFloor Costing Manager"]]]},
     # Costing module fixtures
     {"dt": "Custom Field", "filters": [["module", "=", "Costing"]]},
     {"dt": "Role", "filters": [["name", "in", ["Costing User", "Costing Approver", "Rate Manager", "Costing Sales", "R&D Manager", "Dispatch Manager"]]]},
     {"dt": "Costing Configuration"},
     {"dt": "Packaging Material"},
     {"dt": "Packaging Rate"},
+    {"dt": "Print Format", "filters": [["name", "in", ["Floor Project P&L"]]]},
 ]
 
 # Scheduled Tasks

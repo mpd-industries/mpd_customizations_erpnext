@@ -1,0 +1,114 @@
+{
+ "charts": [],
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Project Manager\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Floor Projects\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Kit Rates\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Kit Coverage\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>XFloor Costing</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"XFloor Costing\",\"col\":4}}]",
+ "creation": "2026-06-25 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "calculate",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "XFloor Costing",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "XFloor Costing",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Project Manager",
+   "link_count": 0,
+   "link_to": "xfloor-project-manager",
+   "link_type": "Page",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Floor Projects",
+   "link_count": 0,
+   "link_to": "Floor Project",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kit Rates",
+   "link_count": 0,
+   "link_to": "Kit rates",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kit Coverage",
+   "link_count": 0,
+   "link_to": "Kit Coverage",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-06-25 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "XFloor Costing",
+ "name": "XFloor Costing",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "XFloor Costing Manager"
+  }
+ ],
+ "sequence_id": 22.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "label": "Project Manager",
+   "link_to": "xfloor-project-manager",
+   "type": "Page"
+  },
+  {
+   "color": "Green",
+   "label": "Floor Projects",
+   "link_to": "Floor Project",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Kit Rates",
+   "link_to": "Kit rates",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "Kit Coverage",
+   "link_to": "Kit Coverage",
+   "type": "DocType"
+  }
+ ],
+ "title": "XFloor Costing"
+}
