@@ -9,16 +9,25 @@ from mpd_customizations.xfloor_costing.services.pl_engine import (
 )
 
 
+ALLOWED_ROLES = frozenset({"System Manager", "XFloor Costing Manager"})
+
+
+def _user_roles():
+	return set(frappe.get_roles())
+
+
 def _ensure_access():
 	if frappe.session.user == "Administrator":
 		return
-	if frappe.has_role("System Manager") or frappe.has_role("XFloor Costing Manager"):
+	if _user_roles() & ALLOWED_ROLES:
 		return
 	frappe.throw("Not permitted", frappe.PermissionError)
 
 
 def _ensure_rates_write():
-	if frappe.session.user == "Administrator" or frappe.has_role("System Manager"):
+	if frappe.session.user == "Administrator":
+		return
+	if "System Manager" in _user_roles():
 		return
 	frappe.throw("Only System Managers can edit kit rates.", frappe.PermissionError)
 
@@ -57,7 +66,7 @@ def get_dashboard():
 
 
 def _can_edit_rates():
-	return frappe.session.user == "Administrator" or frappe.has_role("System Manager")
+	return frappe.session.user == "Administrator" or "System Manager" in _user_roles()
 
 
 @frappe.whitelist()
