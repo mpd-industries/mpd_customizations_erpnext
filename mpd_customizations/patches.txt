@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 mpd_customizations.patches.backfill_customer_product_status
 mpd_customizations.asset_organizer.patches.seed_apr_ai_task_configs
+mpd_customizations.xfloor_costing.patches.migrate_floor_project_parts

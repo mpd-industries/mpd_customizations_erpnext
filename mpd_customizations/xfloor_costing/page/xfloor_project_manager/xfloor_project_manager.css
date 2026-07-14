@@ -309,3 +309,33 @@
 	color: #7a8194;
 	margin-top: 2px;
 }
+
+.xfloor-part-card {
+	background: #fff;
+	border: 1px solid #dde0ec;
+	border-radius: 8px;
+	padding: 14px 16px;
+	margin-bottom: 12px;
+}
+
+.xfloor-part-header {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 10px;
+}
+
+.xfloor-part-header .xf-part-name {
+	flex: 1;
+	font-weight: 600;
+}
+
+.xfloor-part-actions {
+	display: flex;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.xfloor-part-budget {
+	margin-bottom: 8px;
+}

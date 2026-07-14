@@ -12,12 +12,14 @@
   "erp_project",
   "status",
   "section_inputs",
-  "sqft",
   "rate_per_sqft",
-  "top_coat_option",
-  "screed_option",
   "coving_kits",
   "hibuild_kits",
+  "parts",
+  "section_rollup",
+  "sqft",
+  "top_coat_option",
+  "screed_option",
   "applicator_rate",
   "section_budget",
   "contract_value",
@@ -43,7 +45,10 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Project Number"
+   "label": "Project Number",
+   "no_copy": 1,
+   "read_only": 1,
+   "unique": 1
   },
   {
    "fieldname": "customer",
@@ -80,30 +85,10 @@
    "label": "Inputs"
   },
   {
-   "fieldname": "sqft",
-   "fieldtype": "Float",
-   "label": "Square Feet",
-   "precision": "2"
-  },
-  {
    "fieldname": "rate_per_sqft",
    "fieldtype": "Float",
    "label": "Rate Per Sqft",
    "precision": "2"
-  },
-  {
-   "default": "1mm",
-   "fieldname": "top_coat_option",
-   "fieldtype": "Select",
-   "label": "Top Coat Option",
-   "options": "500 micron\n1mm\n2mm"
-  },
-  {
-   "default": "1mm",
-   "fieldname": "screed_option",
-   "fieldtype": "Select",
-   "label": "Screed Option",
-   "options": "500 micron\n1mm\n2mm"
   },
   {
    "fieldname": "coving_kits",
@@ -118,10 +103,45 @@
    "precision": "2"
   },
   {
+   "fieldname": "parts",
+   "fieldtype": "Table",
+   "label": "Parts",
+   "options": "Floor Project Part"
+  },
+  {
+   "fieldname": "section_rollup",
+   "fieldtype": "Section Break",
+   "label": "Rollup (auto)"
+  },
+  {
+   "fieldname": "sqft",
+   "fieldtype": "Float",
+   "label": "Square Feet",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "default": "1mm",
+   "fieldname": "top_coat_option",
+   "fieldtype": "Select",
+   "label": "Top Coat Option",
+   "options": "0\n500 micron\n1mm\n2mm",
+   "read_only": 1
+  },
+  {
+   "default": "1mm",
+   "fieldname": "screed_option",
+   "fieldtype": "Select",
+   "label": "Screed Option",
+   "options": "0\n500 micron\n1mm\n2mm",
+   "read_only": 1
+  },
+  {
    "fieldname": "applicator_rate",
    "fieldtype": "Float",
    "label": "Applicator Rate",
-   "precision": "2"
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "section_budget",

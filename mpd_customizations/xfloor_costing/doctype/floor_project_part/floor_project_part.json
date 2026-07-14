@@ -1,0 +1,61 @@
+{
+ "actions": [],
+ "creation": "2026-07-14 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "part_name",
+  "sqft",
+  "top_coat_option",
+  "screed_option",
+  "applicator_rate"
+ ],
+ "fields": [
+  {
+   "fieldname": "part_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Part Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sqft",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Square Feet",
+   "precision": "2"
+  },
+  {
+   "default": "1mm",
+   "fieldname": "top_coat_option",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Top Coat Option",
+   "options": "0\n500 micron\n1mm\n2mm"
+  },
+  {
+   "default": "1mm",
+   "fieldname": "screed_option",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Screed Option",
+   "options": "0\n500 micron\n1mm\n2mm"
+  },
+  {
+   "fieldname": "applicator_rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Applicator Rate",
+   "precision": "2"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "module": "XFloor Costing",
+ "name": "Floor Project Part",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "idx",
+ "sort_order": "ASC"
+}

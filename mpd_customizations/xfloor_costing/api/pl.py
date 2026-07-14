@@ -1,5 +1,3 @@
-import json
-
 import frappe
 
 from mpd_customizations.xfloor_costing.services.pl_engine import (
@@ -69,15 +67,30 @@ def _can_edit_rates():
 	return frappe.session.user == "Administrator" or "System Manager" in _user_roles()
 
 
+def _project_response(project):
+	result = project.as_dict()
+	result["budget_rows"] = project.get_budget_rows()
+	result["part_budgets"] = project.get_part_budgets()
+	result["comparison"] = project.get_comparison_rows()
+	result["dispatch_lines"] = [d.as_dict() for d in project.dispatch_lines]
+	result["parts"] = [p.as_dict() for p in project.parts]
+	return result
+
+
+def _apply_child_table(project, payload, fieldname):
+	rows = payload.pop(fieldname, None)
+	if rows is None:
+		return
+	project.set(fieldname, [])
+	for row in rows:
+		project.append(fieldname, row)
+
+
 @frappe.whitelist()
 def get_project(name):
 	_ensure_access()
 	doc = frappe.get_doc("Floor Project", name)
-	project = doc.as_dict()
-	project["dispatch_lines"] = [d.as_dict() for d in doc.dispatch_lines]
-	project["budget_rows"] = doc.get_budget_rows()
-	project["comparison"] = doc.get_comparison_rows()
-	return project
+	return _project_response(doc)
 
 
 @frappe.whitelist()
@@ -87,25 +100,16 @@ def save_project(doc):
 	name = payload.get("name")
 	if name:
 		project = frappe.get_doc("Floor Project", name)
-		dispatch_lines = payload.pop("dispatch_lines", None)
+		_apply_child_table(project, payload, "dispatch_lines")
+		_apply_child_table(project, payload, "parts")
 		project.update(payload)
-		if dispatch_lines is not None:
-			project.set("dispatch_lines", [])
-			for row in dispatch_lines:
-				project.append("dispatch_lines", row)
 	else:
 		project = frappe.new_doc("Floor Project")
-		dispatch_lines = payload.pop("dispatch_lines", None)
+		_apply_child_table(project, payload, "dispatch_lines")
+		_apply_child_table(project, payload, "parts")
 		project.update(payload)
-		if dispatch_lines is not None:
-			for row in dispatch_lines:
-				project.append("dispatch_lines", row)
 	project.save(ignore_permissions=True)
-	result = project.as_dict()
-	result["budget_rows"] = project.get_budget_rows()
-	result["comparison"] = project.get_comparison_rows()
-	result["dispatch_lines"] = [d.as_dict() for d in project.dispatch_lines]
-	return result
+	return _project_response(project)
 
 
 @frappe.whitelist()
@@ -170,7 +174,8 @@ def export_pdf(name):
 	doc = frappe.get_doc("Floor Project", name)
 	return {
 		"project": doc.as_dict(),
-		"budget": json.loads(doc.budget_json or "[]"),
-		"comparison": json.loads(doc.comparison_json or "[]"),
+		"budget": doc.get_budget_rows(),
+		"part_budgets": doc.get_part_budgets(),
+		"comparison": doc.get_comparison_rows(),
 		"settings": get_kit_rates_doc(),
 	}

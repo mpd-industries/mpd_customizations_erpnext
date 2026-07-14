@@ -15,28 +15,57 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 	};
 
 	const COMPONENTS = ["Top coat", "Screed", "Primer", "Coving", "Hi-build"];
-	const COAT_OPTS = ["500 micron", "1mm", "2mm"];
+	const COAT_OPTS = ["0", "500 micron", "1mm", "2mm"];
 	const PRINT_FORMAT = "Floor Project P&L";
 
 	const fmt = (v) => format_currency(v || 0, "INR");
 	const fmtN = (v) => Math.round(v || 0).toLocaleString("en-IN");
 	const fmtD = (v) => (Math.round((v || 0) * 100) / 100).toFixed(2);
 
+	const defaultPart = (name) => ({
+		part_name: name || "Main",
+		sqft: 0,
+		top_coat_option: "1mm",
+		screed_option: "1mm",
+		applicator_rate: 0,
+	});
+
+	const ensureParts = (p) => {
+		if (!p.parts || !p.parts.length) {
+			p.parts = [
+				defaultPart(
+					p.project_number || "Main"
+				),
+			];
+			if (p.sqft) p.parts[0].sqft = p.sqft;
+			if (p.top_coat_option) p.parts[0].top_coat_option = p.top_coat_option;
+			if (p.screed_option) p.parts[0].screed_option = p.screed_option;
+			if (p.applicator_rate) p.parts[0].applicator_rate = p.applicator_rate;
+		}
+		return p.parts;
+	};
+
+	const totalSqft = (p) =>
+		(ensureParts(p) || []).reduce((a, part) => a + flt(part.sqft), 0);
+
 	const collectPayload = () => {
 		const p = state.active;
 		if (!p) return null;
 		const $c = $root.find("#xfloor-tab-content");
+		const parts = ensureParts(p).map((part) => ({
+			part_name: part.part_name || "Main",
+			sqft: flt(part.sqft),
+			top_coat_option: part.top_coat_option || "1mm",
+			screed_option: part.screed_option || "1mm",
+			applicator_rate: flt(part.applicator_rate),
+		}));
 		return {
 			name: p.name,
 			party_name: $c.find("#xf_party_name").val() || p.party_name,
-			project_number: $c.find("#xf_project_number").val() || p.project_number,
-			sqft: flt($c.find("#xf_sqft").val()),
 			rate_per_sqft: flt($c.find("#xf_rate").val()),
-			top_coat_option: p.top_coat_option || "1mm",
-			screed_option: p.screed_option || "1mm",
 			coving_kits: flt($c.find("#xf_coving").val()),
 			hibuild_kits: flt($c.find("#xf_hibuild").val()),
-			applicator_rate: flt($c.find("#xf_applicator").val()),
+			parts,
 			dispatch_lines: p.dispatch_lines || [],
 		};
 	};
@@ -105,43 +134,71 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		});
 	};
 
+	const coatCards = (field, selected, partIdx) =>
+		COAT_OPTS.map(
+			(o) =>
+				`<div class="xfloor-opt-card${(selected || "1mm") === o ? " selected" : ""}" data-part-idx="${partIdx}" data-field="${field}" data-val="${o}">
+					<div class="opt-label">${o}</div>
+				</div>`
+		).join("");
+
+	const renderPartCard = (part, idx, canRemove) => {
+		const name = frappe.utils.escape_html(part.part_name || `Part ${idx + 1}`);
+		return `
+			<div class="xfloor-part-card" data-part-idx="${idx}">
+				<div class="xfloor-part-header">
+					<input class="form-control input-sm xf-part-name" value="${name}" placeholder="${__("Part name")}">
+					<div class="xfloor-part-actions">
+						<button type="button" class="btn btn-xs btn-default xf-part-dup" title="${__("Duplicate")}">
+							<i class="fa fa-copy"></i>
+						</button>
+						${
+							canRemove
+								? `<button type="button" class="btn btn-xs btn-danger xf-part-del" title="${__("Remove")}">
+							<i class="fa fa-trash"></i>
+						</button>`
+								: ""
+						}
+					</div>
+				</div>
+				<div class="xfloor-grid">
+					<div><label>${__("Square Feet")}</label>
+						<input type="number" class="form-control input-sm xf-part-sqft" value="${part.sqft || 0}" min="0"></div>
+					<div><label>${__("Applicator Rate (per sqft)")}</label>
+						<input type="number" class="form-control input-sm xf-part-applicator" value="${part.applicator_rate || 0}" min="0" step="0.5"></div>
+				</div>
+				<div class="xfloor-section-title" style="margin-top:12px">${__("Top Coat Option")}</div>
+				<div class="xfloor-opt-row">${coatCards("top_coat_option", part.top_coat_option, idx)}</div>
+				<div class="xfloor-section-title">${__("Screed Option")}</div>
+				<div class="xfloor-opt-row">${coatCards("screed_option", part.screed_option, idx)}</div>
+			</div>`;
+	};
+
 	const renderInputTab = (p) => {
-		const tcCards = COAT_OPTS.map(
-			(o) =>
-				`<div class="xfloor-opt-card${(p.top_coat_option || "1mm") === o ? " selected" : ""}" data-field="top_coat_option" data-val="${o}">
-					<div class="opt-label">${o}</div>
-				</div>`
-		).join("");
-		const scCards = COAT_OPTS.map(
-			(o) =>
-				`<div class="xfloor-opt-card${(p.screed_option || "1mm") === o ? " selected" : ""}" data-field="screed_option" data-val="${o}">
-					<div class="opt-label">${o}</div>
-				</div>`
-		).join("");
+		const parts = ensureParts(p);
+		const partCards = parts.map((part, idx) => renderPartCard(part, idx, parts.length > 1)).join("");
 
 		return `
 			<div class="xfloor-grid">
 				<div><label>${__("Party Name")}</label><input class="form-control input-sm" id="xf_party_name" value="${frappe.utils.escape_html(p.party_name || "")}"></div>
-				<div><label>${__("Project Number")}</label><input class="form-control input-sm" id="xf_project_number" value="${frappe.utils.escape_html(p.project_number || "")}"></div>
-				<div><label>${__("Square Feet")}</label><input type="number" class="form-control input-sm" id="xf_sqft" value="${p.sqft || 0}"></div>
+				<div><label>${__("Project Number")}</label><input class="form-control input-sm" id="xf_project_number" value="${frappe.utils.escape_html(p.project_number || p.name || __("Auto on save"))}" disabled></div>
 				<div><label>${__("Rate per Sqft")}</label><input type="number" class="form-control input-sm" id="xf_rate" value="${p.rate_per_sqft || 0}"></div>
+				<div><label>${__("Total Sq Ft")}</label><input class="form-control input-sm" id="xf_total_sqft" value="${fmtN(totalSqft(p))}" disabled></div>
 			</div>
-			<div class="xfloor-section-title">${__("Top Coat Option")}</div>
-			<div class="xfloor-opt-row" id="xf_tc_opts">${tcCards}</div>
-			<div class="xfloor-section-title">${__("Screed Option")}</div>
-			<div class="xfloor-opt-row" id="xf_sc_opts">${scCards}</div>
-			<div class="xfloor-section-title">${__("Additional Kits & Costs")}</div>
+			<div class="xfloor-section-title">${__("Additional Kits")}</div>
 			<div class="xfloor-grid">
 				<div><label>${__("Coving Kits")}</label><input type="number" class="form-control input-sm" id="xf_coving" value="${p.coving_kits || 0}" min="0"></div>
 				<div><label>${__("Hi-build Kits")}</label><input type="number" class="form-control input-sm" id="xf_hibuild" value="${p.hibuild_kits || 0}" min="0"></div>
-				<div><label>${__("Applicator Rate (per sqft)")}</label><input type="number" class="form-control input-sm" id="xf_applicator" value="${p.applicator_rate || 0}" min="0" step="0.5"></div>
-			</div>`;
+			</div>
+			<div class="xfloor-section-title" style="display:flex;justify-content:space-between;align-items:center">
+				<span>${__("Project Parts")}</span>
+				<button type="button" class="btn btn-xs btn-primary" id="xf-add-part"><i class="fa fa-plus"></i> ${__("Add Part")}</button>
+			</div>
+			<div id="xf-parts-list">${partCards}</div>`;
 	};
 
-	const renderBudgetTab = (p, rows) => {
-		const budgetRows = rows || p.budget_rows || [];
-		const pl = p.profit_loss || 0;
-		const tableRows = budgetRows
+	const renderBudgetTable = (rows, sqft, totalCost, costPerSqft) => {
+		const tableRows = (rows || [])
 			.map((r) => {
 				const cov = r.coverage ? fmtN(r.coverage) : "—";
 				const kits =
@@ -159,19 +216,12 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 					<td class="num">${kits}</td>
 					<td class="num">${rate}</td>
 					<td class="num">${fmt(r.cost)}</td>
-					<td class="num">${p.sqft ? "₹" + fmtD(r.cost_per_sqft) : "—"}</td>
+					<td class="num">${sqft ? "₹" + fmtD(r.cost_per_sqft) : "—"}</td>
 				</tr>`;
 			})
 			.join("");
 
 		return `
-			<div class="xfloor-kpi">
-				<div class="xfloor-kpi-card"><div class="lbl">${__("Contract Value")}</div><div class="val">${fmt(p.contract_value)}</div></div>
-				<div class="xfloor-kpi-card"><div class="lbl">${__("Total Cost")}</div><div class="val">${fmt(p.total_cost)}</div></div>
-				<div class="xfloor-kpi-card"><div class="lbl">${__("Cost per Sqft")}</div><div class="val">₹${fmtD(p.cost_per_sqft)}</div></div>
-				<div class="xfloor-kpi-card"><div class="lbl">${__("Margin")}</div><div class="val ${pl >= 0 ? "pos" : "neg"}">${flt(p.margin_pct).toFixed(1)}%</div></div>
-			</div>
-			<div class="xfloor-section-title">${__("Kit Allocation Breakdown")}</div>
 			<div style="overflow-x:auto">
 				<table class="xfloor-kit-table">
 					<thead><tr>
@@ -182,12 +232,45 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 					<tbody>${tableRows}
 						<tr class="total-row">
 							<td colspan="5" class="num">${__("Total")}</td>
-							<td class="num">${fmt(p.total_cost)}</td>
-							<td class="num">₹${fmtD(p.cost_per_sqft)}</td>
+							<td class="num">${fmt(totalCost)}</td>
+							<td class="num">₹${fmtD(costPerSqft)}</td>
 						</tr>
 					</tbody>
 				</table>
+			</div>`;
+	};
+
+	const renderBudgetTab = (p, rows, partBudgets) => {
+		const budgetRows = rows || p.budget_rows || [];
+		const partsBudget = partBudgets || p.part_budgets || [];
+		const pl = p.profit_loss || 0;
+		const sqft = p.sqft || totalSqft(p);
+
+		const partSections = partsBudget
+			.map((part) => {
+				const s = part.summary || {};
+				return `
+					<div class="xfloor-part-budget">
+						<div class="xfloor-section-title">${frappe.utils.escape_html(part.part_name || __("Part"))}
+							<span class="text-muted" style="font-weight:400;text-transform:none;letter-spacing:0">
+								· ${fmtN(part.sqft)} sqft
+							</span>
+						</div>
+						${renderBudgetTable(part.budget_rows, part.sqft, s.total_cost, s.cost_per_sqft)}
+					</div>`;
+			})
+			.join("");
+
+		return `
+			<div class="xfloor-kpi">
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Contract Value")}</div><div class="val">${fmt(p.contract_value)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Total Cost")}</div><div class="val">${fmt(p.total_cost)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Cost per Sqft")}</div><div class="val">₹${fmtD(p.cost_per_sqft)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Margin")}</div><div class="val ${pl >= 0 ? "pos" : "neg"}">${flt(p.margin_pct).toFixed(1)}%</div></div>
 			</div>
+			${partSections}
+			<div class="xfloor-section-title">${__("Project Total")}</div>
+			${renderBudgetTable(budgetRows, sqft, p.total_cost, p.cost_per_sqft)}
 			<div class="xfloor-pl-banner ${pl >= 0 ? "profit" : "loss"}">
 				<div>
 					<div class="pl-title">${pl >= 0 ? __("Profit") : __("Loss")}</div>
@@ -265,17 +348,74 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		});
 	};
 
+	const syncPartInputsFromDom = () => {
+		const parts = ensureParts(state.active);
+		$root.find(".xfloor-part-card").each(function () {
+			const idx = $(this).data("part-idx");
+			const part = parts[idx];
+			if (!part) return;
+			part.part_name = $(this).find(".xf-part-name").val() || part.part_name;
+			part.sqft = flt($(this).find(".xf-part-sqft").val());
+			part.applicator_rate = flt($(this).find(".xf-part-applicator").val());
+		});
+		$root.find("#xf_total_sqft").val(fmtN(totalSqft(state.active)));
+	};
+
 	const bindInputEvents = () => {
 		const $c = $root.find("#xfloor-tab-content");
+
 		$c.find(".xfloor-opt-card").on("click", function () {
+			const idx = $(this).data("part-idx");
 			const field = $(this).data("field");
 			const val = $(this).data("val");
-			state.active[field] = val;
+			const parts = ensureParts(state.active);
+			if (parts[idx]) {
+				parts[idx][field] = val;
+			}
 			$(this).siblings().removeClass("selected");
 			$(this).addClass("selected");
 			previewCalc();
 		});
-		$c.find("input").on("change", previewCalc);
+
+		$c.find(".xf-part-name, .xf-part-sqft, .xf-part-applicator, #xf_party_name, #xf_rate, #xf_coving, #xf_hibuild").on(
+			"change input",
+			() => {
+				syncPartInputsFromDom();
+				previewCalc();
+			}
+		);
+
+		$c.find("#xf-add-part").on("click", () => {
+			syncPartInputsFromDom();
+			const parts = ensureParts(state.active);
+			parts.push(defaultPart(`Part ${parts.length + 1}`));
+			renderTabContent();
+			previewCalc();
+		});
+
+		$c.find(".xf-part-del").on("click", function () {
+			syncPartInputsFromDom();
+			const idx = $(this).closest(".xfloor-part-card").data("part-idx");
+			const parts = ensureParts(state.active);
+			if (parts.length <= 1) return;
+			parts.splice(idx, 1);
+			renderTabContent();
+			previewCalc();
+		});
+
+		$c.find(".xf-part-dup").on("click", function () {
+			syncPartInputsFromDom();
+			const idx = $(this).closest(".xfloor-part-card").data("part-idx");
+			const parts = ensureParts(state.active);
+			const src = parts[idx];
+			if (!src) return;
+			parts.splice(idx + 1, 0, {
+				...src,
+				part_name: `${src.part_name || "Part"} (copy)`,
+			});
+			renderTabContent();
+			previewCalc();
+		});
 	};
 
 	const bindDispatchEvents = () => {
@@ -317,11 +457,12 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 			bindInputEvents();
 		} else if (tab === "budget") {
 			const rows = state.preview ? state.preview.budget_rows : p.budget_rows;
+			const partBudgets = state.preview ? state.preview.part_budgets : p.part_budgets;
 			const summary = state.preview ? state.preview.summary : null;
 			const display = summary
-				? { ...p, ...summary, budget_rows: rows }
+				? { ...p, ...summary, budget_rows: rows, part_budgets: partBudgets }
 				: p;
-			$content.html(renderBudgetTab(display, rows));
+			$content.html(renderBudgetTab(display, rows, partBudgets));
 		} else if (tab === "actual") {
 			$content.html(renderActualTab(p));
 			bindDispatchEvents();
@@ -331,6 +472,7 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 	};
 
 	const renderEditor = (project) => {
+		ensureParts(project);
 		$root.find("#xfloor-dashboard").hide();
 		$root.find("#xfloor-editor").show();
 		$root.find("#xfloor-title").text(project.party_name || project.project_number || __("New Project"));
@@ -350,8 +492,13 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 	};
 
 	const previewCalc = frappe.utils.debounce(async () => {
+		if (state.activeTab === "input") {
+			syncPartInputsFromDom();
+		}
 		const payload = collectPayload();
-		if (!payload || !payload.sqft) return;
+		if (!payload) return;
+		const sqft = (payload.parts || []).reduce((a, part) => a + flt(part.sqft), 0);
+		if (!sqft) return;
 		const r = await frappe.call("mpd_customizations.xfloor_costing.api.pl.calc_project", {
 			data: payload,
 		});
@@ -362,6 +509,9 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 	}, 400);
 
 	const saveProject = async () => {
+		if (state.activeTab === "input") {
+			syncPartInputsFromDom();
+		}
 		const payload = collectPayload();
 		if (!payload) return;
 		const r = await frappe.call("mpd_customizations.xfloor_costing.api.pl.save_project", {
@@ -401,7 +551,10 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 
 	$root.find("#xfloor-new-project").on("click", async () => {
 		const r = await frappe.call("mpd_customizations.xfloor_costing.api.pl.save_project", {
-			doc: { status: "Draft", top_coat_option: "1mm", screed_option: "1mm" },
+			doc: {
+				status: "Draft",
+				parts: [defaultPart("Main")],
+			},
 		});
 		state.activeTab = "input";
 		state.active = r.message;
@@ -424,6 +577,9 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 	});
 
 	$root.find("#xfloor-tabs").on("click", ".xfloor-tab", function () {
+		if (state.activeTab === "input") {
+			syncPartInputsFromDom();
+		}
 		state.activeTab = $(this).data("tab");
 		$root.find(".xfloor-tab").removeClass("active");
 		$(this).addClass("active");
