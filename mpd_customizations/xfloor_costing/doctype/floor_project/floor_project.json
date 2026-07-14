@@ -12,12 +12,12 @@
   "erp_project",
   "status",
   "section_inputs",
-  "rate_per_sqft",
-  "coving_kits",
-  "hibuild_kits",
   "parts",
   "section_rollup",
   "sqft",
+  "rate_per_sqft",
+  "coving_kits",
+  "hibuild_kits",
   "top_coat_option",
   "screed_option",
   "applicator_rate",
@@ -85,24 +85,6 @@
    "label": "Inputs"
   },
   {
-   "fieldname": "rate_per_sqft",
-   "fieldtype": "Float",
-   "label": "Rate Per Sqft",
-   "precision": "2"
-  },
-  {
-   "fieldname": "coving_kits",
-   "fieldtype": "Float",
-   "label": "Coving Kits",
-   "precision": "2"
-  },
-  {
-   "fieldname": "hibuild_kits",
-   "fieldtype": "Float",
-   "label": "Hi-build Kits",
-   "precision": "2"
-  },
-  {
    "fieldname": "parts",
    "fieldtype": "Table",
    "label": "Parts",
@@ -117,6 +99,27 @@
    "fieldname": "sqft",
    "fieldtype": "Float",
    "label": "Square Feet",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate_per_sqft",
+   "fieldtype": "Float",
+   "label": "Rate Per Sqft",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "coving_kits",
+   "fieldtype": "Float",
+   "label": "Coving Kits",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hibuild_kits",
+   "fieldtype": "Float",
+   "label": "Hi-build Kits",
    "precision": "2",
    "read_only": 1
   },

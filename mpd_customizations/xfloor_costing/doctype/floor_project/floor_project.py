@@ -16,6 +16,7 @@ class FloorProject(Document):
 	def validate(self):
 		self._assign_project_number()
 		self._ensure_main_part()
+		self._backfill_part_shared_from_parent()
 		self._validate_numbers()
 		self._sync_rollup_fields()
 		self._set_dispatch_amounts()
@@ -53,6 +54,9 @@ class FloorProject(Document):
 
 		has_flat = (
 			(self.sqft or 0) > 0
+			or (self.rate_per_sqft or 0) > 0
+			or (self.coving_kits or 0) > 0
+			or (self.hibuild_kits or 0) > 0
 			or self.top_coat_option
 			or self.screed_option
 			or (self.applicator_rate or 0) > 0
@@ -63,56 +67,94 @@ class FloorProject(Document):
 				{
 					"part_name": "Main",
 					"sqft": 0,
+					"rate_per_sqft": 0,
 					"top_coat_option": "1mm",
 					"screed_option": "1mm",
+					"coving_kits": 0,
+					"hibuild_kits": 0,
 					"applicator_rate": 0,
 				},
 			)
 			return
 
-		part = flat_fields_to_main_part(
-			{
-				"sqft": self.sqft,
-				"top_coat_option": self.top_coat_option,
-				"screed_option": self.screed_option,
-				"applicator_rate": self.applicator_rate,
-			}
+		self.append(
+			"parts",
+			flat_fields_to_main_part(
+				{
+					"sqft": self.sqft,
+					"rate_per_sqft": self.rate_per_sqft,
+					"top_coat_option": self.top_coat_option,
+					"screed_option": self.screed_option,
+					"coving_kits": self.coving_kits,
+					"hibuild_kits": self.hibuild_kits,
+					"applicator_rate": self.applicator_rate,
+				}
+			),
 		)
-		self.append("parts", part)
+
+	def _backfill_part_shared_from_parent(self):
+		"""Copy legacy project-level rate/kits onto parts that still lack them."""
+		parts = self.get("parts") or []
+		if not parts:
+			return
+
+		parent_rate = float(self.rate_per_sqft or 0)
+		parent_coving = float(self.coving_kits or 0)
+		parent_hibuild = float(self.hibuild_kits or 0)
+		if not (parent_rate or parent_coving or parent_hibuild):
+			return
+
+		# Only backfill when every part is still empty for that field (pre-migration state).
+		if parent_rate and all(not float(p.rate_per_sqft or 0) for p in parts):
+			for p in parts:
+				p.rate_per_sqft = parent_rate
+		if parent_coving and all(not float(p.coving_kits or 0) for p in parts):
+			# Put historic project total on the first part only.
+			parts[0].coving_kits = parent_coving
+		if parent_hibuild and all(not float(p.hibuild_kits or 0) for p in parts):
+			parts[0].hibuild_kits = parent_hibuild
 
 	def _validate_numbers(self):
-		for fieldname in ("rate_per_sqft", "coving_kits", "hibuild_kits"):
-			if (self.get(fieldname) or 0) < 0:
-				frappe.throw(_("{0} cannot be negative.").format(self.meta.get_label(fieldname)))
-
 		if not self.get("parts"):
 			frappe.throw(_("At least one project part is required."))
 
 		for row in self.parts:
-			if (row.sqft or 0) < 0:
-				frappe.throw(_("Part Square Feet cannot be negative."))
-			if (row.applicator_rate or 0) < 0:
-				frappe.throw(_("Part Applicator Rate cannot be negative."))
+			for fieldname, label in (
+				("sqft", _("Square Feet")),
+				("rate_per_sqft", _("Rate Per Sqft")),
+				("coving_kits", _("Coving Kits")),
+				("hibuild_kits", _("Hi-build Kits")),
+				("applicator_rate", _("Applicator Rate")),
+			):
+				if (row.get(fieldname) or 0) < 0:
+					frappe.throw(_("{0} cannot be negative on part {1}.").format(label, row.part_name or ""))
 			if not (row.part_name or "").strip():
 				frappe.throw(_("Part Name is required for every part."))
 
 	def _sync_rollup_fields(self):
 		parts = self.get("parts") or []
-		self.sqft = sum(float(p.sqft or 0) for p in parts)
+		total_sqft = sum(float(p.sqft or 0) for p in parts)
+		self.sqft = total_sqft
+		self.coving_kits = sum(float(p.coving_kits or 0) for p in parts)
+		self.hibuild_kits = sum(float(p.hibuild_kits or 0) for p in parts)
+
 		if not parts:
+			self.rate_per_sqft = self.rate_per_sqft or 0
 			self.top_coat_option = self.top_coat_option or "1mm"
 			self.screed_option = self.screed_option or "1mm"
 			self.applicator_rate = self.applicator_rate or 0
 			return
 
+		contract = sum(float(p.sqft or 0) * float(p.rate_per_sqft or 0) for p in parts)
+		self.rate_per_sqft = (contract / total_sqft) if total_sqft else 0
+
 		first = parts[0]
 		options = {p.top_coat_option or "1mm" for p in parts}
 		screeds = {p.screed_option or "1mm" for p in parts}
-		rates = {float(p.applicator_rate or 0) for p in parts}
-		# Select fields cannot store "mixed"; use sole value or first part for list view.
+		app_rates = {float(p.applicator_rate or 0) for p in parts}
 		self.top_coat_option = next(iter(options)) if len(options) == 1 else (first.top_coat_option or "1mm")
 		self.screed_option = next(iter(screeds)) if len(screeds) == 1 else (first.screed_option or "1mm")
-		self.applicator_rate = next(iter(rates)) if len(rates) == 1 else 0
+		self.applicator_rate = next(iter(app_rates)) if len(app_rates) == 1 else 0
 
 	def _set_dispatch_amounts(self):
 		for row in self.dispatch_lines or []:

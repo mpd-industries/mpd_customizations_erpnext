@@ -7,3 +7,4 @@
 mpd_customizations.patches.backfill_customer_product_status
 mpd_customizations.asset_organizer.patches.seed_apr_ai_task_configs
 mpd_customizations.xfloor_costing.patches.migrate_floor_project_parts
+mpd_customizations.xfloor_costing.patches.backfill_part_rate_and_kits

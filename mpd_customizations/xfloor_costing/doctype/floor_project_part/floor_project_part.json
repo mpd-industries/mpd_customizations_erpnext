@@ -7,8 +7,11 @@
  "field_order": [
   "part_name",
   "sqft",
+  "rate_per_sqft",
   "top_coat_option",
   "screed_option",
+  "coving_kits",
+  "hibuild_kits",
   "applicator_rate"
  ],
  "fields": [
@@ -27,6 +30,13 @@
    "precision": "2"
   },
   {
+   "fieldname": "rate_per_sqft",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Rate Per Sqft",
+   "precision": "2"
+  },
+  {
    "default": "1mm",
    "fieldname": "top_coat_option",
    "fieldtype": "Select",
@@ -41,6 +51,20 @@
    "in_list_view": 1,
    "label": "Screed Option",
    "options": "0\n500 micron\n1mm\n2mm"
+  },
+  {
+   "fieldname": "coving_kits",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Coving Kits",
+   "precision": "2"
+  },
+  {
+   "fieldname": "hibuild_kits",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Hi-build Kits",
+   "precision": "2"
   },
   {
    "fieldname": "applicator_rate",

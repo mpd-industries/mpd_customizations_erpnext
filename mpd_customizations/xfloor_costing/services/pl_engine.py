@@ -87,33 +87,33 @@ def _normalize_project_data(doc_or_dict):
 	return {}
 
 
-def _row_dict(sqft, cost):
+def _cost_per_sqft(sqft, cost):
 	return (cost / sqft) if sqft else 0
 
 
 def _summary_from_totals(contract, total, sqft):
 	profit_loss = contract - total
 	margin_pct = (profit_loss / contract * 100) if contract else 0
-	cost_per_sqft = (total / sqft) if sqft else 0
 	return {
 		"contract_value": contract,
 		"total_cost": total,
 		"profit_loss": profit_loss,
 		"margin_pct": margin_pct,
-		"cost_per_sqft": cost_per_sqft,
+		"cost_per_sqft": _cost_per_sqft(sqft, total),
 	}
 
 
-def calc_part(part_dict, settings, *, rate_per_sqft, coving_kits=0, hibuild_kits=0):
-	"""Calculate budget for a single area/part."""
+def calc_part(part_dict, settings, *, rate_per_sqft=None, coving_kits=None, hibuild_kits=None):
+	"""Calculate budget for a single area/part. Rates/kits default from the part row."""
 	cfg = settings
 	sqft = _f(part_dict.get("sqft"))
 	top_coat_option = part_dict.get("top_coat_option") or "1mm"
 	screed_option = part_dict.get("screed_option") or "1mm"
 	applicator_rate = _f(part_dict.get("applicator_rate"))
-	coving_kits = _f(coving_kits)
-	hibuild_kits = _f(hibuild_kits)
-	rate_per_sqft = _f(rate_per_sqft)
+
+	rate_per_sqft = _f(part_dict.get("rate_per_sqft") if rate_per_sqft is None else rate_per_sqft)
+	coving_kits = _f(part_dict.get("coving_kits") if coving_kits is None else coving_kits)
+	hibuild_kits = _f(part_dict.get("hibuild_kits") if hibuild_kits is None else hibuild_kits)
 
 	tc_cov, sc_cov = _coverage_for(cfg, top_coat_option, screed_option)
 	pr_cov = _f(cfg.get("primer_coverage"))
@@ -184,38 +184,39 @@ def calc_part(part_dict, settings, *, rate_per_sqft, coving_kits=0, hibuild_kits
 	]
 
 	for row in budget_rows:
-		row["cost_per_sqft"] = _row_dict(sqft, row["cost"])
+		row["cost_per_sqft"] = _cost_per_sqft(sqft, row["cost"])
 
 	return {
 		"part_name": part_dict.get("part_name") or "Main",
 		"sqft": sqft,
+		"rate_per_sqft": rate_per_sqft,
 		"summary": _summary_from_totals(contract, total, sqft),
 		"budget_rows": budget_rows,
 	}
 
 
+def _part_row_dict(row):
+	if isinstance(row, dict):
+		return row
+	if hasattr(row, "as_dict"):
+		return row.as_dict()
+	return {
+		"part_name": getattr(row, "part_name", None),
+		"sqft": getattr(row, "sqft", None),
+		"rate_per_sqft": getattr(row, "rate_per_sqft", None),
+		"top_coat_option": getattr(row, "top_coat_option", None),
+		"screed_option": getattr(row, "screed_option", None),
+		"coving_kits": getattr(row, "coving_kits", None),
+		"hibuild_kits": getattr(row, "hibuild_kits", None),
+		"applicator_rate": getattr(row, "applicator_rate", None),
+	}
+
+
 def _normalize_parts(data):
-	parts = data.get("parts") or []
-	normalized = []
-	for row in parts:
-		if isinstance(row, dict):
-			normalized.append(row)
-		elif hasattr(row, "as_dict"):
-			normalized.append(row.as_dict())
-		else:
-			normalized.append(
-				{
-					"part_name": getattr(row, "part_name", None),
-					"sqft": getattr(row, "sqft", None),
-					"top_coat_option": getattr(row, "top_coat_option", None),
-					"screed_option": getattr(row, "screed_option", None),
-					"applicator_rate": getattr(row, "applicator_rate", None),
-				}
-			)
-	return normalized
+	return [_part_row_dict(row) for row in (data.get("parts") or [])]
 
 
-def _rollup_budget_rows(part_results, total_sqft, cfg, coving_kits, hibuild_kits):
+def _rollup_budget_rows(part_results, total_sqft):
 	by_component = {name: [] for name in BUDGET_COMPONENTS}
 	for part in part_results:
 		for row in part["budget_rows"]:
@@ -223,49 +224,16 @@ def _rollup_budget_rows(part_results, total_sqft, cfg, coving_kits, hibuild_kits
 			if component in by_component:
 				by_component[component].append(row)
 
-	# Project-level coving / hibuild applied once on the rollup (parts carry 0).
-	coving_kits = _f(coving_kits)
-	hibuild_kits = _f(hibuild_kits)
-	coving_cost = coving_kits * _f(cfg.get("coving_rate"))
-	hibuild_cost = hibuild_kits * _f(cfg.get("hibuild_rate"))
-
 	rolled = []
 	for component in BUDGET_COMPONENTS:
 		rows = by_component[component]
-		if component == "Coving":
-			rolled.append(
-				{
-					"component": "Coving",
-					"option": "-",
-					"coverage": 0,
-					"kits": coving_kits,
-					"rate": _f(cfg.get("coving_rate")),
-					"cost": coving_cost,
-					"cost_per_sqft": _row_dict(total_sqft, coving_cost),
-				}
-			)
-			continue
-		if component == "Hi-build":
-			rolled.append(
-				{
-					"component": "Hi-build",
-					"option": "-",
-					"coverage": 0,
-					"kits": hibuild_kits,
-					"rate": _f(cfg.get("hibuild_rate")),
-					"cost": hibuild_cost,
-					"cost_per_sqft": _row_dict(total_sqft, hibuild_cost),
-				}
-			)
-			continue
-
 		options = {r.get("option") for r in rows}
 		coverages = {r.get("coverage") for r in rows}
 		rates = {r.get("rate") for r in rows}
 		kits = sum(_f(r.get("kits")) for r in rows)
 		cost = sum(_f(r.get("cost")) for r in rows)
 
-		option = next(iter(options)) if len(options) == 1 else "mixed"
+		option = next(iter(options)) if len(options) == 1 else ("mixed" if options else "-")
 		coverage = next(iter(coverages)) if len(coverages) == 1 else 0
 		rate = next(iter(rates)) if len(rates) == 1 else 0
 
@@ -277,7 +245,7 @@ def _rollup_budget_rows(part_results, total_sqft, cfg, coving_kits, hibuild_kits
 				"kits": kits,
 				"rate": rate,
 				"cost": cost,
-				"cost_per_sqft": _row_dict(total_sqft, cost),
+				"cost_per_sqft": _cost_per_sqft(total_sqft, cost),
 			}
 		)
 
@@ -287,22 +255,14 @@ def _rollup_budget_rows(part_results, total_sqft, cfg, coving_kits, hibuild_kits
 def calc_project(doc_or_dict, settings=None):
 	data = _normalize_project_data(doc_or_dict)
 	cfg = settings or get_kit_rates_doc()
-	rate_per_sqft = _f(data.get("rate_per_sqft"))
-	coving_kits = _f(data.get("coving_kits"))
-	hibuild_kits = _f(data.get("hibuild_kits"))
 	parts = _normalize_parts(data)
 
 	if parts:
-		part_results = []
-		for part in parts:
-			# Area-driven costs only on each part; coving/hibuild applied once at rollup.
-			result = calc_part(part, cfg, rate_per_sqft=rate_per_sqft, coving_kits=0, hibuild_kits=0)
-			part_results.append(result)
-
+		part_results = [calc_part(part, cfg) for part in parts]
 		total_sqft = sum(_f(p["sqft"]) for p in part_results)
-		budget_rows = _rollup_budget_rows(part_results, total_sqft, cfg, coving_kits, hibuild_kits)
+		budget_rows = _rollup_budget_rows(part_results, total_sqft)
 		total_cost = sum(_f(r["cost"]) for r in budget_rows)
-		contract = total_sqft * rate_per_sqft
+		contract = sum(_f(p["summary"]["contract_value"]) for p in part_results)
 
 		return {
 			"summary": _summary_from_totals(contract, total_cost, total_sqft),
@@ -311,6 +271,7 @@ def calc_project(doc_or_dict, settings=None):
 				{
 					"part_name": p["part_name"],
 					"sqft": p["sqft"],
+					"rate_per_sqft": p["rate_per_sqft"],
 					"summary": p["summary"],
 					"budget_rows": p["budget_rows"],
 				}
@@ -318,21 +279,18 @@ def calc_project(doc_or_dict, settings=None):
 			],
 		}
 
-	# Legacy flat payload (no parts): single calc_part with project-level kits.
+	# Legacy flat payload (no parts).
 	legacy_part = {
 		"part_name": "Main",
 		"sqft": data.get("sqft"),
+		"rate_per_sqft": data.get("rate_per_sqft"),
 		"top_coat_option": data.get("top_coat_option") or "1mm",
 		"screed_option": data.get("screed_option") or "1mm",
+		"coving_kits": data.get("coving_kits"),
+		"hibuild_kits": data.get("hibuild_kits"),
 		"applicator_rate": data.get("applicator_rate"),
 	}
-	result = calc_part(
-		legacy_part,
-		cfg,
-		rate_per_sqft=rate_per_sqft,
-		coving_kits=coving_kits,
-		hibuild_kits=hibuild_kits,
-	)
+	result = calc_part(legacy_part, cfg)
 	return {
 		"summary": result["summary"],
 		"budget_rows": result["budget_rows"],
@@ -345,8 +303,11 @@ def flat_fields_to_main_part(data):
 	return {
 		"part_name": "Main",
 		"sqft": _f(data.get("sqft")),
+		"rate_per_sqft": _f(data.get("rate_per_sqft")),
 		"top_coat_option": data.get("top_coat_option") or "1mm",
 		"screed_option": data.get("screed_option") or "1mm",
+		"coving_kits": _f(data.get("coving_kits")),
+		"hibuild_kits": _f(data.get("hibuild_kits")),
 		"applicator_rate": _f(data.get("applicator_rate")),
 	}
 

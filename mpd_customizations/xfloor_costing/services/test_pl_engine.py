@@ -55,26 +55,29 @@ class TestPLEngine(unittest.TestCase):
 		self.assertEqual(by_component["Screed"]["cost"], 0)
 
 	def test_multi_part_aggregation(self):
-		# Part A: 10000 sqft, 1mm top coat, 2mm screed, applicator 8
-		# Part B: 2000 sqft, 1mm top coat only (screed 0), applicator 12
+		# Part A: 10000 sqft @70, 1mm TC, 2mm screed, coving 2, applicator 8
+		# Part B: 2000 sqft @90, 1mm TC only, hibuild 1, applicator 12
 		result = pl_engine.calc_project(
 			{
-				"rate_per_sqft": 70,
-				"coving_kits": 2,
-				"hibuild_kits": 1,
 				"parts": [
 					{
 						"part_name": "Warehouse",
 						"sqft": 10000,
+						"rate_per_sqft": 70,
 						"top_coat_option": "1mm",
 						"screed_option": "2mm",
+						"coving_kits": 2,
+						"hibuild_kits": 0,
 						"applicator_rate": 8,
 					},
 					{
 						"part_name": "Office",
 						"sqft": 2000,
+						"rate_per_sqft": 90,
 						"top_coat_option": "1mm",
 						"screed_option": "0",
+						"coving_kits": 0,
+						"hibuild_kits": 1,
 						"applicator_rate": 12,
 					},
 				],
@@ -83,7 +86,7 @@ class TestPLEngine(unittest.TestCase):
 		)
 
 		self.assertEqual(len(result["part_budgets"]), 2)
-		self.assertEqual(result["summary"]["contract_value"], 12000 * 70)
+		self.assertEqual(result["summary"]["contract_value"], 10000 * 70 + 2000 * 90)
 
 		tc_cov = SETTINGS["top_coat_1mm_coverage"]
 		sc_cov = SETTINGS["screed_2mm_coverage"]
@@ -103,6 +106,7 @@ class TestPLEngine(unittest.TestCase):
 		part_a = result["part_budgets"][0]
 		part_b = result["part_budgets"][1]
 		self.assertEqual(part_a["part_name"], "Warehouse")
+		self.assertEqual(part_a["rate_per_sqft"], 70)
 		self.assertEqual(
 			{r["component"]: r["kits"] for r in part_a["budget_rows"]}["Screed"],
 			math.ceil(10000 / sc_cov),
@@ -110,6 +114,10 @@ class TestPLEngine(unittest.TestCase):
 		self.assertEqual(
 			{r["component"]: r["kits"] for r in part_b["budget_rows"]}["Screed"],
 			0,
+		)
+		self.assertEqual(
+			{r["component"]: r["kits"] for r in part_b["budget_rows"]}["Hi-build"],
+			1,
 		)
 
 	def test_legacy_flat_matches_single_part(self):
@@ -127,15 +135,15 @@ class TestPLEngine(unittest.TestCase):
 		)
 		parts = pl_engine.calc_project(
 			{
-				"rate_per_sqft": 70,
-				"coving_kits": 2,
-				"hibuild_kits": 1,
 				"parts": [
 					{
 						"part_name": "Main",
 						"sqft": 1000,
+						"rate_per_sqft": 70,
 						"top_coat_option": "1mm",
 						"screed_option": "1mm",
+						"coving_kits": 2,
+						"hibuild_kits": 1,
 						"applicator_rate": 8,
 					}
 				],
@@ -149,13 +157,19 @@ class TestPLEngine(unittest.TestCase):
 		part = pl_engine.flat_fields_to_main_part(
 			{
 				"sqft": 5000,
+				"rate_per_sqft": 65,
 				"top_coat_option": "2mm",
 				"screed_option": "0",
+				"coving_kits": 3,
+				"hibuild_kits": 2,
 				"applicator_rate": 9.5,
 			}
 		)
 		self.assertEqual(part["part_name"], "Main")
 		self.assertEqual(part["sqft"], 5000)
+		self.assertEqual(part["rate_per_sqft"], 65)
+		self.assertEqual(part["coving_kits"], 3)
+		self.assertEqual(part["hibuild_kits"], 2)
 		self.assertEqual(part["top_coat_option"], "2mm")
 		self.assertEqual(part["screed_option"], "0")
 		self.assertEqual(part["applicator_rate"], 9.5)
@@ -166,21 +180,13 @@ class TestPLEngine(unittest.TestCase):
 				"rate_per_sqft": 65,
 				"top_coat_option": "2mm",
 				"screed_option": "0",
-				"coving_kits": 0,
-				"hibuild_kits": 0,
+				"coving_kits": 3,
+				"hibuild_kits": 2,
 				"applicator_rate": 9.5,
 			},
 			settings=SETTINGS,
 		)
-		migrated = pl_engine.calc_project(
-			{
-				"rate_per_sqft": 65,
-				"coving_kits": 0,
-				"hibuild_kits": 0,
-				"parts": [part],
-			},
-			settings=SETTINGS,
-		)
+		migrated = pl_engine.calc_project({"parts": [part]}, settings=SETTINGS)
 		self.assertAlmostEqual(flat["summary"]["total_cost"], migrated["summary"]["total_cost"])
 		self.assertAlmostEqual(flat["summary"]["profit_loss"], migrated["summary"]["profit_loss"])
 

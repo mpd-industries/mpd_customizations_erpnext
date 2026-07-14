@@ -25,21 +25,23 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 	const defaultPart = (name) => ({
 		part_name: name || "Main",
 		sqft: 0,
+		rate_per_sqft: 0,
 		top_coat_option: "1mm",
 		screed_option: "1mm",
+		coving_kits: 0,
+		hibuild_kits: 0,
 		applicator_rate: 0,
 	});
 
 	const ensureParts = (p) => {
 		if (!p.parts || !p.parts.length) {
-			p.parts = [
-				defaultPart(
-					p.project_number || "Main"
-				),
-			];
+			p.parts = [defaultPart(p.project_number || "Main")];
 			if (p.sqft) p.parts[0].sqft = p.sqft;
+			if (p.rate_per_sqft) p.parts[0].rate_per_sqft = p.rate_per_sqft;
 			if (p.top_coat_option) p.parts[0].top_coat_option = p.top_coat_option;
 			if (p.screed_option) p.parts[0].screed_option = p.screed_option;
+			if (p.coving_kits) p.parts[0].coving_kits = p.coving_kits;
+			if (p.hibuild_kits) p.parts[0].hibuild_kits = p.hibuild_kits;
 			if (p.applicator_rate) p.parts[0].applicator_rate = p.applicator_rate;
 		}
 		return p.parts;
@@ -48,6 +50,20 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 	const totalSqft = (p) =>
 		(ensureParts(p) || []).reduce((a, part) => a + flt(part.sqft), 0);
 
+	const totalCoving = (p) =>
+		(ensureParts(p) || []).reduce((a, part) => a + flt(part.coving_kits), 0);
+
+	const totalHibuild = (p) =>
+		(ensureParts(p) || []).reduce((a, part) => a + flt(part.hibuild_kits), 0);
+
+	const weightedRate = (p) => {
+		const parts = ensureParts(p);
+		const sqft = totalSqft(p);
+		if (!sqft) return 0;
+		const contract = parts.reduce((a, part) => a + flt(part.sqft) * flt(part.rate_per_sqft), 0);
+		return Math.round((contract / sqft) * 100) / 100;
+	};
+
 	const collectPayload = () => {
 		const p = state.active;
 		if (!p) return null;
@@ -55,16 +71,16 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		const parts = ensureParts(p).map((part) => ({
 			part_name: part.part_name || "Main",
 			sqft: flt(part.sqft),
+			rate_per_sqft: flt(part.rate_per_sqft),
 			top_coat_option: part.top_coat_option || "1mm",
 			screed_option: part.screed_option || "1mm",
+			coving_kits: flt(part.coving_kits),
+			hibuild_kits: flt(part.hibuild_kits),
 			applicator_rate: flt(part.applicator_rate),
 		}));
 		return {
 			name: p.name,
 			party_name: $c.find("#xf_party_name").val() || p.party_name,
-			rate_per_sqft: flt($c.find("#xf_rate").val()),
-			coving_kits: flt($c.find("#xf_coving").val()),
-			hibuild_kits: flt($c.find("#xf_hibuild").val()),
 			parts,
 			dispatch_lines: p.dispatch_lines || [],
 		};
@@ -164,6 +180,12 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 				<div class="xfloor-grid">
 					<div><label>${__("Square Feet")}</label>
 						<input type="number" class="form-control input-sm xf-part-sqft" value="${part.sqft || 0}" min="0"></div>
+					<div><label>${__("Rate per Sqft")}</label>
+						<input type="number" class="form-control input-sm xf-part-rate" value="${part.rate_per_sqft || 0}" min="0" step="0.5"></div>
+					<div><label>${__("Coving Kits")}</label>
+						<input type="number" class="form-control input-sm xf-part-coving" value="${part.coving_kits || 0}" min="0"></div>
+					<div><label>${__("Hi-build Kits")}</label>
+						<input type="number" class="form-control input-sm xf-part-hibuild" value="${part.hibuild_kits || 0}" min="0"></div>
 					<div><label>${__("Applicator Rate (per sqft)")}</label>
 						<input type="number" class="form-control input-sm xf-part-applicator" value="${part.applicator_rate || 0}" min="0" step="0.5"></div>
 				</div>
@@ -182,13 +204,13 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 			<div class="xfloor-grid">
 				<div><label>${__("Party Name")}</label><input class="form-control input-sm" id="xf_party_name" value="${frappe.utils.escape_html(p.party_name || "")}"></div>
 				<div><label>${__("Project Number")}</label><input class="form-control input-sm" id="xf_project_number" value="${frappe.utils.escape_html(p.project_number || p.name || __("Auto on save"))}" disabled></div>
-				<div><label>${__("Rate per Sqft")}</label><input type="number" class="form-control input-sm" id="xf_rate" value="${p.rate_per_sqft || 0}"></div>
-				<div><label>${__("Total Sq Ft")}</label><input class="form-control input-sm" id="xf_total_sqft" value="${fmtN(totalSqft(p))}" disabled></div>
 			</div>
-			<div class="xfloor-section-title">${__("Additional Kits")}</div>
+			<div class="xfloor-section-title">${__("Project Summary")}</div>
 			<div class="xfloor-grid">
-				<div><label>${__("Coving Kits")}</label><input type="number" class="form-control input-sm" id="xf_coving" value="${p.coving_kits || 0}" min="0"></div>
-				<div><label>${__("Hi-build Kits")}</label><input type="number" class="form-control input-sm" id="xf_hibuild" value="${p.hibuild_kits || 0}" min="0"></div>
+				<div><label>${__("Total Sq Ft")}</label><input class="form-control input-sm" id="xf_total_sqft" value="${fmtN(totalSqft(p))}" disabled></div>
+				<div><label>${__("Avg Rate / Sqft")}</label><input class="form-control input-sm" id="xf_avg_rate" value="${fmtD(weightedRate(p))}" disabled></div>
+				<div><label>${__("Total Coving Kits")}</label><input class="form-control input-sm" id="xf_total_coving" value="${fmtD(totalCoving(p))}" disabled></div>
+				<div><label>${__("Total Hi-build Kits")}</label><input class="form-control input-sm" id="xf_total_hibuild" value="${fmtD(totalHibuild(p))}" disabled></div>
 			</div>
 			<div class="xfloor-section-title" style="display:flex;justify-content:space-between;align-items:center">
 				<span>${__("Project Parts")}</span>
@@ -249,11 +271,12 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		const partSections = partsBudget
 			.map((part) => {
 				const s = part.summary || {};
+				const rateLabel = part.rate_per_sqft != null ? ` · ₹${fmtD(part.rate_per_sqft)}/sqft` : "";
 				return `
 					<div class="xfloor-part-budget">
 						<div class="xfloor-section-title">${frappe.utils.escape_html(part.part_name || __("Part"))}
 							<span class="text-muted" style="font-weight:400;text-transform:none;letter-spacing:0">
-								· ${fmtN(part.sqft)} sqft
+								· ${fmtN(part.sqft)} sqft${rateLabel}
 							</span>
 						</div>
 						${renderBudgetTable(part.budget_rows, part.sqft, s.total_cost, s.cost_per_sqft)}
@@ -356,9 +379,15 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 			if (!part) return;
 			part.part_name = $(this).find(".xf-part-name").val() || part.part_name;
 			part.sqft = flt($(this).find(".xf-part-sqft").val());
+			part.rate_per_sqft = flt($(this).find(".xf-part-rate").val());
+			part.coving_kits = flt($(this).find(".xf-part-coving").val());
+			part.hibuild_kits = flt($(this).find(".xf-part-hibuild").val());
 			part.applicator_rate = flt($(this).find(".xf-part-applicator").val());
 		});
 		$root.find("#xf_total_sqft").val(fmtN(totalSqft(state.active)));
+		$root.find("#xf_avg_rate").val(fmtD(weightedRate(state.active)));
+		$root.find("#xf_total_coving").val(fmtD(totalCoving(state.active)));
+		$root.find("#xf_total_hibuild").val(fmtD(totalHibuild(state.active)));
 	};
 
 	const bindInputEvents = () => {
@@ -377,13 +406,12 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 			previewCalc();
 		});
 
-		$c.find(".xf-part-name, .xf-part-sqft, .xf-part-applicator, #xf_party_name, #xf_rate, #xf_coving, #xf_hibuild").on(
-			"change input",
-			() => {
-				syncPartInputsFromDom();
-				previewCalc();
-			}
-		);
+		$c.find(
+			".xf-part-name, .xf-part-sqft, .xf-part-rate, .xf-part-coving, .xf-part-hibuild, .xf-part-applicator, #xf_party_name"
+		).on("change input", () => {
+			syncPartInputsFromDom();
+			previewCalc();
+		});
 
 		$c.find("#xf-add-part").on("click", () => {
 			syncPartInputsFromDom();
