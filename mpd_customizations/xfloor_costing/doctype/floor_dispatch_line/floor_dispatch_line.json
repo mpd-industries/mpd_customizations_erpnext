@@ -23,7 +23,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Component",
-   "options": "Top coat\nScreed\nPrimer\nCoving\nHi-build",
+   "options": "Epoxy Top coat\nPU Top coat\nScreed\nPrimer\nCoving\nHi-build",
    "reqd": 1
   },
   {

@@ -86,13 +86,49 @@
 	display: flex;
 	gap: 8px;
 	flex-shrink: 0;
+	align-items: center;
 }
+
+/* Discreet SM screen-share control — easy to miss while presenting */
+.xfloor-privacy-btn {
+	opacity: 0.28;
+	border: none;
+	background: transparent;
+	box-shadow: none;
+	padding: 4px 6px;
+	color: #7a8194;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.xfloor-privacy-btn:hover,
+.xfloor-privacy-btn:focus {
+	opacity: 0.75;
+	background: transparent;
+	color: #4a5168;
+	outline: none;
+}
+
+.xfloor-privacy-btn i {
+	font-size: 12px;
+}
+
 
 .xfloor-kpi {
 	display: grid;
 	grid-template-columns: repeat(4, minmax(0, 1fr));
 	gap: 10px;
 	margin-bottom: 16px;
+}
+
+.xfloor-kpi.xfloor-kpi-6 {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (min-width: 1100px) {
+	.xfloor-kpi.xfloor-kpi-6 {
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+	}
 }
 
 .xfloor-kpi-card {

@@ -9,6 +9,7 @@
   "sqft",
   "rate_per_sqft",
   "top_coat_option",
+  "pu_top_coat_option",
   "screed_option",
   "coving_kits",
   "hibuild_kits",
@@ -41,8 +42,16 @@
    "fieldname": "top_coat_option",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Top Coat Option",
-   "options": "0\n500 micron\n1mm\n2mm"
+   "label": "Epoxy Top Coat Option",
+   "options": "0\n500 micron\n1mm\n2mm\n3mm\n4mm"
+  },
+  {
+   "default": "0",
+   "fieldname": "pu_top_coat_option",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "PU Top Coat Option",
+   "options": "0\n1mm\n2mm\n3mm\n4mm"
   },
   {
    "default": "1mm",
@@ -50,7 +59,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Screed Option",
-   "options": "0\n500 micron\n1mm\n2mm"
+   "options": "0\n500 micron\n1mm\n2mm\n3mm\n4mm\n5mm\n6mm\n7mm"
   },
   {
    "fieldname": "coving_kits",

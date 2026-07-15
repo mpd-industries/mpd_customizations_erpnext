@@ -6,13 +6,28 @@
  "field_order": [
   "section_coverage",
   "coverage_effective_date",
+  "section_epoxy",
   "top_coat_500_coverage",
   "top_coat_1mm_coverage",
   "top_coat_2mm_coverage",
+  "top_coat_3mm_coverage",
+  "top_coat_4mm_coverage",
+  "section_pu",
+  "pu_top_coat_1mm_coverage",
+  "pu_top_coat_2mm_coverage",
+  "pu_top_coat_3mm_coverage",
+  "pu_top_coat_4mm_coverage",
+  "section_screed",
   "screed_500_coverage",
   "screed_1mm_coverage",
   "screed_2mm_coverage",
+  "screed_3mm_coverage",
+  "screed_4mm_coverage",
+  "screed_5mm_coverage",
+  "screed_6mm_coverage",
+  "screed_7mm_coverage",
   "primer_coverage",
+  "coving_coverage",
   "section_history",
   "coverage_revisions"
  ],
@@ -28,10 +43,15 @@
    "label": "Coverage Effective Date"
   },
   {
+   "fieldname": "section_epoxy",
+   "fieldtype": "Section Break",
+   "label": "Epoxy Top Coat"
+  },
+  {
    "default": "193",
    "fieldname": "top_coat_500_coverage",
    "fieldtype": "Float",
-   "label": "Top Coat 500 Micron Coverage",
+   "label": "Epoxy Top Coat 500 Micron Coverage",
    "precision": "2",
    "reqd": 1
   },
@@ -39,7 +59,7 @@
    "default": "139",
    "fieldname": "top_coat_1mm_coverage",
    "fieldtype": "Float",
-   "label": "Top Coat 1mm Coverage",
+   "label": "Epoxy Top Coat 1mm Coverage",
    "precision": "2",
    "reqd": 1
   },
@@ -47,9 +67,67 @@
    "default": "107",
    "fieldname": "top_coat_2mm_coverage",
    "fieldtype": "Float",
-   "label": "Top Coat 2mm Coverage",
+   "label": "Epoxy Top Coat 2mm Coverage",
    "precision": "2",
    "reqd": 1
+  },
+  {
+   "default": "107",
+   "fieldname": "top_coat_3mm_coverage",
+   "fieldtype": "Float",
+   "label": "Epoxy Top Coat 3mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "107",
+   "fieldname": "top_coat_4mm_coverage",
+   "fieldtype": "Float",
+   "label": "Epoxy Top Coat 4mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_pu",
+   "fieldtype": "Section Break",
+   "label": "PU Top Coat"
+  },
+  {
+   "default": "139",
+   "fieldname": "pu_top_coat_1mm_coverage",
+   "fieldtype": "Float",
+   "label": "PU Top Coat 1mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "107",
+   "fieldname": "pu_top_coat_2mm_coverage",
+   "fieldtype": "Float",
+   "label": "PU Top Coat 2mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "107",
+   "fieldname": "pu_top_coat_3mm_coverage",
+   "fieldtype": "Float",
+   "label": "PU Top Coat 3mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "107",
+   "fieldname": "pu_top_coat_4mm_coverage",
+   "fieldtype": "Float",
+   "label": "PU Top Coat 4mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_screed",
+   "fieldtype": "Section Break",
+   "label": "Screed"
   },
   {
    "default": "150",
@@ -76,10 +154,58 @@
    "reqd": 1
   },
   {
+   "default": "96",
+   "fieldname": "screed_3mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 3mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "96",
+   "fieldname": "screed_4mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 4mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "96",
+   "fieldname": "screed_5mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 5mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "96",
+   "fieldname": "screed_6mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 6mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "96",
+   "fieldname": "screed_7mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 7mm Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
    "default": "750",
    "fieldname": "primer_coverage",
    "fieldtype": "Float",
    "label": "Primer Coverage",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "150",
+   "fieldname": "coving_coverage",
+   "fieldtype": "Float",
+   "label": "Coving Coverage (ft/kit)",
    "precision": "2",
    "reqd": 1
   },
@@ -98,7 +224,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-06-25 00:00:00.000000",
+ "modified": "2026-07-15 13:20:00.000000",
  "modified_by": "Administrator",
  "module": "XFloor Costing",
  "name": "Kit Coverage",
@@ -117,16 +243,13 @@
    "write": 1
   },
   {
-   "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
    "role": "XFloor Costing Manager",
-   "share": 1,
-   "write": 1
+   "share": 1
   }
  ],
  "sort_field": "modified",

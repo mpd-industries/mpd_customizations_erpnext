@@ -9,10 +9,22 @@
   "top_coat_500_coverage",
   "top_coat_1mm_coverage",
   "top_coat_2mm_coverage",
+  "top_coat_3mm_coverage",
+  "top_coat_4mm_coverage",
+  "pu_top_coat_1mm_coverage",
+  "pu_top_coat_2mm_coverage",
+  "pu_top_coat_3mm_coverage",
+  "pu_top_coat_4mm_coverage",
   "screed_500_coverage",
   "screed_1mm_coverage",
   "screed_2mm_coverage",
-  "primer_coverage"
+  "screed_3mm_coverage",
+  "screed_4mm_coverage",
+  "screed_5mm_coverage",
+  "screed_6mm_coverage",
+  "screed_7mm_coverage",
+  "primer_coverage",
+  "coving_coverage"
  ],
  "fields": [
   {
@@ -25,19 +37,55 @@
   {
    "fieldname": "top_coat_500_coverage",
    "fieldtype": "Float",
-   "label": "Top Coat 500 Micron Coverage",
+   "label": "Epoxy Top Coat 500 Micron Coverage",
    "precision": "2"
   },
   {
    "fieldname": "top_coat_1mm_coverage",
    "fieldtype": "Float",
-   "label": "Top Coat 1mm Coverage",
+   "label": "Epoxy Top Coat 1mm Coverage",
    "precision": "2"
   },
   {
    "fieldname": "top_coat_2mm_coverage",
    "fieldtype": "Float",
-   "label": "Top Coat 2mm Coverage",
+   "label": "Epoxy Top Coat 2mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "top_coat_3mm_coverage",
+   "fieldtype": "Float",
+   "label": "Epoxy Top Coat 3mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "top_coat_4mm_coverage",
+   "fieldtype": "Float",
+   "label": "Epoxy Top Coat 4mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "pu_top_coat_1mm_coverage",
+   "fieldtype": "Float",
+   "label": "PU Top Coat 1mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "pu_top_coat_2mm_coverage",
+   "fieldtype": "Float",
+   "label": "PU Top Coat 2mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "pu_top_coat_3mm_coverage",
+   "fieldtype": "Float",
+   "label": "PU Top Coat 3mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "pu_top_coat_4mm_coverage",
+   "fieldtype": "Float",
+   "label": "PU Top Coat 4mm Coverage",
    "precision": "2"
   },
   {
@@ -59,9 +107,45 @@
    "precision": "2"
   },
   {
+   "fieldname": "screed_3mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 3mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "screed_4mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 4mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "screed_5mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 5mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "screed_6mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 6mm Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "screed_7mm_coverage",
+   "fieldtype": "Float",
+   "label": "Screed 7mm Coverage",
+   "precision": "2"
+  },
+  {
    "fieldname": "primer_coverage",
    "fieldtype": "Float",
    "label": "Primer Coverage",
+   "precision": "2"
+  },
+  {
+   "fieldname": "coving_coverage",
+   "fieldtype": "Float",
+   "label": "Coving Coverage (ft/kit)",
    "precision": "2"
   }
  ],

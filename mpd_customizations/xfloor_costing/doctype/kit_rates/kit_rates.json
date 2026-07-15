@@ -3,14 +3,23 @@
  "creation": "2026-06-25 13:17:16.364461",
  "doctype": "DocType",
  "engine": "InnoDB",
- "field_order": [
+  "field_order": [
   "section_rates",
   "rates_effective_date",
   "top_coat_rate",
+  "pu_top_coat_rate",
   "screed_rate",
   "primer_rate",
   "hibuild_rate",
   "coving_rate",
+  "default_applicator_rate",
+  "section_gm",
+  "top_coat_gm",
+  "pu_top_coat_gm",
+  "screed_gm",
+  "primer_gm",
+  "hibuild_gm",
+  "coving_gm",
   "section_history",
   "rate_revisions"
  ],
@@ -29,7 +38,15 @@
    "default": "4230",
    "fieldname": "top_coat_rate",
    "fieldtype": "Float",
-   "label": "Top Coat Rate",
+   "label": "Epoxy Top Coat Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "4230",
+   "fieldname": "pu_top_coat_rate",
+   "fieldtype": "Float",
+   "label": "PU Top Coat Rate",
    "precision": "2",
    "reqd": 1
   },
@@ -66,6 +83,68 @@
    "reqd": 1
   },
   {
+   "default": "10",
+   "fieldname": "default_applicator_rate",
+   "fieldtype": "Float",
+   "label": "Default Applicator Rate (₹/sqft)",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_gm",
+   "fieldtype": "Section Break",
+   "label": "Gross Margin (₹/kit)",
+   "permlevel": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "top_coat_gm",
+   "fieldtype": "Float",
+   "label": "Epoxy Top Coat GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "pu_top_coat_gm",
+   "fieldtype": "Float",
+   "label": "PU Top Coat GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "screed_gm",
+   "fieldtype": "Float",
+   "label": "Screed GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "primer_gm",
+   "fieldtype": "Float",
+   "label": "Primer GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "hibuild_gm",
+   "fieldtype": "Float",
+   "label": "Hi-build GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "coving_gm",
+   "fieldtype": "Float",
+   "label": "Coving GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
    "fieldname": "section_history",
    "fieldtype": "Section Break",
    "label": "Revision History"
@@ -80,7 +159,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-06-25 13:17:16.364461",
+ "modified": "2026-07-15 13:20:00.000000",
  "modified_by": "Administrator",
  "module": "XFloor Costing",
  "name": "Kit rates",
@@ -91,6 +170,18 @@
    "delete": 1,
    "email": 1,
    "export": 1,
+   "permlevel": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
    "print": 1,
    "read": 1,
    "report": 1,

@@ -7,10 +7,17 @@
  "field_order": [
   "effective_date",
   "top_coat_rate",
+  "pu_top_coat_rate",
   "screed_rate",
   "primer_rate",
   "hibuild_rate",
-  "coving_rate"
+  "coving_rate",
+  "top_coat_gm",
+  "pu_top_coat_gm",
+  "screed_gm",
+  "primer_gm",
+  "hibuild_gm",
+  "coving_gm"
  ],
  "fields": [
   {
@@ -24,7 +31,13 @@
    "fieldname": "top_coat_rate",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Top Coat Rate",
+   "label": "Epoxy Top Coat Rate",
+   "precision": "2"
+  },
+  {
+   "fieldname": "pu_top_coat_rate",
+   "fieldtype": "Float",
+   "label": "PU Top Coat Rate",
    "precision": "2"
   },
   {
@@ -50,6 +63,42 @@
    "fieldname": "coving_rate",
    "fieldtype": "Float",
    "label": "Coving Rate",
+   "precision": "2"
+  },
+  {
+   "fieldname": "top_coat_gm",
+   "fieldtype": "Float",
+   "label": "Epoxy Top Coat GM",
+   "precision": "2"
+  },
+  {
+   "fieldname": "pu_top_coat_gm",
+   "fieldtype": "Float",
+   "label": "PU Top Coat GM",
+   "precision": "2"
+  },
+  {
+   "fieldname": "screed_gm",
+   "fieldtype": "Float",
+   "label": "Screed GM",
+   "precision": "2"
+  },
+  {
+   "fieldname": "primer_gm",
+   "fieldtype": "Float",
+   "label": "Primer GM",
+   "precision": "2"
+  },
+  {
+   "fieldname": "hibuild_gm",
+   "fieldtype": "Float",
+   "label": "Hi-build GM",
+   "precision": "2"
+  },
+  {
+   "fieldname": "coving_gm",
+   "fieldtype": "Float",
+   "label": "Coving GM",
    "precision": "2"
   }
  ],

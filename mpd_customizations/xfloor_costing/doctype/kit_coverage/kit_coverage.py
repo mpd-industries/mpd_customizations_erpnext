@@ -9,10 +9,22 @@ COVERAGE_FIELDS = (
 	"top_coat_500_coverage",
 	"top_coat_1mm_coverage",
 	"top_coat_2mm_coverage",
+	"top_coat_3mm_coverage",
+	"top_coat_4mm_coverage",
+	"pu_top_coat_1mm_coverage",
+	"pu_top_coat_2mm_coverage",
+	"pu_top_coat_3mm_coverage",
+	"pu_top_coat_4mm_coverage",
 	"screed_500_coverage",
 	"screed_1mm_coverage",
 	"screed_2mm_coverage",
+	"screed_3mm_coverage",
+	"screed_4mm_coverage",
+	"screed_5mm_coverage",
+	"screed_6mm_coverage",
+	"screed_7mm_coverage",
 	"primer_coverage",
+	"coving_coverage",
 )
 
 

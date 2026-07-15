@@ -3,9 +3,11 @@ from frappe import _
 from frappe.model.document import Document
 
 from mpd_customizations.xfloor_costing.services.pl_engine import (
+	_coving_kits_from_feet,
 	build_comparison,
 	calc_project,
 	flat_fields_to_main_part,
+	get_kit_rates_doc,
 )
 
 
@@ -43,9 +45,47 @@ class FloorProject(Document):
 		return frappe.parse_json(self.comparison_json or "[]")
 
 	def before_print(self, print_settings=None):
+		print_format = (
+			frappe.form_dict.get("format")
+			or frappe.form_dict.get("print_format")
+			or (getattr(print_settings, "print_format", None) if print_settings else None)
+		)
+		if print_format == "Floor Project Margin":
+			if frappe.session.user != "Administrator" and "System Manager" not in frappe.get_roles():
+				frappe.throw(_("Only System Managers can print the Margin report."), frappe.PermissionError)
+
 		self.budget_rows = self.get_budget_rows()
 		self.part_budgets = self.get_part_budgets()
 		self.kit_rates = frappe.get_single("Kit rates")
+		result = calc_project(self)
+		self.margin_summary = result.get("margin_summary") or {}
+		self.cost_profile = result.get("cost_profile") or {}
+		# Enrich rows used by Margin print format
+		by_name = {r.get("component"): r for r in (result.get("budget_rows") or [])}
+		enriched = []
+		for row in self.budget_rows or []:
+			item = dict(row)
+			src = by_name.get(item.get("component")) or {}
+			item["gm_per_kit"] = src.get("gm_per_kit", 0)
+			item["gm_amount"] = src.get("gm_amount", 0)
+			enriched.append(item)
+		self.budget_rows = enriched
+		calc_parts = result.get("part_budgets") or []
+		out_parts = []
+		for idx, part in enumerate(self.part_budgets or []):
+			p = dict(part)
+			src_part = calc_parts[idx] if idx < len(calc_parts) else {}
+			src_by = {r.get("component"): r for r in (src_part.get("budget_rows") or [])}
+			p_rows = []
+			for row in p.get("budget_rows") or []:
+				item = dict(row)
+				src = src_by.get(item.get("component")) or {}
+				item["gm_per_kit"] = src.get("gm_per_kit", 0)
+				item["gm_amount"] = src.get("gm_amount", 0)
+				p_rows.append(item)
+			p["budget_rows"] = p_rows
+			out_parts.append(p)
+		self.part_budgets = out_parts
 
 	def _ensure_main_part(self):
 		"""Safety net: migrate flat inputs into a single Main part when parts is empty."""
@@ -58,10 +98,12 @@ class FloorProject(Document):
 			or (self.coving_kits or 0) > 0
 			or (self.hibuild_kits or 0) > 0
 			or self.top_coat_option
+			or self.pu_top_coat_option
 			or self.screed_option
 			or (self.applicator_rate or 0) > 0
 		)
 		if not has_flat:
+			default_app = float(get_kit_rates_doc().get("default_applicator_rate") or 10)
 			self.append(
 				"parts",
 				{
@@ -69,10 +111,11 @@ class FloorProject(Document):
 					"sqft": 0,
 					"rate_per_sqft": 0,
 					"top_coat_option": "1mm",
+					"pu_top_coat_option": "0",
 					"screed_option": "1mm",
 					"coving_kits": 0,
 					"hibuild_kits": 0,
-					"applicator_rate": 0,
+					"applicator_rate": default_app,
 				},
 			)
 			return
@@ -84,6 +127,7 @@ class FloorProject(Document):
 					"sqft": self.sqft,
 					"rate_per_sqft": self.rate_per_sqft,
 					"top_coat_option": self.top_coat_option,
+					"pu_top_coat_option": self.pu_top_coat_option,
 					"screed_option": self.screed_option,
 					"coving_kits": self.coving_kits,
 					"hibuild_kits": self.hibuild_kits,
@@ -99,18 +143,14 @@ class FloorProject(Document):
 			return
 
 		parent_rate = float(self.rate_per_sqft or 0)
-		parent_coving = float(self.coving_kits or 0)
 		parent_hibuild = float(self.hibuild_kits or 0)
-		if not (parent_rate or parent_coving or parent_hibuild):
+		if not (parent_rate or parent_hibuild):
 			return
 
 		# Only backfill when every part is still empty for that field (pre-migration state).
 		if parent_rate and all(not float(p.rate_per_sqft or 0) for p in parts):
 			for p in parts:
 				p.rate_per_sqft = parent_rate
-		if parent_coving and all(not float(p.coving_kits or 0) for p in parts):
-			# Put historic project total on the first part only.
-			parts[0].coving_kits = parent_coving
 		if parent_hibuild and all(not float(p.hibuild_kits or 0) for p in parts):
 			parts[0].hibuild_kits = parent_hibuild
 
@@ -118,11 +158,13 @@ class FloorProject(Document):
 		if not self.get("parts"):
 			frappe.throw(_("At least one project part is required."))
 
+		if (self.coving_running_feet or 0) < 0:
+			frappe.throw(_("Coving Running Feet cannot be negative."))
+
 		for row in self.parts:
 			for fieldname, label in (
 				("sqft", _("Square Feet")),
 				("rate_per_sqft", _("Rate Per Sqft")),
-				("coving_kits", _("Coving Kits")),
 				("hibuild_kits", _("Hi-build Kits")),
 				("applicator_rate", _("Applicator Rate")),
 			):
@@ -131,16 +173,35 @@ class FloorProject(Document):
 			if not (row.part_name or "").strip():
 				frappe.throw(_("Part Name is required for every part."))
 
+			epoxy = row.top_coat_option or "0"
+			pu = row.pu_top_coat_option or "0"
+			if epoxy != "0" and pu != "0":
+				frappe.throw(
+					_("Part {0}: choose either Epoxy or PU top coat, not both.").format(
+						row.part_name or ""
+					)
+				)
+
 	def _sync_rollup_fields(self):
 		parts = self.get("parts") or []
 		total_sqft = sum(float(p.sqft or 0) for p in parts)
 		self.sqft = total_sqft
-		self.coving_kits = sum(float(p.coving_kits or 0) for p in parts)
 		self.hibuild_kits = sum(float(p.hibuild_kits or 0) for p in parts)
+
+		cfg = get_kit_rates_doc()
+		feet = float(self.coving_running_feet or 0)
+		if feet > 0:
+			self.coving_kits = float(_coving_kits_from_feet(feet, cfg.get("coving_coverage")))
+			for p in parts:
+				p.coving_kits = 0
+		else:
+			# Legacy: keep sum of part coving when running feet not entered
+			self.coving_kits = sum(float(p.coving_kits or 0) for p in parts)
 
 		if not parts:
 			self.rate_per_sqft = self.rate_per_sqft or 0
 			self.top_coat_option = self.top_coat_option or "1mm"
+			self.pu_top_coat_option = self.pu_top_coat_option or "0"
 			self.screed_option = self.screed_option or "1mm"
 			self.applicator_rate = self.applicator_rate or 0
 			return
@@ -150,9 +211,13 @@ class FloorProject(Document):
 
 		first = parts[0]
 		options = {p.top_coat_option or "1mm" for p in parts}
+		pu_options = {p.pu_top_coat_option or "0" for p in parts}
 		screeds = {p.screed_option or "1mm" for p in parts}
 		app_rates = {float(p.applicator_rate or 0) for p in parts}
 		self.top_coat_option = next(iter(options)) if len(options) == 1 else (first.top_coat_option or "1mm")
+		self.pu_top_coat_option = (
+			next(iter(pu_options)) if len(pu_options) == 1 else (first.pu_top_coat_option or "0")
+		)
 		self.screed_option = next(iter(screeds)) if len(screeds) == 1 else (first.screed_option or "1mm")
 		self.applicator_rate = next(iter(app_rates)) if len(app_rates) == 1 else 0
 

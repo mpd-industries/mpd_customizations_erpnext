@@ -16,9 +16,11 @@
   "section_rollup",
   "sqft",
   "rate_per_sqft",
+  "coving_running_feet",
   "coving_kits",
   "hibuild_kits",
   "top_coat_option",
+  "pu_top_coat_option",
   "screed_option",
   "applicator_rate",
   "section_budget",
@@ -110,6 +112,13 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "fieldname": "coving_running_feet",
+   "fieldtype": "Float",
+   "label": "Coving Running Feet",
+   "precision": "2"
+  },
+  {
    "fieldname": "coving_kits",
    "fieldtype": "Float",
    "label": "Coving Kits",
@@ -127,8 +136,16 @@
    "default": "1mm",
    "fieldname": "top_coat_option",
    "fieldtype": "Select",
-   "label": "Top Coat Option",
-   "options": "0\n500 micron\n1mm\n2mm",
+   "label": "Epoxy Top Coat Option",
+   "options": "0\n500 micron\n1mm\n2mm\n3mm\n4mm",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "pu_top_coat_option",
+   "fieldtype": "Select",
+   "label": "PU Top Coat Option",
+   "options": "0\n1mm\n2mm\n3mm\n4mm",
    "read_only": 1
   },
   {
@@ -136,7 +153,7 @@
    "fieldname": "screed_option",
    "fieldtype": "Select",
    "label": "Screed Option",
-   "options": "0\n500 micron\n1mm\n2mm",
+   "options": "0\n500 micron\n1mm\n2mm\n3mm\n4mm\n5mm\n6mm\n7mm",
    "read_only": 1
   },
   {

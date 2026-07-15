@@ -4,6 +4,8 @@ from mpd_customizations.xfloor_costing.services.pl_engine import (
 	build_comparison,
 	calc_project as calc_project_service,
 	get_kit_rates_doc,
+	strip_gm_from_kit_rates,
+	strip_gm_from_result,
 )
 
 
@@ -12,6 +14,12 @@ ALLOWED_ROLES = frozenset({"System Manager", "XFloor Costing Manager"})
 
 def _user_roles():
 	return set(frappe.get_roles())
+
+
+def _is_system_manager():
+	if frappe.session.user == "Administrator":
+		return True
+	return "System Manager" in _user_roles()
 
 
 def _ensure_access():
@@ -23,11 +31,61 @@ def _ensure_access():
 
 
 def _ensure_rates_write():
-	if frappe.session.user == "Administrator":
-		return
-	if "System Manager" in _user_roles():
+	if _is_system_manager():
 		return
 	frappe.throw("Only System Managers can edit kit rates.", frappe.PermissionError)
+
+
+def _ensure_coverage_write():
+	if _is_system_manager():
+		return
+	frappe.throw("Only System Managers can edit kit coverage.", frappe.PermissionError)
+
+
+def _maybe_strip_result(result):
+	if _is_system_manager():
+		return result
+	return strip_gm_from_result(result)
+
+
+def _attach_live_profiles(project_dict):
+	"""Attach live cost_profile (all roles) and margin_summary (SM only)."""
+	calc = calc_project_service(project_dict)
+	project_dict["cost_profile"] = calc.get("cost_profile")
+
+	if not _is_system_manager():
+		project_dict.pop("margin_summary", None)
+		return project_dict
+
+	project_dict["margin_summary"] = calc.get("margin_summary")
+	# Enrich budget / part rows with live GM for Margin tab without changing stored JSON.
+	by_name = {r.get("component"): r for r in (calc.get("budget_rows") or [])}
+	enriched = []
+	for row in project_dict.get("budget_rows") or []:
+		item = dict(row)
+		src = by_name.get(item.get("component")) or {}
+		item["gm_per_kit"] = src.get("gm_per_kit", 0)
+		item["gm_amount"] = src.get("gm_amount", 0)
+		enriched.append(item)
+	project_dict["budget_rows"] = enriched
+
+	calc_parts = calc.get("part_budgets") or []
+	out_parts = []
+	for idx, part in enumerate(project_dict.get("part_budgets") or []):
+		p = dict(part)
+		src_part = calc_parts[idx] if idx < len(calc_parts) else {}
+		src_by = {r.get("component"): r for r in (src_part.get("budget_rows") or [])}
+		p_rows = []
+		for row in p.get("budget_rows") or []:
+			item = dict(row)
+			src = src_by.get(item.get("component")) or {}
+			item["gm_per_kit"] = src.get("gm_per_kit", 0)
+			item["gm_amount"] = src.get("gm_amount", 0)
+			p_rows.append(item)
+		p["budget_rows"] = p_rows
+		out_parts.append(p)
+	project_dict["part_budgets"] = out_parts
+	return project_dict
 
 
 @frappe.whitelist()
@@ -58,13 +116,11 @@ def get_dashboard():
 		"totals": totals,
 		"kit_rates": get_kit_rates(),
 		"kit_coverage": get_kit_coverage(),
-		"can_edit_rates": _can_edit_rates(),
+		"can_edit_rates": _is_system_manager(),
 		"can_view_rates": True,
+		"can_view_margin": _is_system_manager(),
+		"can_view_cost_profile": True,
 	}
-
-
-def _can_edit_rates():
-	return frappe.session.user == "Administrator" or "System Manager" in _user_roles()
 
 
 def _project_response(project):
@@ -74,6 +130,23 @@ def _project_response(project):
 	result["comparison"] = project.get_comparison_rows()
 	result["dispatch_lines"] = [d.as_dict() for d in project.dispatch_lines]
 	result["parts"] = [p.as_dict() for p in project.parts]
+
+	result = _attach_live_profiles(result)
+
+	if _is_system_manager():
+		return result
+
+	stripped = strip_gm_from_result(
+		{
+			"budget_rows": result["budget_rows"],
+			"part_budgets": result["part_budgets"],
+			"cost_profile": result.get("cost_profile"),
+		}
+	)
+	result["budget_rows"] = stripped["budget_rows"]
+	result["part_budgets"] = stripped["part_budgets"]
+	result["cost_profile"] = stripped.get("cost_profile") or result.get("cost_profile")
+	result.pop("margin_summary", None)
 	return result
 
 
@@ -125,6 +198,8 @@ def get_kit_rates():
 	doc = frappe.get_single("Kit rates")
 	data = doc.as_dict()
 	data["rate_revisions"] = [r.as_dict() for r in doc.rate_revisions]
+	if not _is_system_manager():
+		data = strip_gm_from_kit_rates(data)
 	return data
 
 
@@ -149,7 +224,7 @@ def save_kit_rates(data):
 
 @frappe.whitelist()
 def save_kit_coverage(data):
-	_ensure_access()
+	_ensure_coverage_write()
 	payload = frappe.parse_json(data) if isinstance(data, str) else (data or {})
 	doc = frappe.get_single("Kit Coverage")
 	doc.update(payload)
@@ -165,17 +240,20 @@ def calc_project(data):
 		payload = dict(payload)
 	result = calc_project_service(payload)
 	result["comparison"] = build_comparison(result["budget_rows"], payload.get("dispatch_lines") or [])
-	return result
+	return _maybe_strip_result(result)
 
 
 @frappe.whitelist()
 def export_pdf(name):
 	_ensure_access()
 	doc = frappe.get_doc("Floor Project", name)
+	settings = get_kit_rates_doc()
+	if not _is_system_manager():
+		settings = strip_gm_from_kit_rates(settings)
 	return {
 		"project": doc.as_dict(),
 		"budget": doc.get_budget_rows(),
 		"part_budgets": doc.get_part_budgets(),
 		"comparison": doc.get_comparison_rows(),
-		"settings": get_kit_rates_doc(),
+		"settings": settings,
 	}

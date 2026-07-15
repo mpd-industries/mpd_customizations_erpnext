@@ -12,25 +12,94 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		active: null,
 		activeTab: "input",
 		preview: null,
+		kitRates: null,
 	};
 
-	const COMPONENTS = ["Top coat", "Screed", "Primer", "Coving", "Hi-build"];
-	const COAT_OPTS = ["0", "500 micron", "1mm", "2mm"];
+	const COMPONENTS = ["Epoxy Top coat", "PU Top coat", "Screed", "Primer", "Coving", "Hi-build"];
+	const EPOXY_TOP_COAT_OPTS = ["500 micron", "1mm", "2mm", "3mm", "4mm"];
+	const PU_TOP_COAT_OPTS = ["1mm", "2mm", "3mm", "4mm"];
+	const SCREED_OPTS = ["0", "500 micron", "1mm", "2mm", "3mm", "4mm", "5mm", "6mm", "7mm"];
 	const PRINT_FORMAT = "Floor Project P&L";
+	const MARGIN_PRINT_FORMAT = "Floor Project Margin";
+	const COST_PROFILE_PRINT_FORMAT = "Floor Project Cost Profile";
+	const PRICE_LIST_PRINT_FORMAT = "Kit Rates Price List";
+	const HIDE_MARGIN_KEY = "xfloor_pm_hide_margin";
+	const isSystemManager = () =>
+		frappe.session.user === "Administrator" || frappe.user.has_role("System Manager");
 
+	const isMarginPrivacyOn = () =>
+		typeof localStorage !== "undefined" && localStorage.getItem(HIDE_MARGIN_KEY) === "1";
+
+	const setMarginPrivacy = (on) => {
+		if (typeof localStorage === "undefined") return;
+		if (on) localStorage.setItem(HIDE_MARGIN_KEY, "1");
+		else localStorage.removeItem(HIDE_MARGIN_KEY);
+	};
+
+	const canShowMargin = () => isSystemManager() && !isMarginPrivacyOn();
+
+	const fmtPct = (v) => `${(Math.round((v || 0) * 10) / 10).toFixed(1)}%`;
+
+	const leaveMarginTabIfHidden = () => {
+		if (state.activeTab !== "margin" || canShowMargin()) return;
+		state.activeTab = "budget";
+		$root.find(".xfloor-tab").removeClass("active");
+		$root.find('.xfloor-tab[data-tab="budget"]').addClass("active");
+	};
+
+	const applyMarginVisibility = () => {
+		const showMargin = canShowMargin();
+		$root.find("#xf-tab-margin").toggle(showMargin);
+		// Hide the control itself while privacy is on so screen-share viewers never see it
+		$root.find("#xf-privacy-hide-margin").toggle(isSystemManager() && !isMarginPrivacyOn());
+		leaveMarginTabIfHidden();
+	};
 	const fmt = (v) => format_currency(v || 0, "INR");
 	const fmtN = (v) => Math.round(v || 0).toLocaleString("en-IN");
 	const fmtD = (v) => (Math.round((v || 0) * 100) / 100).toFixed(2);
+
+	const defaultApplicatorRate = () => {
+		const fromSettings = flt(state.kitRates && state.kitRates.default_applicator_rate);
+		return fromSettings > 0 ? fromSettings : 10;
+	};
+
+	const normalizeCoatExclusivity = (part) => {
+		if (!part) return part;
+		// PU no longer offers 500 micron
+		if (part.pu_top_coat_option === "500 micron") {
+			part.pu_top_coat_option = "1mm";
+		}
+		const epoxy = part.top_coat_option || "0";
+		const pu = part.pu_top_coat_option || "0";
+		if (epoxy !== "0" && pu !== "0") {
+			// Prefer epoxy when both were set (legacy); clear PU.
+			part.pu_top_coat_option = "0";
+		}
+		return part;
+	};
+
+	const covingCoverage = () => {
+		const fromSettings = flt(state.kitRates && state.kitRates.coving_coverage);
+		return fromSettings > 0 ? fromSettings : 150;
+	};
+
+	const covingKitsFromFeet = (feet) => {
+		const cov = covingCoverage();
+		const f = flt(feet);
+		if (f <= 0 || cov <= 0) return 0;
+		return Math.ceil(f / cov);
+	};
 
 	const defaultPart = (name) => ({
 		part_name: name || "Main",
 		sqft: 0,
 		rate_per_sqft: 0,
 		top_coat_option: "1mm",
+		pu_top_coat_option: "0",
 		screed_option: "1mm",
 		coving_kits: 0,
 		hibuild_kits: 0,
-		applicator_rate: 0,
+		applicator_rate: defaultApplicatorRate(),
 	});
 
 	const ensureParts = (p) => {
@@ -39,19 +108,18 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 			if (p.sqft) p.parts[0].sqft = p.sqft;
 			if (p.rate_per_sqft) p.parts[0].rate_per_sqft = p.rate_per_sqft;
 			if (p.top_coat_option) p.parts[0].top_coat_option = p.top_coat_option;
+			if (p.pu_top_coat_option) p.parts[0].pu_top_coat_option = p.pu_top_coat_option;
 			if (p.screed_option) p.parts[0].screed_option = p.screed_option;
 			if (p.coving_kits) p.parts[0].coving_kits = p.coving_kits;
 			if (p.hibuild_kits) p.parts[0].hibuild_kits = p.hibuild_kits;
 			if (p.applicator_rate) p.parts[0].applicator_rate = p.applicator_rate;
 		}
+		(p.parts || []).forEach(normalizeCoatExclusivity);
 		return p.parts;
 	};
 
 	const totalSqft = (p) =>
 		(ensureParts(p) || []).reduce((a, part) => a + flt(part.sqft), 0);
-
-	const totalCoving = (p) =>
-		(ensureParts(p) || []).reduce((a, part) => a + flt(part.coving_kits), 0);
 
 	const totalHibuild = (p) =>
 		(ensureParts(p) || []).reduce((a, part) => a + flt(part.hibuild_kits), 0);
@@ -72,19 +140,25 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		if ($c.find(".xfloor-part-card").length) {
 			syncPartInputsFromDom();
 		}
+		const feet = flt($c.find("#xf_coving_feet").val());
+		if ($c.find("#xf_coving_feet").length) {
+			p.coving_running_feet = feet;
+		}
 		const parts = ensureParts(p).map((part) => ({
 			part_name: part.part_name || "Main",
 			sqft: flt(part.sqft),
 			rate_per_sqft: flt(part.rate_per_sqft),
 			top_coat_option: part.top_coat_option || "1mm",
+			pu_top_coat_option: part.pu_top_coat_option || "0",
 			screed_option: part.screed_option || "1mm",
-			coving_kits: flt(part.coving_kits),
+			coving_kits: 0,
 			hibuild_kits: flt(part.hibuild_kits),
 			applicator_rate: flt(part.applicator_rate),
 		}));
 		return {
 			name: p.name,
 			party_name: $c.find("#xf_party_name").val() || p.party_name,
+			coving_running_feet: flt(p.coving_running_feet),
 			parts,
 			dispatch_lines: p.dispatch_lines || [],
 		};
@@ -154,13 +228,13 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		});
 	};
 
-	const coatCards = (field, selected, partIdx) =>
-		COAT_OPTS.map(
-			(o) =>
-				`<div class="xfloor-opt-card${(selected || "1mm") === o ? " selected" : ""}" data-part-idx="${partIdx}" data-field="${field}" data-val="${o}">
+	const coatCards = (field, selected, partIdx, opts, fallback) =>
+		(opts || []).map((o) => {
+			const isSelected = (selected || fallback || "") === o;
+			return `<div class="xfloor-opt-card${isSelected ? " selected" : ""}" data-part-idx="${partIdx}" data-field="${field}" data-val="${o}">
 					<div class="opt-label">${o}</div>
-				</div>`
-		).join("");
+				</div>`;
+		}).join("");
 
 	const renderPartCard = (part, idx, canRemove) => {
 		const name = frappe.utils.escape_html(part.part_name || `Part ${idx + 1}`);
@@ -186,17 +260,19 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 						<input type="number" class="form-control input-sm xf-part-sqft" value="${part.sqft || 0}" min="0"></div>
 					<div><label>${__("Rate per Sqft")}</label>
 						<input type="number" class="form-control input-sm xf-part-rate" value="${part.rate_per_sqft || 0}" min="0" step="0.5"></div>
-					<div><label>${__("Coving Kits")}</label>
-						<input type="number" class="form-control input-sm xf-part-coving" value="${part.coving_kits || 0}" min="0"></div>
 					<div><label>${__("Hi-build Kits")}</label>
 						<input type="number" class="form-control input-sm xf-part-hibuild" value="${part.hibuild_kits || 0}" min="0"></div>
 					<div><label>${__("Applicator Rate (per sqft)")}</label>
 						<input type="number" class="form-control input-sm xf-part-applicator" value="${part.applicator_rate || 0}" min="0" step="0.5"></div>
 				</div>
-				<div class="xfloor-section-title" style="margin-top:12px">${__("Top Coat Option")}</div>
-				<div class="xfloor-opt-row">${coatCards("top_coat_option", part.top_coat_option, idx)}</div>
+				<div class="xfloor-section-title" style="margin-top:12px">${__("Epoxy Top Coat")}
+					<span class="text-muted" style="font-weight:400;font-size:11px;margin-left:6px">${__("or PU — not both")}</span>
+				</div>
+				<div class="xfloor-opt-row">${coatCards("top_coat_option", part.top_coat_option, idx, EPOXY_TOP_COAT_OPTS, "1mm")}</div>
+				<div class="xfloor-section-title">${__("PU Top Coat")}</div>
+				<div class="xfloor-opt-row">${coatCards("pu_top_coat_option", part.pu_top_coat_option, idx, PU_TOP_COAT_OPTS, "")}</div>
 				<div class="xfloor-section-title">${__("Screed Option")}</div>
-				<div class="xfloor-opt-row">${coatCards("screed_option", part.screed_option, idx)}</div>
+				<div class="xfloor-opt-row">${coatCards("screed_option", part.screed_option, idx, SCREED_OPTS, "1mm")}</div>
 			</div>`;
 	};
 
@@ -213,7 +289,10 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 			<div class="xfloor-grid">
 				<div><label>${__("Total Sq Ft")}</label><input class="form-control input-sm" id="xf_total_sqft" value="${fmtN(totalSqft(p))}" disabled></div>
 				<div><label>${__("Avg Rate / Sqft")}</label><input class="form-control input-sm" id="xf_avg_rate" value="${fmtD(weightedRate(p))}" disabled></div>
-				<div><label>${__("Total Coving Kits")}</label><input class="form-control input-sm" id="xf_total_coving" value="${fmtD(totalCoving(p))}" disabled></div>
+				<div><label>${__("Coving Running Feet")}</label>
+					<input type="number" class="form-control input-sm" id="xf_coving_feet" value="${flt(p.coving_running_feet)}" min="0" step="0.5"></div>
+				<div><label>${__("Coving Kits")} <span class="text-muted" style="font-weight:400">(${fmtN(covingCoverage())} ft/kit)</span></label>
+					<input class="form-control input-sm" id="xf_coving_kits" value="${fmtN(covingKitsFromFeet(p.coving_running_feet))}" disabled></div>
 				<div><label>${__("Total Hi-build Kits")}</label><input class="form-control input-sm" id="xf_total_hibuild" value="${fmtD(totalHibuild(p))}" disabled></div>
 			</div>
 			<div class="xfloor-section-title" style="display:flex;justify-content:space-between;align-items:center">
@@ -355,11 +434,188 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		return `<div class="xfloor-empty">${__("Save the project and add dispatches to see comparison.")}</div>`;
 	};
 
+	const renderCostProfileTable = (rows, totals) => {
+		const tableRows = (rows || [])
+			.map(
+				(r) => `<tr>
+					<td><strong>${frappe.utils.escape_html(r.component || "")}</strong></td>
+					<td class="num"><span class="xfloor-kit-badge">${fmtN(r.kits)}</span></td>
+					<td class="num">${fmt(r.rate)}</td>
+					<td class="num">${fmt(r.kit_spend)}</td>
+					<td class="num">${fmtPct(r.spend_share_pct)}</td>
+				</tr>`
+			)
+			.join("");
+		return `
+			<div style="overflow-x:auto">
+				<table class="xfloor-kit-table">
+					<thead><tr>
+						<th>${__("Component")}</th>
+						<th class="num">${__("Kits")}</th>
+						<th class="num">${__("Rate")}</th>
+						<th class="num">${__("Spend")}</th>
+						<th class="num">${__("Share of cost")}</th>
+					</tr></thead>
+					<tbody>${tableRows}
+						<tr class="total-row">
+							<td colspan="3" class="num">${__("Total cost")}</td>
+							<td class="num">${fmt(totals?.total_cost)}</td>
+							<td class="num">100%</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>`;
+	};
+
+	const renderCostProfileTab = (p, costProfile) => {
+		const cp = costProfile || p.cost_profile || {};
+		const pl = cp.profit_loss != null ? cp.profit_loss : p.profit_loss;
+		const plClass = (pl || 0) >= 0 ? "pos" : "neg";
+		const partSections = (cp.part_profiles || [])
+			.map((part) => {
+				return `
+					<div class="xfloor-part-budget">
+						<div class="xfloor-section-title">${frappe.utils.escape_html(part.part_name || __("Part"))}
+							<span class="text-muted" style="font-weight:400;text-transform:none;letter-spacing:0">
+								· ${fmtN(part.sqft)} sqft · ${fmt(part.total_cost)}
+								· ${fmtPct(part.margin_pct)}
+							</span>
+						</div>
+						${renderCostProfileTable(part.rows, part)}
+					</div>`;
+			})
+			.join("");
+
+		return `
+			<div class="xfloor-kpi xfloor-kpi-6">
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Contract")}</div><div class="val">${fmt(cp.contract_value != null ? cp.contract_value : p.contract_value)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Total Cost")}</div><div class="val">${fmt(cp.total_cost != null ? cp.total_cost : p.total_cost)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Project P&L")}</div><div class="val ${plClass}">${fmt(pl)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Margin %")}</div><div class="val ${plClass}">${fmtPct(cp.margin_pct != null ? cp.margin_pct : p.margin_pct)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Kit Spend")}</div><div class="val">${fmt(cp.total_kit_spend)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Kit Spend % of Contract")}</div><div class="val">${fmtPct(cp.kit_spend_pct_of_contract)}</div></div>
+			</div>
+			${partSections}
+			<div class="xfloor-section-title">${__("Project Total")}</div>
+			${renderCostProfileTable(cp.by_component, cp)}
+			<div class="xfloor-pl-banner ${(pl || 0) >= 0 ? "profit" : "loss"}">
+				<div>
+					<div class="pl-title">${__("Cost Profile")}</div>
+					<div class="pl-sub">${__("Spend")} = Σ(${__("kits")} × ${__("rate")}) · P&amp;L = ${__("contract")} − ${__("total cost")}</div>
+				</div>
+				<div class="pl-num">${(pl || 0) >= 0 ? "+" : ""}${fmt(pl)}</div>
+			</div>`;
+	};
+
+	const renderMarginTable = (rows, totals) => {
+		const tableRows = (rows || [])
+			.map(
+				(r) => `<tr>
+					<td><strong>${frappe.utils.escape_html(r.component || "")}</strong></td>
+					<td class="num"><span class="xfloor-kit-badge">${fmtN(r.kits)}</span></td>
+					<td class="num">${fmt(r.rate)}</td>
+					<td class="num">${fmt(r.kit_spend)}</td>
+					<td class="num">${fmt(r.gm_per_kit)}</td>
+					<td class="num">${fmt(r.gm_amount)}</td>
+					<td class="num">${fmtPct(r.gm_pct_of_spend)}</td>
+					<td class="num">${fmtPct(r.gm_share_pct)}</td>
+				</tr>`
+			)
+			.join("");
+		return `
+			<div style="overflow-x:auto">
+				<table class="xfloor-kit-table">
+					<thead><tr>
+						<th>${__("Component")}</th>
+						<th class="num">${__("Kits")}</th>
+						<th class="num">${__("Rate ₹/kit")}</th>
+						<th class="num">${__("Kit spend")}</th>
+						<th class="num">${__("GM ₹/kit")}</th>
+						<th class="num">${__("GM ₹")}</th>
+						<th class="num">${__("GM % spend")}</th>
+						<th class="num">${__("Share of GM")}</th>
+					</tr></thead>
+					<tbody>${tableRows}
+						<tr class="total-row">
+							<td colspan="3" class="num">${__("Total")}</td>
+							<td class="num">${fmt(totals?.total_kit_spend)}</td>
+							<td></td>
+							<td class="num">${fmt(totals?.total_kit_gm)}</td>
+							<td class="num">${fmtPct(totals?.gm_pct_of_kit_spend)}</td>
+							<td class="num">100%</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>`;
+	};
+
+	const renderMarginTab = (p, marginSummary) => {
+		const ms = marginSummary || p.margin_summary || {};
+		const totalGm = ms.total_kit_gm || 0;
+		const pl = ms.profit_loss != null ? ms.profit_loss : p.profit_loss;
+		const plClass = (pl || 0) >= 0 ? "pos" : "neg";
+		const adjusted =
+			ms.adjusted_gross_margin != null
+				? ms.adjusted_gross_margin
+				: (pl || 0) + totalGm;
+		const adjClass = (adjusted || 0) >= 0 ? "pos" : "neg";
+		const partSections = (ms.part_margins || [])
+			.map((part) => {
+				const partPl = part.profit_loss || 0;
+				return `
+					<div class="xfloor-part-budget">
+						<div class="xfloor-section-title">${frappe.utils.escape_html(part.part_name || __("Part"))}
+							<span class="text-muted" style="font-weight:400;text-transform:none;letter-spacing:0">
+								· ${fmtN(part.sqft)} sqft
+								· ${__("P&L")} ${fmt(partPl)}
+								· ${__("Kit GM")} ${fmt(part.total_kit_gm)}
+								· ${__("Adj. GM")} ${fmt(part.adjusted_gross_margin)}
+							</span>
+						</div>
+						${renderMarginTable(part.rows, part)}
+					</div>`;
+			})
+			.join("");
+
+		return `
+			<div class="xfloor-section-title">${__("Same view as Cost Profile")}</div>
+			<div class="xfloor-kpi xfloor-kpi-6">
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Contract")}</div><div class="val">${fmt(ms.contract_value != null ? ms.contract_value : p.contract_value)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Kit spend")}</div><div class="val">${fmt(ms.total_kit_spend)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Applicator cost")}</div><div class="val">${fmt(ms.applicator_cost)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Total Cost")}</div><div class="val">${fmt(ms.total_cost != null ? ms.total_cost : p.total_cost)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Project P&L")}</div><div class="val ${plClass}">${fmt(pl)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Margin %")}</div><div class="val ${plClass}">${fmtPct(ms.margin_pct != null ? ms.margin_pct : p.margin_pct)}</div></div>
+			</div>
+			<div class="xfloor-section-title">${__("Add kit gross margin")}</div>
+			<div class="xfloor-kpi">
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Kit GM earned")}</div><div class="val pos">${fmt(totalGm)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("GM % of kit spend")}</div><div class="val pos">${fmtPct(ms.gm_pct_of_kit_spend)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("GM % of contract")}</div><div class="val pos">${fmtPct(ms.gm_pct_of_contract)}</div></div>
+				<div class="xfloor-kpi-card"><div class="lbl">${__("Adjusted gross margin")}</div><div class="val ${adjClass}">${fmt(adjusted)}</div></div>
+			</div>
+			${partSections}
+			<div class="xfloor-section-title">${__("Component profile")}</div>
+			${renderMarginTable(ms.by_component, ms)}
+			<div class="xfloor-pl-banner ${(adjusted || 0) >= 0 ? "profit" : "loss"}">
+				<div>
+					<div class="pl-title">${__("Adjusted gross margin")}</div>
+					<div class="pl-sub">${__("Project P&L")} ${fmt(pl)} + ${__("Kit GM")} ${fmt(totalGm)}</div>
+				</div>
+				<div class="pl-num">${(adjusted || 0) >= 0 ? "+" : ""}${fmt(adjusted)}</div>
+			</div>`;
+	};
+
 	const renderActionBar = (p) => {
+		const marginBtn = canShowMargin()
+			? `<button class="btn btn-default btn-sm" id="xf-print-margin">${__("Export Margin PDF")}</button>`
+			: "";
 		$root.find("#xfloor-action-bar").html(`
 			<button class="btn btn-danger btn-sm" id="xf-delete">${__("Delete")}</button>
 			<button class="btn btn-default btn-sm" id="xf-save">${__("Save")}</button>
 			<button class="btn btn-default btn-sm" id="xf-print">${__("Export PDF")}</button>
+			<button class="btn btn-default btn-sm" id="xf-print-cost-profile">${__("Export Cost Profile PDF")}</button>
+			${marginBtn}
 		`);
 
 		$root.find("#xf-delete").on("click", async () => {
@@ -373,6 +629,12 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		$root.find("#xf-print").on("click", () => {
 			frappe.utils.print("Floor Project", p.name, PRINT_FORMAT);
 		});
+		$root.find("#xf-print-cost-profile").on("click", () => {
+			frappe.utils.print("Floor Project", p.name, COST_PROFILE_PRINT_FORMAT);
+		});
+		$root.find("#xf-print-margin").on("click", () => {
+			frappe.utils.print("Floor Project", p.name, MARGIN_PRINT_FORMAT);
+		});
 	};
 
 	const syncPartInputsFromDom = () => {
@@ -384,13 +646,17 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 			part.part_name = $(this).find(".xf-part-name").val() || part.part_name;
 			part.sqft = flt($(this).find(".xf-part-sqft").val());
 			part.rate_per_sqft = flt($(this).find(".xf-part-rate").val());
-			part.coving_kits = flt($(this).find(".xf-part-coving").val());
+			part.coving_kits = 0;
 			part.hibuild_kits = flt($(this).find(".xf-part-hibuild").val());
 			part.applicator_rate = flt($(this).find(".xf-part-applicator").val());
 		});
+		const feet = flt($root.find("#xf_coving_feet").val());
+		if ($root.find("#xf_coving_feet").length) {
+			state.active.coving_running_feet = feet;
+			$root.find("#xf_coving_kits").val(fmtN(covingKitsFromFeet(feet)));
+		}
 		$root.find("#xf_total_sqft").val(fmtN(totalSqft(state.active)));
 		$root.find("#xf_avg_rate").val(fmtD(weightedRate(state.active)));
-		$root.find("#xf_total_coving").val(fmtD(totalCoving(state.active)));
 		$root.find("#xf_total_hibuild").val(fmtD(totalHibuild(state.active)));
 	};
 
@@ -400,18 +666,33 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		$c.find(".xfloor-opt-card").on("click", function () {
 			const idx = $(this).data("part-idx");
 			const field = $(this).data("field");
-			const val = $(this).data("val");
+			const val = String($(this).data("val"));
 			const parts = ensureParts(state.active);
-			if (parts[idx]) {
-				parts[idx][field] = val;
+			const part = parts[idx];
+			if (!part) return;
+
+			part[field] = val;
+			if (field === "top_coat_option" && val !== "0") {
+				part.pu_top_coat_option = "0";
+			} else if (field === "pu_top_coat_option" && val !== "0") {
+				part.top_coat_option = "0";
 			}
-			$(this).siblings().removeClass("selected");
+
+			const $card = $(this).closest(".xfloor-part-card");
+			$card.find(`.xfloor-opt-card[data-field="${field}"]`).removeClass("selected");
 			$(this).addClass("selected");
+
+			if (field === "top_coat_option" && val !== "0") {
+				$card.find('.xfloor-opt-card[data-field="pu_top_coat_option"]').removeClass("selected");
+			} else if (field === "pu_top_coat_option" && val !== "0") {
+				$card.find('.xfloor-opt-card[data-field="top_coat_option"]').removeClass("selected");
+			}
+
 			previewCalc();
 		});
 
 		$c.find(
-			".xf-part-name, .xf-part-sqft, .xf-part-rate, .xf-part-coving, .xf-part-hibuild, .xf-part-applicator, #xf_party_name"
+			".xf-part-name, .xf-part-sqft, .xf-part-rate, .xf-part-hibuild, .xf-part-applicator, #xf_party_name, #xf_coving_feet"
 		).on("change input", () => {
 			syncPartInputsFromDom();
 			previewCalc();
@@ -482,6 +763,13 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		const p = state.active;
 		if (!p) return;
 		const $content = $root.find("#xfloor-tab-content");
+
+		if (state.activeTab === "margin" && !canShowMargin()) {
+			state.activeTab = "budget";
+			$root.find(".xfloor-tab").removeClass("active");
+			$root.find('.xfloor-tab[data-tab="budget"]').addClass("active");
+		}
+
 		const tab = state.activeTab;
 
 		if (tab === "input") {
@@ -500,6 +788,16 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 			bindDispatchEvents();
 		} else if (tab === "compare") {
 			$content.html(renderCompareTab(p));
+		} else if (tab === "cost_profile") {
+			const costProfile = state.preview ? state.preview.cost_profile : p.cost_profile;
+			const summary = state.preview ? state.preview.summary : null;
+			const display = summary ? { ...p, ...summary } : p;
+			$content.html(renderCostProfileTab(display, costProfile));
+		} else if (tab === "margin") {
+			const marginSummary = state.preview ? state.preview.margin_summary : p.margin_summary;
+			const summary = state.preview ? state.preview.summary : null;
+			const display = summary ? { ...p, ...summary } : p;
+			$content.html(renderMarginTab(display, marginSummary));
 		}
 	};
 
@@ -513,6 +811,11 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 			badge.text(project.project_number).show();
 		} else {
 			badge.hide();
+		}
+
+		applyMarginVisibility();
+		if (state.activeTab === "margin" && !canShowMargin()) {
+			state.activeTab = "budget";
 		}
 
 		$root.find(".xfloor-tab").removeClass("active");
@@ -535,7 +838,11 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 			data: payload,
 		});
 		state.preview = r.message;
-		if (state.activeTab === "budget") {
+		if (
+			state.activeTab === "budget" ||
+			state.activeTab === "margin" ||
+			state.activeTab === "cost_profile"
+		) {
 			renderTabContent();
 		}
 	}, 400);
@@ -562,17 +869,17 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 	};
 
 	const updateSettingsButtons = (data) => {
-		$root.find("#xfloor-open-kit-rates").toggle(!!data?.can_view_rates);
-		$root.find("#xfloor-open-kit-coverage").toggle(
-			frappe.user.has_role("System Manager") ||
-				frappe.user.has_role("XFloor Costing Manager") ||
-				frappe.session.user === "Administrator"
-		);
+		const canView = !!data?.can_view_rates;
+		$root.find("#xfloor-open-kit-rates").toggle(canView);
+		$root.find("#xfloor-open-kit-coverage").toggle(canView);
+		$root.find("#xfloor-price-list-pdf").toggle(canView);
+		applyMarginVisibility();
 	};
 
 	const loadDashboard = async () => {
 		const r = await frappe.call("mpd_customizations.xfloor_costing.api.pl.get_dashboard");
 		state.projects = r.message.projects || [];
+		state.kitRates = r.message.kit_rates || null;
 		updateSettingsButtons(r.message);
 		renderSidebar();
 		renderDashboard(r.message);
@@ -601,6 +908,10 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		frappe.set_route("Form", "Kit rates", "Kit rates");
 	});
 
+	$root.find("#xfloor-price-list-pdf").on("click", () => {
+		frappe.utils.print("Kit rates", "Kit rates", PRICE_LIST_PRINT_FORMAT);
+	});
+
 	$root.find("#xfloor-open-kit-coverage").on("click", () => {
 		frappe.set_route("Form", "Kit Coverage", "Kit Coverage");
 	});
@@ -614,25 +925,52 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		$(this).addClass("active");
 		if (state.activeTab === "actual" && state.active && !(state.active.dispatch_lines || []).length) {
 			state.active.dispatch_lines = [
-				{ dispatch_date: "", component: "Top coat", kits: 0, rate_per_kit: 0 },
+				{ dispatch_date: "", component: "Epoxy Top coat", kits: 0, rate_per_kit: 0 },
 			];
 		}
 		renderTabContent();
-		if (state.activeTab === "budget") {
+		if (
+			state.activeTab === "budget" ||
+			state.activeTab === "margin" ||
+			state.activeTab === "cost_profile"
+		) {
 			previewCalc();
 		}
 	});
 
+	$root.find("#xf-privacy-hide-margin").on("click", () => {
+		if (!isSystemManager()) return;
+		setMarginPrivacy(true);
+		applyMarginVisibility();
+		if (state.active) {
+			renderActionBar(state.active);
+			renderTabContent();
+		}
+		frappe.show_alert({
+			message: __("Margin hidden. Double-click brand to restore."),
+			indicator: "blue",
+		});
+	});
+
+	// Secret restore: only works for System Manager after privacy mode
+	$root.find(".xfloor-brand").on("dblclick", () => {
+		if (!isSystemManager() || !isMarginPrivacyOn()) return;
+		setMarginPrivacy(false);
+		applyMarginVisibility();
+		if (state.active) renderActionBar(state.active);
+		frappe.show_alert({ message: __("Margin tab restored."), indicator: "green" });
+	});
 	$root.on("click", "#xf-add-dispatch", () => {
 		if (!state.active.dispatch_lines) state.active.dispatch_lines = [];
 		state.active.dispatch_lines.push({
 			dispatch_date: "",
-			component: "Top coat",
+			component: "Epoxy Top coat",
 			kits: 0,
 			rate_per_kit: 0,
 		});
 		renderTabContent();
 	});
 
+	applyMarginVisibility();
 	loadDashboard();
 };
