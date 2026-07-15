@@ -68,6 +68,10 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 		const p = state.active;
 		if (!p) return null;
 		const $c = $root.find("#xfloor-tab-content");
+		// Always read latest part inputs from DOM when the input tab is rendered.
+		if ($c.find(".xfloor-part-card").length) {
+			syncPartInputsFromDom();
+		}
 		const parts = ensureParts(p).map((part) => ({
 			part_name: part.part_name || "Main",
 			sqft: flt(part.sqft),
@@ -537,9 +541,6 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 	}, 400);
 
 	const saveProject = async () => {
-		if (state.activeTab === "input") {
-			syncPartInputsFromDom();
-		}
 		const payload = collectPayload();
 		if (!payload) return;
 		const r = await frappe.call("mpd_customizations.xfloor_costing.api.pl.save_project", {
