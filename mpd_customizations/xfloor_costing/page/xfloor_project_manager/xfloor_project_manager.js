@@ -16,8 +16,8 @@ frappe.pages["xfloor-project-manager"].on_page_load = function (wrapper) {
 	};
 
 	const COMPONENTS = ["Epoxy Top coat", "PU Top coat", "Screed", "Primer", "Coving", "Hi-build"];
-	const EPOXY_TOP_COAT_OPTS = ["500 micron", "1mm", "2mm", "3mm", "4mm"];
-	const PU_TOP_COAT_OPTS = ["1mm", "2mm", "3mm", "4mm"];
+	const EPOXY_TOP_COAT_OPTS = ["0", "500 micron", "1mm", "2mm", "3mm", "4mm"];
+	const PU_TOP_COAT_OPTS = ["0", "1mm", "2mm", "3mm", "4mm"];
 	const SCREED_OPTS = ["0", "500 micron", "1mm", "2mm", "3mm", "4mm", "5mm", "6mm", "7mm"];
 	const PRINT_FORMAT = "Floor Project P&L";
 	const MARGIN_PRINT_FORMAT = "Floor Project Margin";
