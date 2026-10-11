@@ -1,0 +1,195 @@
+{
+  "title": "Sofas List",
+  "supplier": "SADIQ Sofas",
+  "location": "Raipur",
+  "currency": "INR",
+  "note": "Panel Slip and Trends sofas: not ready yet (no photos).",
+  "series": [
+    {
+      "series": "Robin",
+      "items": [
+        {
+          "name": "Corner 3+3 Longer",
+          "price": 57000,
+          "image": "images/sofa_01.jpeg",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "series": "B-Model / Greek",
+      "items": [
+        {
+          "name": "3+3 Lounger",
+          "price": 52500,
+          "image": "images/sofa_02.jpeg",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "series": "Diesel",
+      "items": [
+        {
+          "name": "Diesel Corner (3+3+CT+Puffy)",
+          "price": 64500,
+          "image": "images/sofa_03.jpeg",
+          "ready": true
+        },
+        {
+          "name": "Diesel 3+2+2",
+          "price": 65100,
+          "image": "images/sofa_04.jpeg",
+          "ready": true
+        },
+        {
+          "name": "Diesel 3+1+1",
+          "price": 54600,
+          "image": "images/sofa_05.jpeg",
+          "ready": true
+        },
+        {
+          "name": "Diesel CR 3+3 Lounger",
+          "price": 43500,
+          "image": "images/sofa_06.jpeg",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "series": "Safari",
+      "items": [
+        {
+          "name": "Safari 3+2+2",
+          "price": 63000,
+          "image": "images/sofa_07.jpeg",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "series": "Fuel",
+      "items": [
+        {
+          "name": "Fuel Corner 3+3 Lounger",
+          "price": 48000,
+          "image": "images/sofa_08.jpeg",
+          "ready": true
+        },
+        {
+          "name": "Fuel 3+1+1",
+          "price": 56100,
+          "image": "images/sofa_09.jpeg",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "series": "Apollo",
+      "items": [
+        {
+          "name": "Apollo Corner (3+3 Lounger)",
+          "price": 59400,
+          "image": "images/sofa_10.jpeg",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "series": "Peru",
+      "items": [
+        {
+          "name": "Peru 3+2+2",
+          "price": 79500,
+          "image": "images/sofa_11.jpeg",
+          "ready": true
+        },
+        {
+          "name": "Peru CR 3+3",
+          "price": 64500,
+          "image": "images/sofa_12.jpeg",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "series": "Future",
+      "items": [
+        {
+          "name": "Corner 2+2+1+CT+Puffy",
+          "price": 90000,
+          "image": "images/sofa_13.jpeg",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "series": "RJ Series",
+      "items": [
+        {
+          "name": "RJ-1 (2+2+1+CT+Puffy)",
+          "price": 86700,
+          "image": "images/sofa_14.jpeg",
+          "ready": true
+        },
+        {
+          "name": "RJ-4 (3+2+2)",
+          "price": 81300,
+          "image": "images/sofa_15.jpeg",
+          "ready": true
+        },
+        {
+          "name": "RJ-4 Corner 3+3",
+          "price": 58500,
+          "image": "images/sofa_16.jpeg",
+          "ready": true
+        },
+        {
+          "name": "Square Couch (Single + 2 Puffy)",
+          "price": 36000,
+          "image": "images/sofa_17.jpeg",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "series": "Oscar",
+      "items": [
+        {
+          "name": "Oscar Corner 3+3",
+          "price": 55800,
+          "image": "images/sofa_18.jpeg",
+          "ready": true
+        },
+        {
+          "name": "Oscar (3+2+2)",
+          "price": 69000,
+          "image": "images/sofa_19.jpeg",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "series": "Panel Slip",
+      "items": [
+        {
+          "name": "Panel Slip 3+2+2",
+          "price": 72000,
+          "image": null,
+          "ready": false
+        }
+      ]
+    },
+    {
+      "series": "Trends",
+      "items": [
+        {
+          "name": "3+2+2",
+          "price": 105000,
+          "image": null,
+          "ready": false
+        }
+      ]
+    }
+  ]
+}
