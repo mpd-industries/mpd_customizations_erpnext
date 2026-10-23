@@ -186,7 +186,7 @@ fixtures = [
 scheduler_events = {
     "cron": {
         "*/15 * * * *": [
-            "mpd_customizations.action_extraction.pipeline.reset_stuck_jobs"
+            "mpd_customizations.meeting_notes.action_extraction.pipeline.reset_stuck_jobs"
         ]
     },
     "daily": [
