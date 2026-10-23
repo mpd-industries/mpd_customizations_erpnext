@@ -6,4 +6,4 @@ from frappe.tests.utils import FrappeTestCase
 
 
 class TestApr_location_log(FrappeTestCase):
-    pass
+	pass

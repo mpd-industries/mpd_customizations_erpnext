@@ -17,21 +17,26 @@ class TestCustomerProduct(FrappeTestCase):
 	def _ensure_customer(self):
 		name = "_Test CP Customer"
 		if not frappe.db.exists("Customer", name):
-			frappe.get_doc({
-				"doctype": "Customer",
-				"customer_name": name,
-				"customer_type": "Company",
-				"customer_group": frappe.db.get_value("Customer Group", {}, "name") or "All Customer Groups",
-				"territory": frappe.db.get_value("Territory", {}, "name") or "All Territories",
-			}).insert(ignore_permissions=True)
+			frappe.get_doc(
+				{
+					"doctype": "Customer",
+					"customer_name": name,
+					"customer_type": "Company",
+					"customer_group": frappe.db.get_value("Customer Group", {}, "name")
+					or "All Customer Groups",
+					"territory": frappe.db.get_value("Territory", {}, "name") or "All Territories",
+				}
+			).insert(ignore_permissions=True)
 		return name
 
 	def _make_customer_product(self, **kwargs):
-		doc = frappe.get_doc({
-			"doctype": "Customer Product",
-			"customer": self.customer,
-			"customer_product_code": kwargs.get("customer_product_code", frappe.generate_hash(length=8)),
-		})
+		doc = frappe.get_doc(
+			{
+				"doctype": "Customer Product",
+				"customer": self.customer,
+				"customer_product_code": kwargs.get("customer_product_code", frappe.generate_hash(length=8)),
+			}
+		)
 		for key, value in kwargs.items():
 			if key != "customer_product_code":
 				setattr(doc, key, value)
@@ -101,12 +106,14 @@ class TestCustomerProduct(FrappeTestCase):
 		if not processor:
 			self.skipTest("No Processor master data available")
 
-		pr = frappe.get_doc({
-			"doctype": "Pricing Request",
-			"customer_product": cp.name,
-			"processor": processor,
-			"solids_content_pct": 50,
-		})
+		pr = frappe.get_doc(
+			{
+				"doctype": "Pricing Request",
+				"customer_product": cp.name,
+				"processor": processor,
+				"solids_content_pct": 50,
+			}
+		)
 
 		with self.assertRaises(frappe.ValidationError):
 			pr.insert(ignore_permissions=True)

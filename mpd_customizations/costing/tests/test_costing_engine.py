@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, call, patch
 
 from mpd_customizations.costing.services.config import CostingConfig
 from mpd_customizations.costing.services.costing_engine import CostingEngine
@@ -79,9 +79,12 @@ class TestCostingEngine(unittest.TestCase):
 		mock_frappe._.side_effect = lambda x, *a: x
 
 		mock_fetcher.fetch.return_value = MagicMock(
-			has_missing_rates=False, missing_items=[],
-			has_expired_rates=False, expired_items=[],
-			overrides_detected=False, overrides_changed=[],
+			has_missing_rates=False,
+			missing_items=[],
+			has_expired_rates=False,
+			expired_items=[],
+			overrides_detected=False,
+			overrides_changed=[],
 		)
 
 		mock_frappe.get_all.side_effect = [
@@ -121,6 +124,7 @@ class TestCostingEngine(unittest.TestCase):
 
 		# Expected: 0.70 × 18.0 = 12.6
 		from mpd_customizations.costing.services.cost_calculator import compute_processing_cost
+
 		result = compute_processing_cost(70.0, 18.0)
 		self.assertAlmostEqual(result, 12.6)
 
@@ -160,20 +164,25 @@ class TestCostingEngine(unittest.TestCase):
 		mock_frappe.as_json.return_value = "{}"
 
 		mock_fetcher.fetch.return_value = MagicMock(
-			has_missing_rates=False, missing_items=[],
-			has_expired_rates=False, expired_items=[],
-			overrides_detected=False, overrides_changed=[],
+			has_missing_rates=False,
+			missing_items=[],
+			has_expired_rates=False,
+			expired_items=[],
+			overrides_detected=False,
+			overrides_changed=[],
 		)
 
 		mock_frappe.get_all.side_effect = [
-			[{
-				"name": "BOM-001",
-				"item": "PAINT-001",
-				"quantity": 1.0,
-				"custom_formulation_id": "F1",
-				"custom_formulation_description": "Base",
-				"process_loss_percentage": 1.0,
-			}],
+			[
+				{
+					"name": "BOM-001",
+					"item": "PAINT-001",
+					"quantity": 1.0,
+					"custom_formulation_id": "F1",
+					"custom_formulation_description": "Base",
+					"process_loss_percentage": 1.0,
+				}
+			],
 			[{"parent": "BOM-001", "item_code": "RM-1", "item_name": "RM 1", "qty": 1.0, "uom": "Kg"}],
 			[],
 			[],
@@ -212,20 +221,25 @@ class TestCostingEngine(unittest.TestCase):
 		mock_frappe.as_json.return_value = "{}"
 
 		mock_fetcher.fetch.return_value = MagicMock(
-			has_missing_rates=False, missing_items=[],
-			has_expired_rates=False, expired_items=[],
-			overrides_detected=False, overrides_changed=[],
+			has_missing_rates=False,
+			missing_items=[],
+			has_expired_rates=False,
+			expired_items=[],
+			overrides_detected=False,
+			overrides_changed=[],
 		)
 
 		mock_frappe.get_all.side_effect = [
-			[{
-				"name": "BOM-001",
-				"item": "PAINT-001",
-				"quantity": 1.0,
-				"custom_formulation_id": "F1",
-				"custom_formulation_description": "Base",
-				"process_loss_percentage": 0.0,
-			}],
+			[
+				{
+					"name": "BOM-001",
+					"item": "PAINT-001",
+					"quantity": 1.0,
+					"custom_formulation_id": "F1",
+					"custom_formulation_description": "Base",
+					"process_loss_percentage": 0.0,
+				}
+			],
 			[{"parent": "BOM-001", "item_code": "RM-1", "item_name": "RM 1", "qty": 1.0, "uom": "Kg"}],
 			[],
 			[],

@@ -10,6 +10,7 @@ from mpd_customizations.xfloor_costing.services.pl_constants import (
 	GM_FIELDNAMES,
 )
 
+
 def _f(value):
 	try:
 		return float(value or 0)
@@ -120,4 +121,3 @@ def _normalize_project_data(doc_or_dict):
 
 def _cost_per_sqft(sqft, cost):
 	return (cost / sqft) if sqft else 0
-

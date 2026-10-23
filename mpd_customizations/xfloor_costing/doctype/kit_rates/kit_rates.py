@@ -60,8 +60,7 @@ class Kitrates(Document):
 			return
 
 		changed = any(
-			float(prev.get(fieldname) or 0) != float(self.get(fieldname) or 0)
-			for fieldname in TRACKED_FIELDS
+			float(prev.get(fieldname) or 0) != float(self.get(fieldname) or 0) for fieldname in TRACKED_FIELDS
 		)
 		if not changed:
 			return

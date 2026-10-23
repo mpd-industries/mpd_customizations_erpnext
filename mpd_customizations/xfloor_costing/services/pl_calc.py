@@ -24,6 +24,7 @@ from mpd_customizations.xfloor_costing.services.pl_profiles import (
 	_summary_from_totals,
 )
 
+
 def calc_part(part_dict, settings, *, rate_per_sqft=None, coving_kits=None, hibuild_kits=None):
 	"""Calculate budget for a single area/part. Rates/kits default from the part row.
 
@@ -331,9 +332,7 @@ def calc_actual_totals(dispatch_lines):
 def calc_actual_by_component(dispatch_lines):
 	result = {name: {"kits": 0.0, "cost": 0.0} for name in COMPONENTS}
 	for row in dispatch_lines or []:
-		component = _normalize_component(
-			row.get("component") if isinstance(row, dict) else row.component
-		)
+		component = _normalize_component(row.get("component") if isinstance(row, dict) else row.component)
 		if component not in result:
 			continue
 		row_kits = _f(row.get("kits") if isinstance(row, dict) else row.kits)
@@ -365,4 +364,3 @@ def build_comparison(budget_rows, dispatch_lines):
 			}
 		)
 	return comparison
-

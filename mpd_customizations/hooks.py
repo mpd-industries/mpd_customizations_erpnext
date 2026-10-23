@@ -46,7 +46,23 @@ scheduler_events = {
 
 fixtures = [
 	{"dt": "Custom Field", "filters": [["module", "=", "Costing"]]},
-	{"dt": "Role", "filters": [["name", "in", ["Costing User", "Costing Approver", "Rate Manager", "Costing Sales", "R&D Manager", "Dispatch Manager"]]]},
+	{
+		"dt": "Role",
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"Costing User",
+					"Costing Approver",
+					"Rate Manager",
+					"Costing Sales",
+					"R&D Manager",
+					"Dispatch Manager",
+				],
+			]
+		],
+	},
 	{"dt": "Costing Configuration"},
 	{"dt": "Packaging Material"},
 	{"dt": "Packaging Rate"},
@@ -74,16 +90,12 @@ doctype_js["Floor Project"] = "xfloor_costing/doctype/floor_project/floor_projec
 doctype_js["Kit rates"] = "xfloor_costing/doctype/kit_rates/kit_rates.js"
 doctype_js["Kit Coverage"] = "xfloor_costing/doctype/kit_coverage/kit_coverage.js"
 
-fixtures.append(
-	{"dt": "Print Format", "filters": [["name", "in", ["Floor Project P&L"]]]}
-)
+fixtures.append({"dt": "Print Format", "filters": [["name", "in", ["Floor Project P&L"]]]})
 
 # xfloor_cms
 # ----------
 
-fixtures.append(
-	{"dt": "Role", "filters": [["name", "in", ["Xfloor CMS Manager", "XFloor Costing Manager"]]]}
-)
+fixtures.append({"dt": "Role", "filters": [["name", "in", ["Xfloor CMS Manager", "XFloor Costing Manager"]]]})
 
 # Shared
 # ------
@@ -93,9 +105,7 @@ commands = ["mpd_customizations.commands"]
 
 doctype_js["Project"] = "public/js/project_custom.js"
 
-fixtures.insert(
-	0, {"dt": "Custom Field", "filters": [["dt", "in", ["Task"]]]}
-)
+fixtures.insert(0, {"dt": "Custom Field", "filters": [["dt", "in", ["Task"]]]})
 fixtures.insert(
 	1, {"dt": "Property Setter", "filters": [["doc_type", "=", "Task"], ["field_name", "=", "description"]]}
 )

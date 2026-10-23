@@ -1,6 +1,6 @@
-import click
 import re
 
+import click
 import frappe
 
 from mpd_customizations.mpd_base.item_ai.item_hooks import compute_item_label

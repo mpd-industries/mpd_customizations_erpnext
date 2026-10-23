@@ -3,14 +3,17 @@ import frappe
 
 def build_speaker_id_prompt(attendees):
 	"""System prompt for the speaker-identification step."""
-	attendee_lines = "\n".join(
-		(
-			f"  - {a['full_name']} ({a['designation'] or 'Staff'}): user_id={a['user_id']}"
-			if a["user_id"]
-			else f"  - {a['full_name']} (External — {a['company']}): no system account"
+	attendee_lines = (
+		"\n".join(
+			(
+				f"  - {a['full_name']} ({a['designation'] or 'Staff'}): user_id={a['user_id']}"
+				if a["user_id"]
+				else f"  - {a['full_name']} (External — {a['company']}): no system account"
+			)
+			for a in attendees
 		)
-		for a in attendees
-	) or "  (no attendees listed)"
+		or "  (no attendees listed)"
+	)
 
 	return f"""You are identifying the real people behind anonymous speaker labels in a meeting transcript.
 
@@ -163,15 +166,19 @@ Use create_subtask when a task has 2+ distinct independently-assignable sub-step
 
 # ─── internal helpers ─────────────────────────────────────────────────────────
 
+
 def _format_attendees(attendees):
-	return "\n".join(
-		(
-			f"  - {a['full_name']} ({a['designation'] or 'Staff'}): user_id={a['user_id']}"
-			if a["user_id"]
-			else f"  - {a['full_name']} (External — {a['company']}): no system account"
+	return (
+		"\n".join(
+			(
+				f"  - {a['full_name']} ({a['designation'] or 'Staff'}): user_id={a['user_id']}"
+				if a["user_id"]
+				else f"  - {a['full_name']} (External — {a['company']}): no system account"
+			)
+			for a in attendees
 		)
-		for a in attendees
-	) or "  (no attendees listed)"
+		or "  (no attendees listed)"
+	)
 
 
 def resolve_attendees(meeting_note_doc):
@@ -184,19 +191,23 @@ def resolve_attendees(meeting_note_doc):
 				["employee_name", "designation"],
 				as_dict=True,
 			)
-			attendees.append({
-				"user_id": row.user,
-				"full_name": emp.employee_name if emp else (row.full_name or row.user),
-				"designation": emp.designation if emp else None,
-				"company": None,
-			})
+			attendees.append(
+				{
+					"user_id": row.user,
+					"full_name": emp.employee_name if emp else (row.full_name or row.user),
+					"designation": emp.designation if emp else None,
+					"company": None,
+				}
+			)
 		else:
-			attendees.append({
-				"user_id": None,
-				"full_name": row.full_name,
-				"designation": None,
-				"company": row.company or "External",
-			})
+			attendees.append(
+				{
+					"user_id": None,
+					"full_name": row.full_name,
+					"designation": None,
+					"company": row.company or "External",
+				}
+			)
 	return attendees
 
 

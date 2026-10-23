@@ -43,7 +43,9 @@ class PackagingRateFetcher:
 				freshness = _compute_freshness(rate_record, pricing_date)
 
 				if preserve_overrides:
-					is_overridden = round(line.working_rate_per_unit or 0, 4) != round(line.fetched_rate_per_unit or 0, 4)
+					is_overridden = round(line.working_rate_per_unit or 0, 4) != round(
+						line.fetched_rate_per_unit or 0, 4
+					)
 					if is_overridden:
 						result.overrides_detected = True
 					else:
@@ -84,7 +86,8 @@ def _get_best_packaging_rate(packaging_material: str, pricing_date) -> dict:
 
 	# Current rates (valid today) take priority
 	current = [
-		r for r in all_rates
+		r
+		for r in all_rates
 		if getdate(r["valid_from"]) <= pricing_date
 		and (not r.get("valid_to") or getdate(r["valid_to"]) >= pricing_date)
 	]

@@ -11,6 +11,7 @@ from mpd_customizations.xfloor_costing.services.pl_helpers import (
 	_f,
 )
 
+
 def _summary_from_totals(contract, total, sqft):
 	profit_loss = contract - total
 	margin_pct = (profit_loss / contract * 100) if contract else 0
@@ -206,4 +207,3 @@ def _build_cost_profile(budget_rows, part_budgets, summary=None):
 		"kit_spend_pct_of_contract": _pct(total_kit_spend, contract),
 		"part_profiles": [_enrich_part_cost_profile(part) for part in (part_budgets or [])],
 	}
-

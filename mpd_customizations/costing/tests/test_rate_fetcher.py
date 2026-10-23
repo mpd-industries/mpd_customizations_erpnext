@@ -37,6 +37,7 @@ def _make_rate_line(item, fetched=100.0, working=100.0, credit=30, fetched_credi
 
 def _make_rate_option(item="MAT-001", city="Indore", rate=105.0, freshness="Current", credit=30):
 	from mpd_customizations.costing.services.rate_option import RateOption
+
 	return RateOption(
 		item=item,
 		city=city,
@@ -50,7 +51,6 @@ def _make_rate_option(item="MAT-001", city="Indore", rate=105.0, freshness="Curr
 
 
 class TestRateFetcher(unittest.TestCase):
-
 	def test_preserve_overrides_keeps_working_values(self):
 		from mpd_customizations.costing.services.rate_fetcher import RateFetcher
 
@@ -58,11 +58,16 @@ class TestRateFetcher(unittest.TestCase):
 		existing_rl = _make_rate_line("MAT-001", fetched=100.0, working=120.0, credit=30, fetched_credit=30)
 		doc.rate_lines = [existing_rl]
 
-		with patch(_FETCHER_FRAPPE) as mock_frappe, \
-		     patch("mpd_customizations.costing.services.rate_fetcher.get_default_registry") as mock_reg, \
-		     patch("mpd_customizations.costing.services.rate_fetcher._get_processing_charge", return_value=None), \
-		     patch("mpd_customizations.costing.services.rate_fetcher.now_datetime", return_value=datetime.now()):
-
+		with (
+			patch(_FETCHER_FRAPPE) as mock_frappe,
+			patch("mpd_customizations.costing.services.rate_fetcher.get_default_registry") as mock_reg,
+			patch(
+				"mpd_customizations.costing.services.rate_fetcher._get_processing_charge", return_value=None
+			),
+			patch(
+				"mpd_customizations.costing.services.rate_fetcher.now_datetime", return_value=datetime.now()
+			),
+		):
 			mock_frappe.db.get_value.return_value = "Indore"
 			mock_frappe.get_all.side_effect = [
 				[{"name": "BOM-001", "item": "PAINT-001", "quantity": 1, "custom_formulation_id": "F1"}],
@@ -90,11 +95,16 @@ class TestRateFetcher(unittest.TestCase):
 		existing_rl = _make_rate_line("MAT-001", fetched=100.0, working=120.0)
 		doc.rate_lines = [existing_rl]
 
-		with patch(_FETCHER_FRAPPE) as mock_frappe, \
-		     patch("mpd_customizations.costing.services.rate_fetcher.get_default_registry") as mock_reg, \
-		     patch("mpd_customizations.costing.services.rate_fetcher._get_processing_charge", return_value=None), \
-		     patch("mpd_customizations.costing.services.rate_fetcher.now_datetime", return_value=datetime.now()):
-
+		with (
+			patch(_FETCHER_FRAPPE) as mock_frappe,
+			patch("mpd_customizations.costing.services.rate_fetcher.get_default_registry") as mock_reg,
+			patch(
+				"mpd_customizations.costing.services.rate_fetcher._get_processing_charge", return_value=None
+			),
+			patch(
+				"mpd_customizations.costing.services.rate_fetcher.now_datetime", return_value=datetime.now()
+			),
+		):
 			mock_frappe.db.get_value.return_value = "Indore"
 			mock_frappe.get_all.side_effect = [
 				[{"name": "BOM-001", "item": "PAINT-001", "quantity": 1, "custom_formulation_id": "F1"}],
@@ -118,11 +128,16 @@ class TestRateFetcher(unittest.TestCase):
 		doc = _make_doc()
 		doc.rate_lines = []
 
-		with patch(_FETCHER_FRAPPE) as mock_frappe, \
-		     patch("mpd_customizations.costing.services.rate_fetcher.get_default_registry") as mock_reg, \
-		     patch("mpd_customizations.costing.services.rate_fetcher._get_processing_charge", return_value=None), \
-		     patch("mpd_customizations.costing.services.rate_fetcher.now_datetime", return_value=datetime.now()):
-
+		with (
+			patch(_FETCHER_FRAPPE) as mock_frappe,
+			patch("mpd_customizations.costing.services.rate_fetcher.get_default_registry") as mock_reg,
+			patch(
+				"mpd_customizations.costing.services.rate_fetcher._get_processing_charge", return_value=None
+			),
+			patch(
+				"mpd_customizations.costing.services.rate_fetcher.now_datetime", return_value=datetime.now()
+			),
+		):
 			mock_frappe.db.get_value.return_value = "Indore"
 			mock_frappe.get_all.side_effect = [
 				[{"name": "BOM-001", "item": "PAINT-001", "quantity": 1, "custom_formulation_id": "F1"}],

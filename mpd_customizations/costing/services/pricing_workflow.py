@@ -27,7 +27,11 @@ def select_combination(pricing_calculation_name: str, bom: str):
 		frappe.throw(frappe._(f"BOM {bom} not found in costing data — please re-evaluate."))
 
 	doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
-	new_mode = "Ready to Quote" if selected["status"] in ("Ready to Quote", "Indicative — Rates Expired") else doc.mode
+	new_mode = (
+		"Ready to Quote"
+		if selected["status"] in ("Ready to Quote", "Indicative — Rates Expired")
+		else doc.mode
+	)
 	selling_price = selected.get("selling_price_per_kg") or selected["total_cost_per_kg"]
 
 	frappe.db.set_value(
@@ -88,9 +92,9 @@ def approve_customer_product(name: str):
 	doc = frappe.get_doc("Customer Product", name)
 	if doc.status != "Formulations Added":
 		frappe.throw(
-			_("Customer Product must be in 'Formulations Added' status to approve. Current status: {0}").format(
-				doc.status or "Draft"
-			)
+			_(
+				"Customer Product must be in 'Formulations Added' status to approve. Current status: {0}"
+			).format(doc.status or "Draft")
 		)
 	if not doc.margin_type or not doc.margin_rate:
 		frappe.throw(_("Margin type and rate are required before approval."))

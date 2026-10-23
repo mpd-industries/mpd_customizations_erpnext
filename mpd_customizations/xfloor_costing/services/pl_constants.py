@@ -3,7 +3,6 @@ import math
 import frappe
 from frappe.model.document import Document
 
-
 COMPONENTS = ("Epoxy Top coat", "PU Top coat", "Screed", "Primer", "Coving", "Hi-build")
 
 
@@ -88,4 +87,3 @@ GM_FIELDNAMES = (
 	"hibuild_gm",
 	"coving_gm",
 )
-

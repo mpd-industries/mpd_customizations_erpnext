@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import today, getdate
+from frappe.utils import getdate, today
 
 
 def execute(filters=None):
@@ -14,7 +14,13 @@ def _get_columns():
 		{"fieldname": "item", "label": "Item", "fieldtype": "Link", "options": "Item", "width": 150},
 		{"fieldname": "item_name", "label": "Item Name", "fieldtype": "Data", "width": 180},
 		{"fieldname": "city", "label": "City", "fieldtype": "Link", "options": "City", "width": 100},
-		{"fieldname": "supplier", "label": "Supplier", "fieldtype": "Link", "options": "Supplier", "width": 150},
+		{
+			"fieldname": "supplier",
+			"label": "Supplier",
+			"fieldtype": "Link",
+			"options": "Supplier",
+			"width": 150,
+		},
 		{"fieldname": "rate_type", "label": "Rate Type", "fieldtype": "Data", "width": 130},
 		{"fieldname": "ex_works_rate", "label": "Ex-Works Rate", "fieldtype": "Currency", "width": 110},
 		{"fieldname": "freight_per_unit", "label": "Freight/Unit", "fieldtype": "Currency", "width": 100},
@@ -24,7 +30,13 @@ def _get_columns():
 		{"fieldname": "valid_from", "label": "Valid From", "fieldtype": "Datetime", "width": 140},
 		{"fieldname": "valid_to", "label": "Valid To", "fieldtype": "Datetime", "width": 140},
 		{"fieldname": "status", "label": "Status", "fieldtype": "Data", "width": 90},
-		{"fieldname": "name", "label": "Document", "fieldtype": "Link", "options": "Material Rate", "width": 140},
+		{
+			"fieldname": "name",
+			"label": "Document",
+			"fieldtype": "Link",
+			"options": "Material Rate",
+			"width": 140,
+		},
 	]
 
 
@@ -48,9 +60,19 @@ def _get_data(filters):
 		"Material Rate",
 		filters=db_filters,
 		fields=[
-			"name", "item", "item_name", "city", "supplier", "rate_type",
-			"ex_works_rate", "freight_per_unit", "delivered_rate",
-			"credit_days", "lead_time_days", "valid_from", "valid_to",
+			"name",
+			"item",
+			"item_name",
+			"city",
+			"supplier",
+			"rate_type",
+			"ex_works_rate",
+			"freight_per_unit",
+			"delivered_rate",
+			"credit_days",
+			"lead_time_days",
+			"valid_from",
+			"valid_to",
 			"docstatus",
 		],
 		order_by="valid_from desc",

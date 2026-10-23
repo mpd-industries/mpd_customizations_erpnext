@@ -20,7 +20,7 @@ def get_backlog(project, status_filter=None):
 	)
 	for t in open_tasks:
 		raw = t.pop("_assign", None)
-		t["assigned_to"] = (_json.loads(raw)[0] if raw else None)
+		t["assigned_to"] = _json.loads(raw)[0] if raw else None
 
 	recent_closed = frappe.get_all(
 		"Task",
@@ -31,7 +31,7 @@ def get_backlog(project, status_filter=None):
 	)
 	for t in recent_closed:
 		raw = t.pop("_assign", None)
-		t["assigned_to"] = (_json.loads(raw)[0] if raw else None)
+		t["assigned_to"] = _json.loads(raw)[0] if raw else None
 
 	return {
 		"project": project,
@@ -41,14 +41,16 @@ def get_backlog(project, status_filter=None):
 	}
 
 
-def update_existing_task(task_name, comment,
+def update_existing_task(
+	task_name,
+	comment,
 	new_priority=None,
 	objective=None,
 	acceptance_criteria=None,
 	new_due_date=None,
 	new_assignee=None,
-	new_status=None):
-
+	new_status=None,
+):
 	task = frappe.get_doc("Task", task_name)
 	changed = False
 
@@ -81,12 +83,15 @@ def update_existing_task(task_name, comment,
 		frappe.db.commit()  # must commit before assign_to can find the task
 		try:
 			from frappe.desk.form.assign_to import add as _assign_add
-			_assign_add({
-				"assign_to": [new_assignee],
-				"doctype": "Task",
-				"name": task_name,
-				"notify": 0,
-			})
+
+			_assign_add(
+				{
+					"assign_to": [new_assignee],
+					"doctype": "Task",
+					"name": task_name,
+					"notify": 0,
+				}
+			)
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), f"Could not assign {new_assignee} to {task_name}")
 
@@ -119,11 +124,19 @@ def reopen_task(task_name, comment, new_due_date=None):
 	return {"task": task_name, "status": "reopened"}
 
 
-def create_pending_task(subject, project, description,
-	suggested_assignee=None, priority="Medium", exp_end_date=None,
-	objective=None, acceptance_criteria=None):
-
-	full_description = _patch_description(description or "", objective=objective, acceptance_criteria=acceptance_criteria)
+def create_pending_task(
+	subject,
+	project,
+	description,
+	suggested_assignee=None,
+	priority="Medium",
+	exp_end_date=None,
+	objective=None,
+	acceptance_criteria=None,
+):
+	full_description = _patch_description(
+		description or "", objective=objective, acceptance_criteria=acceptance_criteria
+	)
 
 	task = frappe.new_doc("Task")
 	task.subject = subject
@@ -140,7 +153,10 @@ def create_pending_task(subject, project, description,
 	if suggested_assignee:
 		try:
 			from frappe.desk.form.assign_to import add as _assign_add
-			_assign_add({"assign_to": [suggested_assignee], "doctype": "Task", "name": task.name, "notify": 0})
+
+			_assign_add(
+				{"assign_to": [suggested_assignee], "doctype": "Task", "name": task.name, "notify": 0}
+			)
 			frappe.db.commit()
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), f"Could not assign {suggested_assignee} to {task.name}")
@@ -148,10 +164,15 @@ def create_pending_task(subject, project, description,
 	return {"name": task.name, "subject": task.subject}
 
 
-def create_subtask(subject, parent_task, project,
-	description=None, suggested_assignee=None,
-	priority="Medium", exp_end_date=None):
-
+def create_subtask(
+	subject,
+	parent_task,
+	project,
+	description=None,
+	suggested_assignee=None,
+	priority="Medium",
+	exp_end_date=None,
+):
 	task = frappe.new_doc("Task")
 	task.subject = subject
 	task.parent_task = parent_task
@@ -169,9 +190,11 @@ def create_subtask(subject, parent_task, project,
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
 
+
 def _default_due_date():
 	"""Returns a date string 4 working days (Mon–Fri) from today."""
 	from frappe.utils import add_days, getdate
+
 	d = getdate()
 	added = 0
 	while added < 4:
@@ -179,6 +202,7 @@ def _default_due_date():
 		if d.weekday() < 5:  # 0=Mon … 4=Fri
 			added += 1
 	return str(d)
+
 
 def _patch_description(current: str, objective=None, acceptance_criteria=None) -> str:
 	"""Insert or replace ## Objective / ## Acceptance Criteria sections in description."""

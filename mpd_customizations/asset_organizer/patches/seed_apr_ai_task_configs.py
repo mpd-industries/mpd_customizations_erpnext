@@ -27,7 +27,9 @@ STRICT OUTPUT RULES:
 - If a field is optional and absent, set it to null.
 """
 
-_SEGMENT_PROMPT = _BASE_INSTRUCTIONS + """
+_SEGMENT_PROMPT = (
+	_BASE_INSTRUCTIONS
+	+ """
 Your task: examine the uploaded PDF and identify every distinct logical document within it.
 A PDF may contain a single document or multiple documents scanned together (e.g. an IGP on
 page 1, a tax invoice on pages 2-4, and a lorry receipt on page 5).
@@ -62,8 +64,11 @@ RULES:
 - "Payment"        — bank advice, RTGS/NEFT confirmation, or remittance statement
 - "Other"          — anything else
 """
+)
 
-_QUOTE_PROMPT = _BASE_INSTRUCTIONS + """
+_QUOTE_PROMPT = (
+	_BASE_INSTRUCTIONS
+	+ """
 Your task: extract all fields from the supplier quotation.
 
 TARGET JSON SCHEMA:
@@ -93,8 +98,11 @@ TARGET JSON SCHEMA:
   "extra_fields": { "key": "value", ... } — any other labelled fields not covered above; empty object if none
 }
 """
+)
 
-_PO_PROMPT = _BASE_INSTRUCTIONS + """
+_PO_PROMPT = (
+	_BASE_INSTRUCTIONS
+	+ """
 Your task: extract all fields from the purchase order.
 
 TARGET JSON SCHEMA:
@@ -134,8 +142,11 @@ LOCATION EXTRACTION RULES:
 - Use the deepest valid matched node from document wording (e.g. phase/reactor), then fill parent levels accordingly.
 - If unclear, set location fields to null.
 """
+)
 
-_INVOICE_PROMPT = _BASE_INSTRUCTIONS + """
+_INVOICE_PROMPT = (
+	_BASE_INSTRUCTIONS
+	+ """
 Your task: extract all fields from an Indian tax invoice, commercial invoice, or import-related
 invoice (local domestic purchase OR import purchase). Financial totals are MANDATORY.
 
@@ -214,8 +225,11 @@ INDIAN CONTEXT RULES:
 IMPORTANT: tax.invoice_taxable_value, tax.invoice_gst_amount, and tax.invoice_total_value must all be
 extracted as numbers when the tax block is present. Only use 0.0 if the document explicitly states zero.
 """
+)
 
-_IGP_PROMPT = _BASE_INSTRUCTIONS + """
+_IGP_PROMPT = (
+	_BASE_INSTRUCTIONS
+	+ """
 Your task: extract all fields from the inward gate pass or delivery challan.
 
 TARGET JSON SCHEMA:
@@ -244,8 +258,11 @@ TARGET JSON SCHEMA:
 
 Note: item_lines may be partial. Extract whatever line items appear.
 """
+)
 
-_PAYMENT_PROMPT = _BASE_INSTRUCTIONS + """
+_PAYMENT_PROMPT = (
+	_BASE_INSTRUCTIONS
+	+ """
 Your task: extract payment details from a bank advice, RTGS confirmation, or remittance statement.
 
 You will receive match context (supplier name, GSTIN, invoice/PO numbers from the procurement record).
@@ -263,8 +280,11 @@ TARGET JSON SCHEMA:
   "extra_fields": { "key": "value", ... } — any other labelled fields not covered above; empty object if none
 }
 """
+)
 
-_GENERIC_PROMPT = _BASE_INSTRUCTIONS + """
+_GENERIC_PROMPT = (
+	_BASE_INSTRUCTIONS
+	+ """
 Your task: extract key-value information from a document that does not fit standard categories.
 
 TARGET JSON SCHEMA:
@@ -286,8 +306,11 @@ TARGET JSON SCHEMA:
 For generic_data_map: extract every distinct labelled field you can find on the document as
 key-value pairs. Keys should be in plain English, values as printed.
 """
+)
 
-_WEIGHMENT_PROMPT = _BASE_INSTRUCTIONS + """
+_WEIGHMENT_PROMPT = (
+	_BASE_INSTRUCTIONS
+	+ """
 Your task: extract all fields from a weigh bridge / RST slip.
 
 TARGET JSON SCHEMA:
@@ -311,8 +334,11 @@ TARGET JSON SCHEMA:
 
 Note: weight fields are in kg. If the slip shows values in tonnes, convert to kg (1 MT = 1000 kg).
 """
+)
 
-_LORRY_RECEIPT_PROMPT = _BASE_INSTRUCTIONS + """
+_LORRY_RECEIPT_PROMPT = (
+	_BASE_INSTRUCTIONS
+	+ """
 Your task: extract all fields from a lorry receipt (LR) or goods consignment note (GCN).
 
 TARGET JSON SCHEMA:
@@ -342,8 +368,11 @@ TARGET JSON SCHEMA:
   "extra_fields": { "key": "value", ... } — any other labelled fields not covered above; empty object if none
 }
 """
+)
 
-_EWAY_BILL_PROMPT = _BASE_INSTRUCTIONS + """
+_EWAY_BILL_PROMPT = (
+	_BASE_INSTRUCTIONS
+	+ """
 Your task: extract all fields from a GST e-Way Bill.
 
 TARGET JSON SCHEMA:
@@ -382,6 +411,7 @@ TARGET JSON SCHEMA:
   "extra_fields": { "key": "value", ... } — any other labelled fields not covered above; empty object if none
 }
 """
+)
 
 _LABEL_PROMPT = """\
 You are a procurement labelling assistant for MPD Industries Pvt. Ltd.
@@ -469,117 +499,117 @@ TARGET JSON SCHEMA:
 # ---------------------------------------------------------------------------
 
 CONFIGS = [
-    {
-        "task_key":     "apr_document_segment",
-        "task_label":   "APR Document Segmentation",
-        "description":  "First-pass segmentation of an uploaded PDF. Identifies all logical documents by page range and category.",
-        "system_prompt": _SEGMENT_PROMPT,
-    },
-    {
-        "task_key":     "apr_extract_quote",
-        "task_label":   "APR Quote Extraction",
-        "description":  "Full extraction of a supplier quotation for an APR.",
-        "system_prompt": _QUOTE_PROMPT,
-    },
-    {
-        "task_key":     "apr_extract_po",
-        "task_label":   "APR PO Extraction",
-        "description":  "Full extraction of a purchase order for an APR.",
-        "system_prompt": _PO_PROMPT,
-    },
-    {
-        "task_key":     "apr_extract_invoice",
-        "task_label":   "APR Invoice Extraction",
-        "description":  "Full extraction of a tax invoice for an APR. Financial totals are mandatory.",
-        "system_prompt": _INVOICE_PROMPT,
-    },
-    {
-        "task_key":     "apr_extract_igp",
-        "task_label":   "APR IGP / Gate Pass Extraction",
-        "description":  "Full extraction of an inward gate pass or delivery challan for an APR.",
-        "system_prompt": _IGP_PROMPT,
-    },
-    {
-        "task_key":     "apr_extract_payment",
-        "task_label":   "APR Payment Extraction",
-        "description":  "Extraction of payment details from a bank advice or remittance statement.",
-        "system_prompt": _PAYMENT_PROMPT,
-    },
-    {
-        "task_key":     "apr_extract_generic",
-        "task_label":   "APR Generic Document Extraction",
-        "description":  "Freeform key-value extraction for Other-category APR documents.",
-        "system_prompt": _GENERIC_PROMPT,
-    },
-    {
-        "task_key":     "apr_extract_weighment",
-        "task_label":   "APR Weighment Slip Extraction",
-        "description":  "Extraction of gross/tare/net weights and vehicle details from a weigh bridge RST slip.",
-        "system_prompt": _WEIGHMENT_PROMPT,
-    },
-    {
-        "task_key":     "apr_extract_lorry_receipt",
-        "task_label":   "APR Lorry Receipt Extraction",
-        "description":  "Extraction of consignor, consignee, freight, and vehicle details from a lorry receipt (LR/GCN).",
-        "system_prompt": _LORRY_RECEIPT_PROMPT,
-    },
-    {
-        "task_key":     "apr_extract_eway_bill",
-        "task_label":   "APR E-Way Bill Extraction",
-        "description":  "Extraction of GST e-Way Bill fields including IRN, party GSTINs, goods details, and tax values.",
-        "system_prompt": _EWAY_BILL_PROMPT,
-    },
-    {
-        "task_key":     "apr_generate_label",
-        "task_label":   "APR Asset Label Generation",
-        "description":  "Generates a short human-readable asset label from extracted document JSON. Called after Quote or PO extraction.",
-        "system_prompt": _LABEL_PROMPT,
-        "max_tokens":   300,
-        "temperature":  0.2,
-    },
-    {
-        "task_key":     "apr_item_line_merge",
-        "task_label":   "APR Item Line Merge Check",
-        "description":  "Batch: maps new PO/Invoice lines to existing APR item lines (add vs same).",
-        "system_prompt": _ITEM_MERGE_PROMPT,
-        "max_tokens":   800,
-        "temperature":  0.0,
-    },
-    {
-        "task_key":     "apr_item_catalog_match",
-        "task_label":   "APR Item Catalog Match",
-        "description":  "Reviews dedup.py similarity candidates and confirms ERP Item link or new product.",
-        "system_prompt": _ITEM_CATALOG_MATCH_PROMPT,
-        "max_tokens":   300,
-        "temperature":  0.0,
-    },
+	{
+		"task_key": "apr_document_segment",
+		"task_label": "APR Document Segmentation",
+		"description": "First-pass segmentation of an uploaded PDF. Identifies all logical documents by page range and category.",
+		"system_prompt": _SEGMENT_PROMPT,
+	},
+	{
+		"task_key": "apr_extract_quote",
+		"task_label": "APR Quote Extraction",
+		"description": "Full extraction of a supplier quotation for an APR.",
+		"system_prompt": _QUOTE_PROMPT,
+	},
+	{
+		"task_key": "apr_extract_po",
+		"task_label": "APR PO Extraction",
+		"description": "Full extraction of a purchase order for an APR.",
+		"system_prompt": _PO_PROMPT,
+	},
+	{
+		"task_key": "apr_extract_invoice",
+		"task_label": "APR Invoice Extraction",
+		"description": "Full extraction of a tax invoice for an APR. Financial totals are mandatory.",
+		"system_prompt": _INVOICE_PROMPT,
+	},
+	{
+		"task_key": "apr_extract_igp",
+		"task_label": "APR IGP / Gate Pass Extraction",
+		"description": "Full extraction of an inward gate pass or delivery challan for an APR.",
+		"system_prompt": _IGP_PROMPT,
+	},
+	{
+		"task_key": "apr_extract_payment",
+		"task_label": "APR Payment Extraction",
+		"description": "Extraction of payment details from a bank advice or remittance statement.",
+		"system_prompt": _PAYMENT_PROMPT,
+	},
+	{
+		"task_key": "apr_extract_generic",
+		"task_label": "APR Generic Document Extraction",
+		"description": "Freeform key-value extraction for Other-category APR documents.",
+		"system_prompt": _GENERIC_PROMPT,
+	},
+	{
+		"task_key": "apr_extract_weighment",
+		"task_label": "APR Weighment Slip Extraction",
+		"description": "Extraction of gross/tare/net weights and vehicle details from a weigh bridge RST slip.",
+		"system_prompt": _WEIGHMENT_PROMPT,
+	},
+	{
+		"task_key": "apr_extract_lorry_receipt",
+		"task_label": "APR Lorry Receipt Extraction",
+		"description": "Extraction of consignor, consignee, freight, and vehicle details from a lorry receipt (LR/GCN).",
+		"system_prompt": _LORRY_RECEIPT_PROMPT,
+	},
+	{
+		"task_key": "apr_extract_eway_bill",
+		"task_label": "APR E-Way Bill Extraction",
+		"description": "Extraction of GST e-Way Bill fields including IRN, party GSTINs, goods details, and tax values.",
+		"system_prompt": _EWAY_BILL_PROMPT,
+	},
+	{
+		"task_key": "apr_generate_label",
+		"task_label": "APR Asset Label Generation",
+		"description": "Generates a short human-readable asset label from extracted document JSON. Called after Quote or PO extraction.",
+		"system_prompt": _LABEL_PROMPT,
+		"max_tokens": 300,
+		"temperature": 0.2,
+	},
+	{
+		"task_key": "apr_item_line_merge",
+		"task_label": "APR Item Line Merge Check",
+		"description": "Batch: maps new PO/Invoice lines to existing APR item lines (add vs same).",
+		"system_prompt": _ITEM_MERGE_PROMPT,
+		"max_tokens": 800,
+		"temperature": 0.0,
+	},
+	{
+		"task_key": "apr_item_catalog_match",
+		"task_label": "APR Item Catalog Match",
+		"description": "Reviews dedup.py similarity candidates and confirms ERP Item link or new product.",
+		"system_prompt": _ITEM_CATALOG_MATCH_PROMPT,
+		"max_tokens": 300,
+		"temperature": 0.0,
+	},
 ]
 
 
 def execute():
-    for cfg in CONFIGS:
-        if frappe.db.exists("AI Task Config", {"task_key": cfg["task_key"]}):
-            frappe.logger("asset_organizer").info(
-                f"seed_apr_ai_task_configs: {cfg['task_key']} already exists — skipping"
-            )
-            continue
+	for cfg in CONFIGS:
+		if frappe.db.exists("AI Task Config", {"task_key": cfg["task_key"]}):
+			frappe.logger("asset_organizer").info(
+				f"seed_apr_ai_task_configs: {cfg['task_key']} already exists — skipping"
+			)
+			continue
 
-        doc = frappe.get_doc({
-            "doctype":      "AI Task Config",
-            "name":         cfg["task_key"],
-            "task_key":     cfg["task_key"],
-            "task_label":   cfg["task_label"],
-            "description":  cfg["description"],
-            "llm_provider": LLM_PROVIDER,
-            "model":        MODEL,
-            "temperature":  cfg.get("temperature", TEMPERATURE),
-            "max_tokens":   cfg.get("max_tokens", MAX_TOKENS),
-            "system_prompt": cfg["system_prompt"],
-            "is_active":    1,
-        })
-        doc.insert(ignore_permissions=True)
-        frappe.logger("asset_organizer").info(
-            f"seed_apr_ai_task_configs: created {cfg['task_key']}"
-        )
+		doc = frappe.get_doc(
+			{
+				"doctype": "AI Task Config",
+				"name": cfg["task_key"],
+				"task_key": cfg["task_key"],
+				"task_label": cfg["task_label"],
+				"description": cfg["description"],
+				"llm_provider": LLM_PROVIDER,
+				"model": MODEL,
+				"temperature": cfg.get("temperature", TEMPERATURE),
+				"max_tokens": cfg.get("max_tokens", MAX_TOKENS),
+				"system_prompt": cfg["system_prompt"],
+				"is_active": 1,
+			}
+		)
+		doc.insert(ignore_permissions=True)
+		frappe.logger("asset_organizer").info(f"seed_apr_ai_task_configs: created {cfg['task_key']}")
 
-    frappe.db.commit()
+	frappe.db.commit()

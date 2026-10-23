@@ -4,8 +4,12 @@ import frappe
 
 @click.command("recompute-item-labels")
 @click.option("--site", required=True, help="Site name")
-@click.option("--force", is_flag=True, default=False,
-              help="Recompute all items, not just those with missing/changed labels")
+@click.option(
+	"--force",
+	is_flag=True,
+	default=False,
+	help="Recompute all items, not just those with missing/changed labels",
+)
 def recompute_item_labels(site, force):
 	"""Recompute custom_item_label for all Items on a site."""
 	frappe.init(site=site)

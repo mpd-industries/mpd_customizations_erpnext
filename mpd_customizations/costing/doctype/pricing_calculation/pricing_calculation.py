@@ -30,14 +30,14 @@ class PricingCalculation(Document):
 			if cp_status != "Approved":
 				frappe.throw(_("Customer Product must be Approved before creating a quote."))
 			# Customer Quote mode — sync export flag from Customer Product
-			cp_is_export = frappe.db.get_value("Customer Product", self.customer_product_ref, "is_export") or 0
+			cp_is_export = (
+				frappe.db.get_value("Customer Product", self.customer_product_ref, "is_export") or 0
+			)
 			self.is_export = cp_is_export
 		elif self.item:
 			bom_exists = frappe.db.exists("BOM", {"item": self.item})
 			if not bom_exists:
-				frappe.throw(
-					_("Item {0} has no BOM. Only items with a BOM can be costed.").format(self.item)
-				)
+				frappe.throw(_("Item {0} has no BOM. Only items with a BOM can be costed.").format(self.item))
 
 		# Recompute packaging line derived fields
 		for pl in self.packaging_lines or []:
@@ -57,9 +57,7 @@ class PricingCalculation(Document):
 
 		solids = self.solids_content_pct or 0
 		for charge in self.additional_charges or []:
-			charge.amount_per_kg = compute_additional_charge_amount(
-				charge.rate or 0, charge.basis, solids
-			)
+			charge.amount_per_kg = compute_additional_charge_amount(charge.rate or 0, charge.basis, solids)
 
 	def before_submit(self):
 		if self.mode != "Approved":

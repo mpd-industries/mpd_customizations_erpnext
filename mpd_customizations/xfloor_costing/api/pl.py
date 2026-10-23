@@ -2,12 +2,13 @@ import frappe
 
 from mpd_customizations.xfloor_costing.services.pl_engine import (
 	build_comparison,
-	calc_project as calc_project_service,
 	get_kit_rates_doc,
 	strip_gm_from_kit_rates,
 	strip_gm_from_result,
 )
-
+from mpd_customizations.xfloor_costing.services.pl_engine import (
+	calc_project as calc_project_service,
+)
 
 ALLOWED_ROLES = frozenset({"System Manager", "XFloor Costing Manager"})
 

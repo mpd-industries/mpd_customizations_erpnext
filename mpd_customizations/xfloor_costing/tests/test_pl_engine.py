@@ -3,7 +3,6 @@ import unittest
 
 from mpd_customizations.xfloor_costing.services import pl_engine
 
-
 SETTINGS = {**pl_engine.DEFAULT_RATES, **pl_engine.DEFAULT_COVERAGE}
 
 
@@ -245,9 +244,7 @@ class TestPLEngine(unittest.TestCase):
 		self.assertEqual(by_component["Screed"]["gm_amount"], sc_kits * 300)
 		self.assertNotIn("Applicator", by_component)
 
-		expected_total = (
-			tc_kits * 500 + sc_kits * 300 + pr_kits * 100 + 2 * 200 + 1 * 150
-		)
+		expected_total = tc_kits * 500 + sc_kits * 300 + pr_kits * 100 + 2 * 200 + 1 * 150
 		self.assertEqual(ms["total_kit_gm"], expected_total)
 		self.assertEqual(ms["adjusted_gross_margin"], ms["profit_loss"] + ms["total_kit_gm"])
 
@@ -330,9 +327,7 @@ class TestPLEngine(unittest.TestCase):
 		self.assertAlmostEqual(by_comp["Coving"]["cost"], 2 * SETTINGS["coving_rate"])
 		self.assertEqual(result["coving_kits"], 2)
 		# Parts must not also charge coving
-		part_coving = next(
-			r for r in result["part_budgets"][0]["budget_rows"] if r["component"] == "Coving"
-		)
+		part_coving = next(r for r in result["part_budgets"][0]["budget_rows"] if r["component"] == "Coving")
 		self.assertEqual(part_coving["kits"], 0)
 		self.assertEqual(part_coving["cost"], 0)
 

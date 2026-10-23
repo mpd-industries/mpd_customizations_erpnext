@@ -4,22 +4,23 @@ import os
 import frappe
 from frappe import _
 
-from mpd_customizations.meeting_notes.action_extraction.tool_definitions import (
-	TASK_UPDATE_TOOLS,
-	REOPEN_TOOLS,
-	NEW_TASK_TOOLS,
-)
+from mpd_customizations.meeting_notes.action_extraction import tools as _tools
 from mpd_customizations.meeting_notes.action_extraction.prompt import (
+	build_new_tasks_prompt,
 	build_speaker_id_prompt,
 	build_task_batch_prompt,
-	build_new_tasks_prompt,
 	resolve_attendees,
 )
-from mpd_customizations.meeting_notes.action_extraction import tools as _tools
+from mpd_customizations.meeting_notes.action_extraction.tool_definitions import (
+	NEW_TASK_TOOLS,
+	REOPEN_TOOLS,
+	TASK_UPDATE_TOOLS,
+)
 
 BATCH_SIZE = 5
 
 # ─── public entry points ──────────────────────────────────────────────────────
+
 
 def run_transcription(meeting_note_name):
 	doc = frappe.get_doc("Meeting Note", meeting_note_name)
@@ -65,8 +66,9 @@ def run(meeting_note_name):
 		speaker_map_text = _format_speaker_map(speaker_map, attendees)
 		log_entries.append({"step": "speaker_identification", "result": speaker_map})
 
-		frappe.db.set_value("Meeting Note", doc.name, "extraction_log",
-			json.dumps({"speaker_map": speaker_map}, indent=2))
+		frappe.db.set_value(
+			"Meeting Note", doc.name, "extraction_log", json.dumps({"speaker_map": speaker_map}, indent=2)
+		)
 		frappe.db.commit()
 
 		# ── Step 2: Fetch all tasks ───────────────────────────────────────────
@@ -74,25 +76,31 @@ def run(meeting_note_name):
 		open_tasks = backlog["tasks"]
 		recent_closed = backlog.get("recently_closed", [])
 
-		log_entries.append({
-			"step": "backlog_fetched",
-			"open_count": len(open_tasks),
-			"closed_count": len(recent_closed),
-		})
+		log_entries.append(
+			{
+				"step": "backlog_fetched",
+				"open_count": len(open_tasks),
+				"closed_count": len(recent_closed),
+			}
+		)
 
 		# ── Step 3: Process tasks in batches of BATCH_SIZE ───────────────────
 		for i in range(0, len(open_tasks), BATCH_SIZE):
-			batch = open_tasks[i:i + BATCH_SIZE]
+			batch = open_tasks[i : i + BATCH_SIZE]
 			results = _process_task_batch(batch, doc, attendees, speaker_map_text, litellm, kwargs)
-			log_entries.append({
-				"step": "task_batch",
-				"batch": i // BATCH_SIZE + 1,
-				"tasks": [t["name"] for t in batch],
-				"result": results,
-			})
+			log_entries.append(
+				{
+					"step": "task_batch",
+					"batch": i // BATCH_SIZE + 1,
+					"tasks": [t["name"] for t in batch],
+					"result": results,
+				}
+			)
 
 		# ── Step 4: New tasks + reopen recently-closed ────────────────────────
-		result = _extract_and_reopen(open_tasks, recent_closed, doc, attendees, speaker_map_text, litellm, kwargs)
+		result = _extract_and_reopen(
+			open_tasks, recent_closed, doc, attendees, speaker_map_text, litellm, kwargs
+		)
 		log_entries.append({"step": "new_tasks_and_reopen", "result": result})
 
 		# ── Step 5: Generate meeting summary ─────────────────────────────────
@@ -109,10 +117,14 @@ def run(meeting_note_name):
 
 	except Exception:
 		tb = frappe.get_traceback()
-		frappe.db.set_value("Meeting Note", meeting_note_name, {
-			"status": "Draft",
-			"extraction_log": tb,
-		})
+		frappe.db.set_value(
+			"Meeting Note",
+			meeting_note_name,
+			{
+				"status": "Draft",
+				"extraction_log": tb,
+			},
+		)
 		frappe.db.commit()
 		frappe.log_error(tb, f"Meeting Note Extraction Failed: {meeting_note_name}")
 
@@ -128,10 +140,14 @@ def reset_stuck_jobs():
 	)
 
 	for row in stuck:
-		frappe.db.set_value("Meeting Note", row.name, {
-			"status": "Draft",
-			"extraction_log": "Reset by scheduler: job did not complete within 30 minutes.",
-		})
+		frappe.db.set_value(
+			"Meeting Note",
+			row.name,
+			{
+				"status": "Draft",
+				"extraction_log": "Reset by scheduler: job did not complete within 30 minutes.",
+			},
+		)
 		frappe.log_error(
 			f"Meeting Note {row.name} was stuck for >30 min and has been reset.",
 			"Meeting Note Stuck Job Reset",
@@ -142,6 +158,7 @@ def reset_stuck_jobs():
 
 
 # ─── pipeline steps ───────────────────────────────────────────────────────────
+
 
 def _identify_speakers(doc, attendees, litellm, kwargs):
 	system_prompt = build_speaker_id_prompt(attendees)
@@ -180,10 +197,7 @@ def _process_task_batch(tasks, doc, attendees, speaker_map_text, litellm, kwargs
 	)
 
 	task_details = "\n\n".join(_format_task_for_prompt(t) for t in tasks)
-	user_message = (
-		f"{task_details}\n\n"
-		f"--- FULL TRANSCRIPT ---\n{doc.transcript}\n--- END ---"
-	)
+	user_message = f"{task_details}\n\n" f"--- FULL TRANSCRIPT ---\n{doc.transcript}\n--- END ---"
 
 	messages = [
 		{"role": "system", "content": system_prompt},
@@ -229,10 +243,10 @@ def _extract_and_reopen(open_tasks, recent_closed, doc, attendees, speaker_map_t
 	)
 
 	all_tasks = open_tasks + recent_closed
-	task_list = "\n".join(
-		f"  - {t['name']}: {t['subject']} [status: {t['status']}]"
-		for t in all_tasks
-	) or "  (no existing tasks)"
+	task_list = (
+		"\n".join(f"  - {t['name']}: {t['subject']} [status: {t['status']}]" for t in all_tasks)
+		or "  (no existing tasks)"
+	)
 
 	user_message = (
 		f"Meeting Title: {doc.title}\n"
@@ -240,10 +254,7 @@ def _extract_and_reopen(open_tasks, recent_closed, doc, attendees, speaker_map_t
 		f"Date: {doc.meeting_date}\n\n"
 		f"Existing tasks (do NOT recreate these):\n{task_list}\n\n"
 		f"Recently closed tasks that could be reopened:\n"
-		+ (
-			"\n".join(f"  - {t['name']}: {t['subject']}" for t in recent_closed)
-			or "  (none)"
-		)
+		+ ("\n".join(f"  - {t['name']}: {t['subject']}" for t in recent_closed) or "  (none)")
 		+ f"\n\n--- FULL TRANSCRIPT ---\n{doc.transcript}\n--- END ---"
 	)
 
@@ -257,6 +268,7 @@ def _extract_and_reopen(open_tasks, recent_closed, doc, attendees, speaker_map_t
 
 
 # ─── tool execution ───────────────────────────────────────────────────────────
+
 
 def _run_tool_loop(messages, tools, litellm, kwargs, max_rounds=5):
 	call_kwargs = dict(
@@ -287,11 +299,13 @@ def _run_tool_loop(messages, tools, litellm, kwargs, max_rounds=5):
 
 			result = _dispatch_tool(fn_name, fn_args)
 
-			messages.append({
-				"role": "tool",
-				"tool_call_id": tc.id,
-				"content": json.dumps(result),
-			})
+			messages.append(
+				{
+					"role": "tool",
+					"tool_call_id": tc.id,
+					"content": json.dumps(result),
+				}
+			)
 
 	return (msg.content or "") if msg else ""
 
@@ -314,6 +328,7 @@ def _dispatch_tool(name, args):
 
 
 # ─── formatting helpers ───────────────────────────────────────────────────────
+
 
 def _format_task_for_prompt(task):
 	return (
@@ -343,6 +358,7 @@ def _format_speaker_map(speaker_map, attendees):
 
 
 # ─── LLM credentials ─────────────────────────────────────────────────────────
+
 
 def _build_kwargs(model, api_key, api_base, extra_headers):
 	return {
@@ -375,12 +391,14 @@ def _resolve_llm_credentials():
 		or "openrouter/anthropic/claude-sonnet-4-6"
 	)
 	if not api_key:
-		frappe.throw(_(
-			"Meeting note extraction is not configured. "
-			"Options: (1) AI Task Config with task_key='meeting_note_extraction' in ERPNext UI, "
-			"(2) env var OPENROUTER_API_KEY, "
-			"(3) bench set-config openrouter_api_key YOUR_KEY"
-		))
+		frappe.throw(
+			_(
+				"Meeting note extraction is not configured. "
+				"Options: (1) AI Task Config with task_key='meeting_note_extraction' in ERPNext UI, "
+				"(2) env var OPENROUTER_API_KEY, "
+				"(3) bench set-config openrouter_api_key YOUR_KEY"
+			)
+		)
 	api_base = "https://openrouter.ai/api/v1"
 	return model, api_key, api_base, _openrouter_headers(api_base, model)
 
@@ -388,10 +406,12 @@ def _resolve_llm_credentials():
 def _validate_sarvam_key():
 	key = os.environ.get("SARVAM_API_KEY") or frappe.conf.get("sarvam_api_key")
 	if not key:
-		frappe.throw(_(
-			"Sarvam API key not configured. "
-			"Set env var SARVAM_API_KEY or run: bench set-config sarvam_api_key YOUR_KEY"
-		))
+		frappe.throw(
+			_(
+				"Sarvam API key not configured. "
+				"Set env var SARVAM_API_KEY or run: bench set-config sarvam_api_key YOUR_KEY"
+			)
+		)
 
 
 def _openrouter_headers(api_base, model):
@@ -408,11 +428,13 @@ def _openrouter_headers(api_base, model):
 
 # ─── audio transcription ─────────────────────────────────────────────────────
 
+
 def _get_audio_bytes(file_url):
 	import urllib.parse
 
 	if "generate_file" in file_url or "frappe_s3_attachment" in file_url:
 		from frappe_s3_attachment.controller import S3Operations
+
 		params = urllib.parse.parse_qs(urllib.parse.urlparse(file_url).query)
 		s3_key = params.get("key", [None])[0]
 		if not s3_key:
@@ -428,8 +450,9 @@ def _get_audio_bytes(file_url):
 
 
 def _transcribe_with_diarization(doc):
-	import tempfile
 	import os as _os
+	import tempfile
+
 	from sarvamai import SarvamAI
 
 	api_key = os.environ.get("SARVAM_API_KEY") or frappe.conf.get("sarvam_api_key")
@@ -473,10 +496,10 @@ def _transcribe_with_diarization(doc):
 	lines = []
 	for entry in entries:
 		speaker = entry.get("speaker_id", "?")
-		text    = entry.get("transcript", "")
-		start   = int(float(entry.get("start_time_seconds", 0)))
-		end     = int(float(entry.get("end_time_seconds", 0)))
-		ts      = f"{start // 60}:{start % 60:02d}-{end // 60}:{end % 60:02d}"
+		text = entry.get("transcript", "")
+		start = int(float(entry.get("start_time_seconds", 0)))
+		end = int(float(entry.get("end_time_seconds", 0)))
+		ts = f"{start // 60}:{start % 60:02d}-{end // 60}:{end % 60:02d}"
 		lines.append(f"Speaker {speaker} [{ts}]: {text}")
 
 	return "\n".join(lines)

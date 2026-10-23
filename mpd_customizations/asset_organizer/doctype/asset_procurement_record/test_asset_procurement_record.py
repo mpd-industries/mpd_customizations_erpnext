@@ -6,4 +6,4 @@ from frappe.tests.utils import FrappeTestCase
 
 
 class TestAsset_procurement_record(FrappeTestCase):
-    pass
+	pass

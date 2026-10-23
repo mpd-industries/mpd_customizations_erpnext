@@ -25,4 +25,6 @@ def _migrate_pending_rate_items():
 	if count:
 		frappe.db.delete("Pending Rate Item", {})
 		frappe.db.commit()
-		click.echo(f"Cleared {count} legacy Pending Rate Item record(s). Re-run 'Create Pending Rates' to regenerate.")
+		click.echo(
+			f"Cleared {count} legacy Pending Rate Item record(s). Re-run 'Create Pending Rates' to regenerate."
+		)

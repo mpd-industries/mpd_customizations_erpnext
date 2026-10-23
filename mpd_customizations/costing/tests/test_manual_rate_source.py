@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from mpd_customizations.costing.services.sources.manual_rate_source import ManualRateSource
 
@@ -14,9 +14,19 @@ def _dt(days_offset=0):
 PRICING_DT = _dt(0)
 
 
-def _record(item="MAT-001", city="Indore", supplier="SUP-001", delivered=100.0,
-             credit=30, valid_from_offset=-10, valid_to_offset=20, rate_type="All-In Delivered",
-             ex_works=None, name="MR-0001", lead_time=None):
+def _record(
+	item="MAT-001",
+	city="Indore",
+	supplier="SUP-001",
+	delivered=100.0,
+	credit=30,
+	valid_from_offset=-10,
+	valid_to_offset=20,
+	rate_type="All-In Delivered",
+	ex_works=None,
+	name="MR-0001",
+	lead_time=None,
+):
 	return {
 		"name": name,
 		"item": item,
@@ -100,9 +110,7 @@ class TestManualRateSource(unittest.TestCase):
 
 		with patch(_MODULE) as mock_frappe:
 			mock_frappe.get_all.side_effect = mock_get_all
-			result = self.source.batch_resolve(
-				[("MAT-001", "Indore"), ("MAT-002", "Indore")], PRICING_DT
-			)
+			result = self.source.batch_resolve([("MAT-001", "Indore"), ("MAT-002", "Indore")], PRICING_DT)
 
 		self.assertEqual(call_count[0], 1)
 		self.assertIn(("MAT-001", "Indore"), result)

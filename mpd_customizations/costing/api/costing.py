@@ -29,6 +29,7 @@ def evaluate(pricing_calculation_name: str, trigger: str = "manual"):
 
 def _run_evaluate(pricing_calculation_name: str, trigger: str = "override"):
 	from mpd_customizations.costing.services.costing_engine import CostingEngine
+
 	return CostingEngine(get_default_registry(), get_config()).evaluate(pricing_calculation_name, trigger)
 
 
@@ -230,17 +231,19 @@ def fetch_processing_charge(pricing_calculation_name: str):
 		existing_pl.processing_charge_ref = pc["name"]
 		existing_pl.processor = doc.processor
 	else:
-		doc.append("processing_lines", {
-			"processor": doc.processor,
-			"processing_charge_ref": pc["name"],
-			"fetched_charge_per_kg": pc["charge_per_kg"],
-			"fetched_freight_per_unit": pc.get("fg_freight_per_unit") or 0,
-			"fetched_includes_outward_freight": pc.get("includes_outward_freight"),
-			"working_charge_per_kg": pc["charge_per_kg"],
-			"working_freight_per_unit": pc.get("fg_freight_per_unit") or 0,
-			"working_includes_outward_freight": pc.get("includes_outward_freight"),
-		})
+		doc.append(
+			"processing_lines",
+			{
+				"processor": doc.processor,
+				"processing_charge_ref": pc["name"],
+				"fetched_charge_per_kg": pc["charge_per_kg"],
+				"fetched_freight_per_unit": pc.get("fg_freight_per_unit") or 0,
+				"fetched_includes_outward_freight": pc.get("includes_outward_freight"),
+				"working_charge_per_kg": pc["charge_per_kg"],
+				"working_freight_per_unit": pc.get("fg_freight_per_unit") or 0,
+				"working_includes_outward_freight": pc.get("includes_outward_freight"),
+			},
+		)
 
 	doc.save(ignore_permissions=True)
 	return {"charge_per_kg": pc["charge_per_kg"], "ref": pc["name"]}
-

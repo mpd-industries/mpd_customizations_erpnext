@@ -4,8 +4,8 @@ from frappe.model.document import Document
 
 from mpd_customizations.xfloor_costing.services.pl_engine import (
 	build_comparison,
-	coving_kits_from_feet,
 	calc_project,
+	coving_kits_from_feet,
 	flat_fields_to_main_part,
 	get_kit_rates_doc,
 )
@@ -177,9 +177,7 @@ class FloorProject(Document):
 			pu = row.pu_top_coat_option or "0"
 			if epoxy != "0" and pu != "0":
 				frappe.throw(
-					_("Part {0}: choose either Epoxy or PU top coat, not both.").format(
-						row.part_name or ""
-					)
+					_("Part {0}: choose either Epoxy or PU top coat, not both.").format(row.part_name or "")
 				)
 
 	def _sync_rollup_fields(self):

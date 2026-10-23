@@ -186,5 +186,7 @@ TOOL_DEFINITIONS = [
 
 # Subsets used per pipeline step
 TASK_UPDATE_TOOLS = [t for t in TOOL_DEFINITIONS if t["function"]["name"] == "update_existing_task"]
-REOPEN_TOOLS      = [t for t in TOOL_DEFINITIONS if t["function"]["name"] == "reopen_task"]
-NEW_TASK_TOOLS    = [t for t in TOOL_DEFINITIONS if t["function"]["name"] in ("create_pending_task", "create_subtask")]
+REOPEN_TOOLS = [t for t in TOOL_DEFINITIONS if t["function"]["name"] == "reopen_task"]
+NEW_TASK_TOOLS = [
+	t for t in TOOL_DEFINITIONS if t["function"]["name"] in ("create_pending_task", "create_subtask")
+]

@@ -11,38 +11,27 @@ Run from bench console:
 import frappe
 
 from mpd_customizations.xfloor_cms.seed_data import (
-	SITE_SETTINGS,
-	HOME_PAGE,
 	ABOUT_PAGE,
 	APPLICATOR_PAGE,
 	CONTACT_PAGE,
 	FAQ_PAGE,
-	PRODUCTS,
-	INDUSTRIES,
-	TESTIMONIALS,
 	GALLERY_ITEMS,
+	HOME_PAGE,
+	INDUSTRIES,
+	PRODUCTS,
+	SITE_SETTINGS,
+	TESTIMONIALS,
 )
-
-
 
 # ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 
 
-
-
-
-
-
-
-
-
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _upsert_singleton(doctype: str, data: dict) -> None:
 	doc = frappe.get_single(doctype)
@@ -78,6 +67,7 @@ def _upsert_by_field(doctype: str, unique_field: str, data: dict) -> None:
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
+
 
 def run() -> None:
 	print("\n=== Xfloor CMS Seed ===")

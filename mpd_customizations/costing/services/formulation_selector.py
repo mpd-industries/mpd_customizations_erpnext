@@ -22,7 +22,9 @@ class FormulationSelector:
 			return SelectionResult()
 
 		min_cost = min(c["total_cost_per_kg"] for c in combinations)
-		result = SelectionResult(cheapest_cost=min_cost, threshold_applied=self._config.auto_exclusion_threshold_pct)
+		result = SelectionResult(
+			cheapest_cost=min_cost, threshold_applied=self._config.auto_exclusion_threshold_pct
+		)
 
 		for combo in combinations:
 			cost = combo["total_cost_per_kg"]
@@ -44,11 +46,7 @@ class FormulationSelector:
 		if preferred_bom and result.included:
 			preferred = next((c for c in result.included if c.get("bom") == preferred_bom), None)
 			rank1 = result.included[0]
-			if (
-				preferred
-				and preferred is not rank1
-				and rank1["total_cost_per_kg"] > 0
-			):
+			if preferred and preferred is not rank1 and rank1["total_cost_per_kg"] > 0:
 				diff_pct = (
 					(preferred["total_cost_per_kg"] - rank1["total_cost_per_kg"])
 					/ rank1["total_cost_per_kg"]

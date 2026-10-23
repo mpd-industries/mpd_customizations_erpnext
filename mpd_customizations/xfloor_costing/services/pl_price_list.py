@@ -18,6 +18,7 @@ from mpd_customizations.xfloor_costing.services.pl_helpers import (
 	get_kit_rates_doc,
 )
 
+
 def _area_rate(kit_rate, coverage):
 	cov = _f(coverage)
 	if cov <= 0:
@@ -222,4 +223,3 @@ def strip_gm_from_kit_rates(data):
 	if "rate_revisions" in out:
 		out["rate_revisions"] = revisions
 	return out
-
