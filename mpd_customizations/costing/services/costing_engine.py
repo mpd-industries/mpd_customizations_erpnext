@@ -1,7 +1,6 @@
 from typing import Dict, List, Optional
 
 import frappe
-from frappe.utils import now_datetime
 
 from mpd_customizations.costing.services.config import get_config
 from mpd_customizations.costing.services.cost_calculator import (
