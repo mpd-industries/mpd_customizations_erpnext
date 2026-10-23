@@ -1,3 +1,4 @@
+import click
 import frappe
 
 ITEM_CATEGORY_CODE_SEED_ROWS = [
@@ -81,4 +82,4 @@ def seed_item_category_codes():
         doc.insert(ignore_permissions=True)
 
     frappe.db.commit()
-    print("Seeded Item Category Codes")
+    click.echo("Seeded Item Category Codes")

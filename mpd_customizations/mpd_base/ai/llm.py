@@ -50,11 +50,7 @@ def call_llm(config, system_prompt, user_prompt,
     if extra:
         completion_kwargs["extra_headers"] = extra
 
-    # write the prompt to a file with timestamp 
-
     response = litellm.completion(**completion_kwargs)
-
-    # write the response to a file with timestamp
 
     raw = (response.choices[0].message.content or "").strip()
     if not raw:

@@ -64,11 +64,11 @@ def run_item_review(request_name):
             file_data, file_mime = None, None
 
         # Get system prompt from AI Task Config
-        from mpd_customizations.utils import get_task_config
+        from mpd_customizations.mpd_base.ai.task_config import get_task_config
         config, params = get_task_config("item_classification")
 
         # Call LLM
-        from mpd_customizations.mpd_base.item_ai.llm_call import call_llm
+        from mpd_customizations.mpd_base.ai.llm import call_llm
         result = call_llm(
             config=config,
             system_prompt=config.system_prompt,

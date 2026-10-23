@@ -2,8 +2,8 @@ import os
 
 import frappe
 
-from mpd_customizations.setup.item_classification_prompt import ITEM_CLASSIFICATION_SYSTEM_PROMPT
-from mpd_customizations.setup.oth_reclassification_prompt import OTH_RECLASSIFICATION_SYSTEM_PROMPT
+from mpd_customizations.mpd_base.item_ai.prompts import ITEM_CLASSIFICATION_SYSTEM_PROMPT
+from mpd_customizations.mpd_base.oth_review.prompts import OTH_RECLASSIFICATION_SYSTEM_PROMPT
 
 
 def seed_llm_fixtures():

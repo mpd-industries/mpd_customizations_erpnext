@@ -83,8 +83,8 @@ def run_oth_review(doc_name):
             )
             return
 
-        from mpd_customizations.utils import get_task_config
-        from mpd_customizations.mpd_base.item_ai.llm_call import call_llm
+        from mpd_customizations.mpd_base.ai.llm import call_llm
+        from mpd_customizations.mpd_base.ai.task_config import get_task_config
 
         config, _params = get_task_config("oth_reclassification")
 

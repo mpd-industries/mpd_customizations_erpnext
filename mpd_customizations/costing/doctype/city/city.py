@@ -1,3 +1,4 @@
+import click
 import frappe
 from frappe.model.document import Document
 
@@ -26,7 +27,7 @@ def sync_cities_from_addresses():
 
 	if inserted:
 		frappe.db.commit()
-		print(f"City sync: inserted {inserted} new city record(s) from Address table.")
+		click.echo(f"City sync: inserted {inserted} new city record(s) from Address table.")
 
 
 def on_address_update(doc, method=None):

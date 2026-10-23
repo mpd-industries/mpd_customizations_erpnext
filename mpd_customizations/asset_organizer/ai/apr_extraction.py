@@ -13,7 +13,7 @@ from mpd_customizations.mpd_base.item_ai.dedup import (
     check_item_duplicates,
     check_item_duplicates_and_set_status,
 )
-from mpd_customizations.mpd_base.item_ai.llm_call import call_llm
+from mpd_customizations.mpd_base.ai.llm import call_llm
 from mpd_customizations.asset_organizer.ai.schemas import (
     CATEGORY_SCHEMA_MAP,
     CATEGORY_TASK_KEY_MAP,

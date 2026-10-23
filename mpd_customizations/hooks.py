@@ -139,7 +139,7 @@ doctype_js = {
 # Override standard doctype classes
 
 override_doctype_class = {
-	"File": "mpd_customizations.overrides.file.CustomFile",
+	"File": "mpd_customizations.mpd_base.files.file_override.CustomFile",
 }
 
 # Document Events
