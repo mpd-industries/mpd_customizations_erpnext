@@ -3,8 +3,8 @@ from frappe import _
 from frappe.model.document import Document
 
 from mpd_customizations.xfloor_costing.services.pl_engine import (
-	_coving_kits_from_feet,
 	build_comparison,
+	coving_kits_from_feet,
 	calc_project,
 	flat_fields_to_main_part,
 	get_kit_rates_doc,
@@ -191,7 +191,7 @@ class FloorProject(Document):
 		cfg = get_kit_rates_doc()
 		feet = float(self.coving_running_feet or 0)
 		if feet > 0:
-			self.coving_kits = float(_coving_kits_from_feet(feet, cfg.get("coving_coverage")))
+			self.coving_kits = float(coving_kits_from_feet(feet, cfg.get("coving_coverage")))
 			for p in parts:
 				p.coving_kits = 0
 		else:
