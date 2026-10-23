@@ -12,7 +12,7 @@ def after_migrate():
 
 
 def _sync_cities():
-	from mpd_customizations.costing.doctype.city.city import sync_cities_from_addresses
+	from mpd_customizations.costing.services.city_sync import sync_cities_from_addresses
 
 	sync_cities_from_addresses()
 

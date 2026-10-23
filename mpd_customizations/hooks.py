@@ -152,7 +152,7 @@ doc_events = {
 		"on_trash":    "mpd_customizations.mpd_base.item_ai.item_hooks.on_trash",
 	},
 	"Address": {
-		"on_update": "mpd_customizations.costing.doctype.city.city.on_address_update",
+		"on_update": "mpd_customizations.costing.services.city_sync.on_address_update",
 	},
 }
 

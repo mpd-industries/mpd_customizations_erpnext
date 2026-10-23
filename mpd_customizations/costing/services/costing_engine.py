@@ -28,98 +28,11 @@ class CostingEngine:
 		doc = frappe.get_doc("Pricing Calculation", pricing_calculation_name)
 
 		is_customer_quote = bool(doc.customer_product_ref)
-		freight_fetch_result = None
-
-		if is_customer_quote:
-			boms = _get_customer_product_boms(doc.customer_product_ref)
-			_init_packaging_lines(doc)
-			_init_delivery_lines(doc)
-			fetch_result = RateFetcher.fetch(doc, preserve_overrides=True, bom_list=boms)
-			PackagingRateFetcher.fetch(doc, preserve_overrides=True)
-			freight_fetch_result = FreightRateFetcher.fetch(doc, preserve_overrides=True)
-		else:
-			if not doc.item:
-				frappe.throw(frappe._("Product is required."))
-			if not doc.city:
-				frappe.throw(frappe._("City is required on the Pricing Calculation."))
-
-			bom_exists = frappe.db.exists("BOM", {"item": doc.item})
-			if not bom_exists:
-				frappe.throw(frappe._("No BOM found for item {0}.").format(doc.item))
-
-			if doc.processor:
-				processor_city = frappe.db.get_value("Processor", doc.processor, "city")
-				if processor_city and processor_city != doc.city:
-					frappe.throw(
-						frappe._("Processor {0} is configured for city {1}, but this calculation is for city {2}.").format(
-							doc.processor, processor_city, doc.city
-						)
-					)
-
-			boms = frappe.get_all(
-				"BOM",
-				filters={"item": doc.item},
-				fields=[
-					"name",
-					"item",
-					"quantity",
-					"custom_formulation_id",
-					"custom_formulation_description",
-					"process_loss_percentage",
-				],
-			)
-			fetch_result = RateFetcher.fetch(doc, preserve_overrides=True)
-
+		boms, fetch_result, freight_fetch_result = self._load_and_fetch_rates(doc, is_customer_quote)
 		doc.save(ignore_permissions=True)
 
-		bom_names = [b["name"] for b in boms]
-		all_bom_items = frappe.get_all(
-			"BOM Item",
-			filters={"parent": ["in", bom_names]},
-			fields=["parent", "item_code", "item_name", "qty", "uom"],
-		)
-		all_scrap_items = frappe.get_all(
-			"BOM Scrap Item",
-			filters={"parent": ["in", bom_names]},
-			fields=["parent", "item_code", "item_name", "stock_qty", "stock_uom"],
-		)
-
-		bom_items_map: Dict[str, list] = {}
-		for bi in all_bom_items:
-			bom_items_map.setdefault(bi["parent"], []).append(bi)
-
-		scrap_items_map: Dict[str, list] = {}
-		for si in all_scrap_items:
-			scrap_items_map.setdefault(si["parent"], []).append(si)
-
-		all_item_codes = {bi["item_code"] for bi in all_bom_items} | {si["item_code"] for si in all_scrap_items}
-		item_label_map: Dict[str, str] = {}
-		if all_item_codes:
-			for row in frappe.get_all(
-				"Item",
-				filters={"name": ["in", list(all_item_codes)]},
-				fields=["name", "custom_item_label"],
-			):
-				item_label_map[row.name] = row.custom_item_label or ""
-
-		prev_rm_costs = {}
-		preferred_bom_override = None
-		if doc.pricing_request:
-			prev_pc_name = frappe.db.get_value("Pricing Request", doc.pricing_request, "previous_pricing_ref")
-			if prev_pc_name:
-				prev_raw = frappe.parse_json(
-					frappe.db.get_value("Pricing Calculation", prev_pc_name, "costing_raw") or "{}"
-				)
-				prev_combos = prev_raw.get("combinations", [])
-				prev_rm_costs = {c["bom"]: c["rm_cost_per_kg"] for c in prev_combos}
-				prev_selected = next((c for c in prev_combos if c.get("is_selected")), None)
-				if prev_selected:
-					preferred_bom_override = prev_selected["bom"]
-
-		preferred_bom = preferred_bom_override or doc.preferred_bom
-		if preferred_bom_override and preferred_bom_override != doc.preferred_bom:
-			frappe.db.set_value("Pricing Calculation", pricing_calculation_name, "preferred_bom", preferred_bom_override)
-			doc.preferred_bom = preferred_bom_override
+		bom_items_map, scrap_items_map, item_label_map = self._load_bom_components(boms)
+		preferred_bom, prev_rm_costs = self._resolve_preferred_bom(doc, pricing_calculation_name)
 
 		city = doc.city or ""
 		rate_lines_map = {rl.item: rl for rl in (doc.rate_lines or [])}
@@ -328,7 +241,8 @@ class CostingEngine:
 
 		previously_selected_bom = doc.selected_combination or None
 
-		now = now_datetime()
+		# Called on the module-level frappe so tests can patch costing_engine.frappe.
+		now = frappe.utils.now_datetime()
 
 		for combo in combination_results:
 			combo["is_preferred"] = bool(combo["bom"] == preferred_bom)
@@ -397,6 +311,108 @@ class CostingEngine:
 			"switch_alert": selection.switch_alert,
 			"mode": mode,
 		}
+
+	def _load_and_fetch_rates(self, doc, is_customer_quote):
+		"""Validate the calculation, load its BOMs, and fetch current rates."""
+		freight_fetch_result = None
+		if is_customer_quote:
+			boms = _get_customer_product_boms(doc.customer_product_ref)
+			_init_packaging_lines(doc)
+			_init_delivery_lines(doc)
+			fetch_result = RateFetcher.fetch(doc, preserve_overrides=True, bom_list=boms)
+			PackagingRateFetcher.fetch(doc, preserve_overrides=True)
+			freight_fetch_result = FreightRateFetcher.fetch(doc, preserve_overrides=True)
+		else:
+			if not doc.item:
+				frappe.throw(frappe._("Product is required."))
+			if not doc.city:
+				frappe.throw(frappe._("City is required on the Pricing Calculation."))
+
+			bom_exists = frappe.db.exists("BOM", {"item": doc.item})
+			if not bom_exists:
+				frappe.throw(frappe._("No BOM found for item {0}.").format(doc.item))
+
+			if doc.processor:
+				processor_city = frappe.db.get_value("Processor", doc.processor, "city")
+				if processor_city and processor_city != doc.city:
+					frappe.throw(
+						frappe._("Processor {0} is configured for city {1}, but this calculation is for city {2}.").format(
+							doc.processor, processor_city, doc.city
+						)
+					)
+
+			boms = frappe.get_all(
+				"BOM",
+				filters={"item": doc.item},
+				fields=[
+					"name",
+					"item",
+					"quantity",
+					"custom_formulation_id",
+					"custom_formulation_description",
+					"process_loss_percentage",
+				],
+			)
+			fetch_result = RateFetcher.fetch(doc, preserve_overrides=True)
+
+		return boms, fetch_result, freight_fetch_result
+
+	def _load_bom_components(self, boms):
+		"""Bulk-load BOM items, scrap items, and item labels for every BOM."""
+		bom_names = [b["name"] for b in boms]
+		all_bom_items = frappe.get_all(
+			"BOM Item",
+			filters={"parent": ["in", bom_names]},
+			fields=["parent", "item_code", "item_name", "qty", "uom"],
+		)
+		all_scrap_items = frappe.get_all(
+			"BOM Scrap Item",
+			filters={"parent": ["in", bom_names]},
+			fields=["parent", "item_code", "item_name", "stock_qty", "stock_uom"],
+		)
+
+		bom_items_map: Dict[str, list] = {}
+		for bi in all_bom_items:
+			bom_items_map.setdefault(bi["parent"], []).append(bi)
+
+		scrap_items_map: Dict[str, list] = {}
+		for si in all_scrap_items:
+			scrap_items_map.setdefault(si["parent"], []).append(si)
+
+		all_item_codes = {bi["item_code"] for bi in all_bom_items} | {si["item_code"] for si in all_scrap_items}
+		item_label_map: Dict[str, str] = {}
+		if all_item_codes:
+			for row in frappe.get_all(
+				"Item",
+				filters={"name": ["in", list(all_item_codes)]},
+				fields=["name", "custom_item_label"],
+			):
+				item_label_map[row.name] = row.custom_item_label or ""
+
+		return bom_items_map, scrap_items_map, item_label_map
+
+	def _resolve_preferred_bom(self, doc, pricing_calculation_name):
+		"""Carry the previously selected formulation forward as the preferred BOM."""
+		prev_rm_costs = {}
+		preferred_bom_override = None
+		if doc.pricing_request:
+			prev_pc_name = frappe.db.get_value("Pricing Request", doc.pricing_request, "previous_pricing_ref")
+			if prev_pc_name:
+				prev_raw = frappe.parse_json(
+					frappe.db.get_value("Pricing Calculation", prev_pc_name, "costing_raw") or "{}"
+				)
+				prev_combos = prev_raw.get("combinations", [])
+				prev_rm_costs = {c["bom"]: c["rm_cost_per_kg"] for c in prev_combos}
+				prev_selected = next((c for c in prev_combos if c.get("is_selected")), None)
+				if prev_selected:
+					preferred_bom_override = prev_selected["bom"]
+
+		preferred_bom = preferred_bom_override or doc.preferred_bom
+		if preferred_bom_override and preferred_bom_override != doc.preferred_bom:
+			frappe.db.set_value("Pricing Calculation", pricing_calculation_name, "preferred_bom", preferred_bom_override)
+			doc.preferred_bom = preferred_bom_override
+
+		return preferred_bom, prev_rm_costs
 
 
 def _get_customer_product_boms(customer_product_ref: str) -> List[Dict]:
