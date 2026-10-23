@@ -1,4 +1,3 @@
-import os
 
 import frappe
 from frappe import _

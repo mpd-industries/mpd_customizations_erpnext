@@ -1,279 +1,101 @@
 app_name = "mpd_customizations"
-commands = ["mpd_customizations.commands"]
 app_title = "Mpd Customizations"
 app_publisher = "mpdindustries"
 app_description = "Customizations For MPD Industries"
 app_email = "ayush@mpdindustries.com"
 app_license = "mit"
 
-# Apps
-# ------------------
-
-# required_apps = []
-
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "mpd_customizations",
-# 		"logo": "/assets/mpd_customizations/logo.png",
-# 		"title": "Mpd Customizations",
-# 		"route": "/mpd_customizations",
-# 		"has_permission": "mpd_customizations.api.permission.has_app_permission"
-# 	}
-# ]
-
-# Includes in <head>
-# ------------------
-
-# include js, css files in header of desk.html
-# app_include_css = "/assets/mpd_customizations/css/mpd_customizations.css"
-# app_include_js = "/assets/mpd_customizations/js/mpd_customizations.js"
-
-# include js, css files in header of web template
-# web_include_css = "/assets/mpd_customizations/css/mpd_customizations.css"
-# web_include_js = "/assets/mpd_customizations/js/mpd_customizations.js"
-
-# include custom scss in every website theme (without file extension ".scss")
-# website_theme_scss = "mpd_customizations/public/scss/website"
-
-# include js, css files in header of web form
-# webform_include_js = {"doctype": "public/js/doctype.js"}
-# webform_include_css = {"doctype": "public/css/doctype.css"}
-
-# include js in page
-# page_js = {"page" : "public/js/file.js"}
-
-# include js in doctype views
-doctype_js = {
-    "Item": "public/js/item_custom.js",
-    "Meeting Note": "meeting_notes/doctype/meeting_note/meeting_note.js",
-    "Project": "public/js/project_custom.js",
-    "Floor Project": "xfloor_costing/doctype/floor_project/floor_project.js",
-    "Kit rates": "xfloor_costing/doctype/kit_rates/kit_rates.js",
-    "Kit Coverage": "xfloor_costing/doctype/kit_coverage/kit_coverage.js",
-}
-# doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
-# doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
-# doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
-
-# Svg Icons
-# ------------------
-# include app icons in desk
-# app_include_icons = "mpd_customizations/public/icons.svg"
-
-# Home Pages
-# ----------
-
-# application home page (will override Website Settings)
-# home_page = "login"
-
-# website user home page (by Role)
-# role_home_page = {
-# 	"Role": "home_page"
-# }
-
-# Generators
-# ----------
-
-# automatically create page for each record of this doctype
-# website_generators = ["Web Page"]
-
-# Jinja
-# ----------
-
-# add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "mpd_customizations.utils.jinja_methods",
-# 	"filters": "mpd_customizations.utils.jinja_filters"
-# }
-
 # Installation
 # ------------
+# Each feature registers its own steps in setup.FEATURE_INSTALLERS.
 
-# before_install = "mpd_customizations.install.before_install"
-# after_install = "mpd_customizations.install.after_install"
+after_install = "mpd_customizations.setup.after_install"
+after_migrate = "mpd_customizations.setup.after_migrate"
 
-# Uninstallation
-# ------------
+# mpd_base
+# --------
+# Item master customizations and the S3-backed File override.
 
-# before_uninstall = "mpd_customizations.uninstall.before_uninstall"
-# after_uninstall = "mpd_customizations.uninstall.after_uninstall"
+doctype_js = {
+	"Item": "public/js/item_custom.js",
+}
 
-# Integration Setup
-# ------------------
-# To set up dependencies/integrations with other apps
-# Name of the app being installed is passed as an argument
-
-# before_app_install = "mpd_customizations.utils.before_app_install"
-# after_app_install = "mpd_customizations.utils.after_app_install"
-
-# Integration Cleanup
-# -------------------
-# To clean up dependencies/integrations with other apps
-# Name of the app being uninstalled is passed as an argument
-
-# before_app_uninstall = "mpd_customizations.utils.before_app_uninstall"
-# after_app_uninstall = "mpd_customizations.utils.after_app_uninstall"
-
-# Desk Notifications
-# ------------------
-# See frappe.core.notifications.get_notification_config
-
-# notification_config = "mpd_customizations.notifications.get_notification_config"
-
-# Permissions
-# -----------
-# Permissions evaluated in scripted ways
-
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
-
-# DocType Class
-# ---------------
-# Override standard doctype classes
+doc_events = {
+	"Item": {
+		"before_save": "mpd_customizations.mpd_base.item_ai.item_hooks.before_save",
+		"on_trash": "mpd_customizations.mpd_base.item_ai.item_hooks.on_trash",
+	},
+}
 
 override_doctype_class = {
 	"File": "mpd_customizations.mpd_base.files.file_override.CustomFile",
 }
 
-# Document Events
-# ---------------
-# Hook on document methods and events
-
-doc_events = {
-	"Item": {
-		"before_save": "mpd_customizations.mpd_base.item_ai.item_hooks.before_save",
-		"on_trash":    "mpd_customizations.mpd_base.item_ai.item_hooks.on_trash",
-	},
-	"Address": {
-		"on_update": "mpd_customizations.costing.services.city_sync.on_address_update",
-	},
-}
-
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
-
-# Fixtures
-# --------
-
-fixtures = [
-    {"dt": "Custom Field", "filters": [["dt", "in", ["Task"]]]},
-    {"dt": "Property Setter", "filters": [["doc_type", "=", "Task"], ["field_name", "=", "description"]]},
-    {"dt": "Role", "filters": [["name", "in", ["Xfloor CMS Manager", "XFloor Costing Manager"]]]},
-    # Costing module fixtures
-    {"dt": "Custom Field", "filters": [["module", "=", "Costing"]]},
-    {"dt": "Role", "filters": [["name", "in", ["Costing User", "Costing Approver", "Rate Manager", "Costing Sales", "R&D Manager", "Dispatch Manager"]]]},
-    {"dt": "Costing Configuration"},
-    {"dt": "Packaging Material"},
-    {"dt": "Packaging Rate"},
-    {"dt": "Print Format", "filters": [["name", "in", ["Floor Project P&L"]]]},
-]
-
-# Scheduled Tasks
-# ---------------
-
-scheduler_events = {
-    "cron": {
-        "*/15 * * * *": [
-            "mpd_customizations.meeting_notes.action_extraction.pipeline.reset_stuck_jobs"
-        ]
-    },
-    "daily": [
-        "mpd_customizations.costing.services.rate_validity_monitor.run_rate_validity_check"
-    ],
-}
-
-# Testing
+# costing
 # -------
 
-# before_tests = "mpd_customizations.install.before_tests"
+doc_events["Address"] = {
+	"on_update": "mpd_customizations.costing.services.city_sync.on_address_update",
+}
 
-# Overriding Methods
-# ------------------------------
-#
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "mpd_customizations.event.get_events"
-# }
-#
-# each overriding function accepts a `data` argument;
-# generated from the base implementation of the doctype dashboard,
-# along with any modifications made in other Frappe apps
-# override_doctype_dashboards = {
-# 	"Task": "mpd_customizations.task.get_dashboard_data"
-# }
+scheduler_events = {
+	"daily": [
+		"mpd_customizations.costing.services.rate_validity_monitor.run_rate_validity_check",
+	],
+}
 
-# exempt linked doctypes from being automatically cancelled
-#
-# auto_cancel_exempted_doctypes = ["Auto Repeat"]
+fixtures = [
+	{"dt": "Custom Field", "filters": [["module", "=", "Costing"]]},
+	{"dt": "Role", "filters": [["name", "in", ["Costing User", "Costing Approver", "Rate Manager", "Costing Sales", "R&D Manager", "Dispatch Manager"]]]},
+	{"dt": "Costing Configuration"},
+	{"dt": "Packaging Material"},
+	{"dt": "Packaging Rate"},
+]
 
-# Ignore links to specified DocTypes when deleting documents
-# -----------------------------------------------------------
+# asset_organizer
+# ---------------
+# No hooks of its own; extraction jobs are enqueued from the doctype controller.
 
-# ignore_links_on_delete = ["Communication", "ToDo"]
+# meeting_notes
+# -------------
 
-# Request Events
-# ----------------
-# before_request = ["mpd_customizations.utils.before_request"]
-# after_request = ["mpd_customizations.utils.after_request"]
+doctype_js["Meeting Note"] = "meeting_notes/doctype/meeting_note/meeting_note.js"
 
-# Job Events
+scheduler_events["cron"] = {
+	"*/15 * * * *": [
+		"mpd_customizations.meeting_notes.action_extraction.pipeline.reset_stuck_jobs",
+	],
+}
+
+# xfloor_costing
+# --------------
+
+doctype_js["Floor Project"] = "xfloor_costing/doctype/floor_project/floor_project.js"
+doctype_js["Kit rates"] = "xfloor_costing/doctype/kit_rates/kit_rates.js"
+doctype_js["Kit Coverage"] = "xfloor_costing/doctype/kit_coverage/kit_coverage.js"
+
+fixtures.append(
+	{"dt": "Print Format", "filters": [["name", "in", ["Floor Project P&L"]]]}
+)
+
+# xfloor_cms
 # ----------
-# before_job = ["mpd_customizations.utils.before_job"]
-# after_job = ["mpd_customizations.utils.after_job"]
 
-# User Data Protection
-# --------------------
+fixtures.append(
+	{"dt": "Role", "filters": [["name", "in", ["Xfloor CMS Manager", "XFloor Costing Manager"]]]}
+)
 
-# user_data_fields = [
-# 	{
-# 		"doctype": "{doctype_1}",
-# 		"filter_by": "{filter_by}",
-# 		"redact_fields": ["{field_1}", "{field_2}"],
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_2}",
-# 		"filter_by": "{filter_by}",
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_3}",
-# 		"strict": False,
-# 	},
-# 	{
-# 		"doctype": "{doctype_4}"
-# 	}
-# ]
+# Shared
+# ------
+# Bench commands are collected in commands/__init__.py.
 
-# Authentication and authorization
-# --------------------------------
+commands = ["mpd_customizations.commands"]
 
-# auth_hooks = [
-# 	"mpd_customizations.auth.validate"
-# ]
+doctype_js["Project"] = "public/js/project_custom.js"
 
-# Automatically update python controller files with type annotations for this app.
-# export_python_type_annotations = True
-
-# default_log_clearing_doctypes = {
-# 	"Logging DocType Name": 30  # days to retain logs
-# }
-
-# Translation
-# ------------
-# List of apps whose translatable strings should be excluded from this app's translations.
-# ignore_translatable_strings_from = []
-
-after_install = "mpd_customizations.setup.after_install"
-after_migrate = "mpd_customizations.setup.after_migrate"
+fixtures.insert(
+	0, {"dt": "Custom Field", "filters": [["dt", "in", ["Task"]]]}
+)
+fixtures.insert(
+	1, {"dt": "Property Setter", "filters": [["doc_type", "=", "Task"], ["field_name", "=", "description"]]}
+)
