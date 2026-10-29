@@ -9,7 +9,7 @@ frappe.ui.form.on('Item Request', {
             poll_for_status_change(frm);
         }
         render_status_banner(frm);
-        render_action_buttons(frm);
+        frm.clear_custom_buttons();
         style_inline_buttons(frm);
     },
 
@@ -18,30 +18,29 @@ frappe.ui.form.on('Item Request', {
     generate_ai_btn(frm)         { generate_ai_suggestion(frm); },
     create_item_btn(frm)         { create_item(frm); },
 
+    // Exactly one of Stock / Fixed Asset / Expense
+    is_stock_item(frm)    { exclusive_item_kind(frm, 'is_stock_item'); },
+    is_fixed_asset(frm)   { exclusive_item_kind(frm, 'is_fixed_asset'); },
+    is_expense_item(frm)  { exclusive_item_kind(frm, 'is_expense_item'); },
+
     // Reset dedup when key input fields change
     requester_description(frm) { reset_dedup_if_needed(frm); },
     tally_name(frm)            { reset_dedup_if_needed(frm); },
     tally_alias(frm)           { reset_dedup_if_needed(frm); },
     legacy_material_code(frm)  { reset_dedup_if_needed(frm); },
 
-    // AI suggestion fields — flag for MA review if a non-MA user edits them
-    ai_item_name_suggestion(frm)      { flag_for_ma_if_needed(frm); },
-    ai_prefix_suggestion(frm)         { flag_for_ma_if_needed(frm); },
-    ai_sub_category_suggestion(frm)   { flag_for_ma_if_needed(frm); },
-    ai_item_group_suggestion(frm)     { flag_for_ma_if_needed(frm); },
-    ai_asset_category_suggestion(frm) { flag_for_ma_if_needed(frm); },
-    ai_solids_suffix_suggestion(frm)  { flag_for_ma_if_needed(frm); },
-    ai_hsn_suggestion(frm)            { flag_for_ma_if_needed(frm); },
-    ai_uom_suggestion(frm)            { flag_for_ma_if_needed(frm); },
-
 });
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function is_ma() {
-    return frappe.user_roles.includes('Master Approver') ||
-           frappe.user_roles.includes('System Manager');
+function exclusive_item_kind(frm, checked_field) {
+    if (!frm.doc[checked_field]) return;
+    ['is_stock_item', 'is_fixed_asset', 'is_expense_item'].forEach((field) => {
+        if (field !== checked_field && frm.doc[field]) {
+            frm.set_value(field, 0);
+        }
+    });
 }
 
 function style_inline_buttons(frm) {
@@ -75,7 +74,7 @@ function style_inline_buttons(frm) {
 
 function reload_and_render(frm) {
     // reload_doc fetches the latest doc and calls frm.refresh() internally,
-    // which triggers our refresh event handler (render_status_banner + render_action_buttons).
+    // which triggers our refresh event handler (render_status_banner).
     return frm.reload_doc();
 }
 
@@ -84,15 +83,15 @@ function reload_and_render(frm) {
 
 function render_status_banner(frm) {
     const map = {
-        'Draft':               ['blue',   'Fill in the details on the left, then click Check for Similar Items below.'],
+        'Draft':               ['blue',   'Choose Stock, Fixed Asset, or Expense, fill in the details, then click Check for Similar Items below.'],
         'Pending Dedup Check': ['yellow', 'Checking for similar items...'],
         'Dedup Confirmed':     ['blue',   'No duplicates found (or acknowledged). Click Generate AI Suggestion below.'],
         'Pending AI Review':   ['yellow', 'AI review in progress...'],
-        'AI Reviewed':         ['green',  'AI suggestion is ready below. Review the fields — edit any to send for MA approval, or click  <b>Create Item</b>  to accept as-is.'],
-        'Duplicate Flagged':   ['red',    'AI flagged a possible duplicate. A Master Approver will review and resolve.'],
-        'Pending MA Approval': ['orange', 'The suggestion was modified — awaiting Master Approver review.'],
-        'Approved':            ['green',  `Approved. Item created: ${frm.doc.created_item_code || '—'}`],
-        'Rejected':            ['red',    'Request rejected. See the MA Review Note in the Approval section.'],
+        'AI Reviewed':         ['green',  'AI suggestion is ready below. You can edit any field, then click <b>Create Item</b>.'],
+        'Duplicate Flagged':   ['orange', 'AI flagged a possible duplicate — review the suggestion and similar items, edit if needed, then click <b>Create Item</b> when ready.'],
+        'Pending MA Approval': ['green',  'Suggestion is ready. Edits are allowed — click <b>Create Item</b> when ready.'],
+        'Approved':            ['green',  `Item created: ${frm.doc.created_item_code || '—'}`],
+        'Rejected':            ['red',    'Request was rejected. See the note in the Created Item section.'],
     };
     const [indicator, message] = map[frm.doc.status] || ['blue', ''];
     if (message) {
@@ -100,44 +99,6 @@ function render_status_banner(frm) {
             `<span class="indicator ${indicator}">${message}</span>`
         );
     }
-}
-
-
-// ─── Action buttons (top toolbar — MA actions only) ───────────────────────────
-
-function render_action_buttons(frm) {
-    frm.clear_custom_buttons();
-    const s = frm.doc.status;
-
-    // MA approval path
-    if (is_ma() && ['Pending MA Approval', 'Duplicate Flagged'].includes(s)) {
-        frm.add_custom_button('Approve & Create Item', () => approve_request(frm), 'Actions');
-        frm.add_custom_button('Reject', () => reject_request(frm), 'Actions');
-    }
-}
-
-
-// ─── Flag for MA review when AI fields are edited ─────────────────────────────
-
-function flag_for_ma_if_needed(frm) {
-    if (frm.doc.status !== 'AI Reviewed') return;
-    if (is_ma()) return;  // MAs can freely edit without escalating
-    if (frm.is_new()) return;
-
-    frappe.call({
-        method: 'mpd_customizations.mpd_base.item_ai.review.flag_for_ma_approval',
-        args: { request_name: frm.doc.name },
-        callback(r) {
-            if (r.message && r.message.status === 'flagged') {
-                reload_and_render(frm).then(() => {
-                    frappe.show_alert({
-                        message: 'You edited the AI suggestion — sent for Master Approver review.',
-                        indicator: 'orange',
-                    });
-                });
-            }
-        },
-    });
 }
 
 
@@ -345,11 +306,11 @@ function poll_for_status_change(frm, interval_ms=4000, max_attempts=30) {
 }
 
 
-// ─── Item creation (requester accepts AI result as-is) ────────────────────────
+// ─── Item creation ────────────────────────────────────────────────────────────
 
 function create_item(frm) {
     frappe.confirm(
-        'Create the item with the AI suggested values?',
+        'Create the item with the current suggestion values (including any edits)?',
         () => {
             const do_create = () => {
                 frappe.call({
@@ -374,57 +335,5 @@ function create_item(frm) {
                 do_create();
             }
         }
-    );
-}
-
-
-// ─── MA approval / rejection ──────────────────────────────────────────────────
-
-function approve_request(frm) {
-    frappe.confirm(
-        'Approve this request and create the item with the current field values?',
-        () => {
-            frappe.call({
-                method: 'mpd_customizations.mpd_base.item_ai.review.approve_request',
-                args: { request_name: frm.doc.name },
-                callback(r) {
-                    reload_and_render(frm).then(() => {
-                        if (r.message) {
-                            frappe.show_alert({
-                                message: `Approved — item created: ${r.message}`,
-                                indicator: 'green',
-                            });
-                        }
-                    });
-                },
-            });
-        }
-    );
-}
-
-function reject_request(frm) {
-    frappe.prompt(
-        {
-            label: 'Reason for rejection',
-            fieldname: 'review_note',
-            fieldtype: 'Small Text',
-            reqd: 1,
-        },
-        ({ review_note }) => {
-            frappe.call({
-                method: 'mpd_customizations.mpd_base.item_ai.review.reject_request',
-                args: { request_name: frm.doc.name, review_note },
-                callback() {
-                    reload_and_render(frm).then(() => {
-                        frappe.show_alert({
-                            message: 'Request rejected.',
-                            indicator: 'red',
-                        });
-                    });
-                },
-            });
-        },
-        'Reject Item Request',
-        'Reject'
     );
 }

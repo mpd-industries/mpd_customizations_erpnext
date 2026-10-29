@@ -67,8 +67,12 @@ def build_and_insert_item(doc):
 	gst_link = _resolve_gst_hsn_link_for_item(doc)
 	canonical_desc = canonical_request_description(doc)
 
-	if doc.is_fixed_asset and not doc.ai_asset_category_suggestion:
-		frappe.throw("Asset Category is required for Fixed Asset items — AI suggestion is missing.")
+	is_fixed_asset = 1 if doc.is_fixed_asset else 0
+	is_stock_item = 1 if doc.is_stock_item and not is_fixed_asset else 0
+	# Expense: both flags stay 0.
+
+	if is_fixed_asset and not doc.ai_asset_category_suggestion:
+		frappe.throw("Asset Category is required for Fixed Asset items — pick or keep the AI suggestion.")
 
 	item = frappe.get_doc(
 		{
@@ -77,8 +81,8 @@ def build_and_insert_item(doc):
 			"item_name": doc.ai_item_name_suggestion,
 			"description": canonical_desc,
 			"item_group": doc.ai_item_group_suggestion,
-			"is_stock_item": doc.is_stock_item,
-			"is_fixed_asset": doc.is_fixed_asset,
+			"is_stock_item": is_stock_item,
+			"is_fixed_asset": is_fixed_asset,
 			"is_purchase_item": 1,
 			"stock_uom": stock_uom,
 			"purchase_uom": stock_uom,

@@ -1,9 +1,23 @@
-import json
-
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from mpd_customizations.mpd_base.item_ai.dedup import build_search_index
+
+
+def count_item_kind_flags(doc) -> int:
+	return int(bool(doc.is_stock_item)) + int(bool(doc.is_fixed_asset)) + int(bool(doc.is_expense_item))
+
+
+def validate_item_kind(doc):
+	"""Exactly one of Stock, Fixed Asset, or Expense must be checked."""
+	count = count_item_kind_flags(doc)
+	if count == 1:
+		return
+	frappe.throw(
+		_("Choose exactly one of Is Stock Item, Is Fixed Asset, or Expense."),
+		title=_("Item kind required"),
+	)
 
 
 class ItemRequest(Document):
@@ -12,41 +26,12 @@ class ItemRequest(Document):
 			self.requested_by = frappe.session.user
 
 	def validate(self):
-		self._check_snapshot_modified()
-
-	def _check_snapshot_modified(self):
-		"""
-		If any AI suggestion field has been changed after the snapshot
-		was frozen, bump status to Pending MA Approval so the MA must
-		review before the item is created.
-		"""
-		if not self.ai_snapshot:
-			return
-		if self.status != "AI Reviewed":
-			return
-
-		snapshot = json.loads(self.ai_snapshot)
-
-		fields_to_check = [
-			("ai_item_name_suggestion", "item_name"),
-			("ai_prefix_suggestion", "prefix"),
-			("ai_sub_category_suggestion", "sub_category"),
-			("ai_item_group_suggestion", "item_group"),
-			("ai_asset_category_suggestion", "asset_category"),
-			("ai_solids_suffix_suggestion", "solids_suffix"),
-		]
-
-		for doc_field, snap_key in fields_to_check:
-			current = self.get(doc_field) or None
-			original = snapshot.get(snap_key) or None
-			if current != original:
-				self.status = "Pending MA Approval"
-				return
+		validate_item_kind(self)
 
 	def on_trash(self):
 		if self.created_item_code:
 			frappe.db.set_value("Item", self.created_item_code, "custom_item_request", None)
 
 	def rebuild_item_index(self):
-		"""Called after Item is created on approval."""
+		"""Called after Item is created."""
 		build_search_index()

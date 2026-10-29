@@ -16,6 +16,7 @@
   "stock_uom",
   "is_stock_item",
   "is_fixed_asset",
+  "is_expense_item",
   "tally_name",
   "tally_alias",
   "legacy_material_code",
@@ -120,18 +121,25 @@
    "options": "UOM"
   },
   {
-   "default": "1",
-   "description": "Defaulted to yes \u2014 uncheck if not a stock item",
+   "default": "0",
+   "description": "Choose exactly one of Stock, Fixed Asset, or Expense",
    "fieldname": "is_stock_item",
    "fieldtype": "Check",
    "label": "Is Stock Item"
   },
   {
    "default": "0",
-   "description": "Check if this is a fixed asset",
+   "description": "Choose exactly one of Stock, Fixed Asset, or Expense",
    "fieldname": "is_fixed_asset",
    "fieldtype": "Check",
    "label": "Is Fixed Asset"
+  },
+  {
+   "default": "0",
+   "description": "Not stock and not a fixed asset (service, consumable charged to expense). Choose exactly one of Stock, Fixed Asset, or Expense",
+   "fieldname": "is_expense_item",
+   "fieldtype": "Check",
+   "label": "Expense"
   },
   {
    "description": "Legacy Tally item code e.g. ORM0010",
@@ -202,7 +210,7 @@
    "fieldname": "create_item_btn",
    "fieldtype": "Button",
    "label": "Create Item",
-   "depends_on": "eval:doc.status === 'AI Reviewed'"
+   "depends_on": "eval:['AI Reviewed','Pending MA Approval','Duplicate Flagged'].includes(doc.status)"
   },
   {
    "fieldname": "ai_item_name_suggestion",
@@ -332,11 +340,11 @@
   {
    "fieldname": "section_break_approval",
    "fieldtype": "Section Break",
-   "label": "Approval",
-   "depends_on": "eval:['Approved','Rejected','Pending MA Approval','Duplicate Flagged'].includes(doc.status)"
+   "label": "Created Item",
+   "depends_on": "eval:['Approved','Rejected'].includes(doc.status)"
   },
   {
-   "description": "Set on approval.",
+   "description": "Set when the item is created.",
    "fieldname": "created_item_code",
    "fieldtype": "Link",
    "label": "Created Item Code",
@@ -344,10 +352,11 @@
    "read_only": 1
   },
   {
-   "description": "Required on reject",
+   "description": "Legacy field; rejection is no longer used in this flow",
    "fieldname": "ma_review_note",
    "fieldtype": "Small Text",
-   "label": "MA Review Note"
+   "label": "MA Review Note",
+   "read_only": 1
   },
   {
    "fieldname": "approved_by",
@@ -366,7 +375,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-11 16:08:22.925988",
+ "modified": "2026-10-29 12:40:00.000000",
  "modified_by": "Administrator",
  "module": "mpd_base",
  "name": "Item Request",

@@ -37,10 +37,12 @@ def sync_item_classification_system_prompt_from_code():
 	if not frappe.db.exists("AI Task Config", "item_classification"):
 		return
 	doc = frappe.get_doc("AI Task Config", "item_classification")
+	if doc.system_prompt == ITEM_CLASSIFICATION_SYSTEM_PROMPT:
+		return
 	doc.system_prompt = ITEM_CLASSIFICATION_SYSTEM_PROMPT
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()
-	print("Synced item_classification system prompt from code (MPD_SYNC_ITEM_AI_PROMPT=1)")
+	print("Synced item_classification system prompt from code")
 
 
 def _seed_openrouter_provider():

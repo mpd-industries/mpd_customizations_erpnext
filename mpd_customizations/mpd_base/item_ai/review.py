@@ -19,6 +19,11 @@ def enqueue_item_ai_review(request_name):
 	Called by the Generate AI Suggestion button.
 	Sets status to Pending AI Review and queues the background job.
 	"""
+	from mpd_customizations.mpd_base.doctype.item_request.item_request import validate_item_kind
+
+	doc = frappe.get_doc("Item Request", request_name)
+	validate_item_kind(doc)
+
 	frappe.db.set_value("Item Request", request_name, "status", "Pending AI Review")
 	frappe.db.commit()
 
@@ -192,12 +197,21 @@ def build_prompt(doc, top_candidates):
 	)
 	uom_block = "\n".join(f"- {u.name}" for u in uom_rows)
 
+	if doc.is_fixed_asset:
+		item_kind = "Fixed Asset"
+	elif doc.is_expense_item:
+		item_kind = "Expense (not stock, not fixed asset)"
+	else:
+		item_kind = "Stock Item"
+
 	canonical_desc = _canonical_request_description(doc)
 	prompt = f"""
 ITEM REQUEST:
   Description:           {canonical_desc}
+  Item Kind:             {item_kind}
   Is Fixed Asset:        {"Yes" if doc.is_fixed_asset else "No"}
   Is Stock Item:         {"Yes" if doc.is_stock_item else "No"}
+  Is Expense:            {"Yes" if doc.is_expense_item else "No"}
   HSN Code:              {doc.gst_hsn_code or "Not provided"}
   Stock UOM (requester): {doc.stock_uom or "Not provided"}
   Tally Name:            {doc.tally_name or "None"}
@@ -226,8 +240,8 @@ Pick suggested_stock_uom from this list only (exact name match).
 def apply_result(doc, result, config, params):
 	"""
 	Writes LLM output to the Item Request doc.
-	Freezes the snapshot.
-	Decides auto-approval vs MA review.
+	Freezes the snapshot and leaves status at AI Reviewed.
+	Does not change the Stock / Fixed Asset / Expense checks.
 	"""
 	doc.ai_item_name_suggestion = result.get("item_name")
 	doc.ai_prefix_suggestion = result.get("prefix")
@@ -283,56 +297,45 @@ def apply_result(doc, result, config, params):
 	}
 	doc.ai_snapshot = json.dumps(snapshot)
 
-	# Decide approval path — order matters: duplicate > OTH > normal
-	threshold = float(params.get("confidence_threshold", 0.85))
-	has_duplicate = bool(result.get("duplicate_warning"))
-	is_oth = result.get("prefix") == "OTH"
-	high_conf = doc.ai_confidence_score >= threshold
-
-	if has_duplicate:
-		doc.status = "Duplicate Flagged"
-	elif is_oth:
-		doc.status = "Pending MA Approval"
-	else:
-		doc.status = "AI Reviewed"
+	# The requester creates the item themselves — duplicate and OTH stay
+	# visible on the form but no longer block Create Item.
+	doc.status = "AI Reviewed"
 
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
 
-# ─── Flag for MA review (called when user edits AI suggestion fields) ──────────
+# ─── Flag for MA review (kept as a no-op for cached desk scripts) ──────────────
 
 
 @frappe.whitelist()
 def flag_for_ma_approval(request_name):
-	"""
-	Called client-side when a non-MA user edits an AI suggestion field.
-	Transitions the request from AI Reviewed to Pending MA Approval.
-	"""
-	doc = frappe.get_doc("Item Request", request_name)
-	if doc.status != "AI Reviewed":
-		return {"status": "no_change"}
-
-	doc.status = "Pending MA Approval"
-	doc.save(ignore_permissions=True)
-	frappe.db.commit()
-	return {"status": "flagged"}
+	"""Editing the AI suggestion no longer escalates for Master Approver review."""
+	return {"status": "no_change"}
 
 
-# ─── Create item (requester accepts AI suggestion as-is) ──────────────────────
+# ─── Create item (requester accepts the current suggestion fields) ─────────────
+
+_CREATE_ALLOWED_STATUSES = ("AI Reviewed", "Pending MA Approval", "Duplicate Flagged")
 
 
 @frappe.whitelist()
 def create_item_from_request(request_name):
 	"""
 	Called when the requester clicks 'Create Item' after reviewing the AI output.
-	Only allowed when status is AI Reviewed (unmodified suggestion).
-	Creates the ERPNext Item and marks the request Approved.
+	Uses the suggestion fields currently on the form (including any edits).
 	"""
+	from mpd_customizations.mpd_base.doctype.item_request.item_request import validate_item_kind
+
 	doc = frappe.get_doc("Item Request", request_name)
 
-	if doc.status != "AI Reviewed":
-		frappe.throw("Item can only be created directly from 'AI Reviewed' status.")
+	if doc.status not in _CREATE_ALLOWED_STATUSES:
+		frappe.throw(
+			f"Item can only be created after AI review "
+			f"(allowed: {', '.join(_CREATE_ALLOWED_STATUSES)}; current: {doc.status})."
+		)
+
+	validate_item_kind(doc)
 
 	item_code = _build_and_insert_item(doc)
 
@@ -345,68 +348,9 @@ def create_item_from_request(request_name):
 
 	_rebuild_search_index()
 	return item_code
-
-
-# ─── MA approve (MA accepts the request, possibly after editing fields) ────────
-
-
-@frappe.whitelist()
-def approve_request(request_name):
-	"""
-	Called by a Master Approver via the 'Approve & Create Item' button.
-	Allowed from Pending MA Approval or Duplicate Flagged status.
-	"""
-	if not _is_ma():
-		frappe.throw("Only a Master Approver can approve requests.", frappe.PermissionError)
-
-	doc = frappe.get_doc("Item Request", request_name)
-
-	if doc.status not in ("Pending MA Approval", "Duplicate Flagged"):
-		frappe.throw(f"Cannot approve a request in '{doc.status}' status.")
-
-	item_code = _build_and_insert_item(doc)
-
-	doc.status = "Approved"
-	doc.created_item_code = item_code
-	doc.approved_by = frappe.session.user
-	doc.approved_on = now_datetime()
-	doc.save(ignore_permissions=True)
-	frappe.db.commit()
-
-	_rebuild_search_index()
-	return item_code
-
-
-# ─── MA reject ────────────────────────────────────────────────────────────────
-
-
-@frappe.whitelist()
-def reject_request(request_name, review_note):
-	"""
-	Called by a Master Approver via the 'Reject' button.
-	"""
-	if not _is_ma():
-		frappe.throw("Only a Master Approver can reject requests.", frappe.PermissionError)
-
-	if not review_note:
-		frappe.throw("A review note is required when rejecting a request.")
-
-	doc = frappe.get_doc("Item Request", request_name)
-	doc.status = "Rejected"
-	doc.ma_review_note = review_note
-	doc.approved_by = frappe.session.user
-	doc.approved_on = now_datetime()
-	doc.save(ignore_permissions=True)
-	frappe.db.commit()
-	return {"status": "rejected"}
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
-
-
-def _is_ma():
-	roles = frappe.get_roles(frappe.session.user)
-	return "Master Approver" in roles or "System Manager" in roles
 
 
 def _rebuild_search_index():

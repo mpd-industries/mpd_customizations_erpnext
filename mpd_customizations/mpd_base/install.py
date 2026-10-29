@@ -1,5 +1,3 @@
-import os
-
 from mpd_customizations.mpd_base.ai.llm_fixtures import (
 	seed_llm_fixtures,
 	sync_item_classification_system_prompt_from_code,
@@ -19,10 +17,9 @@ def after_migrate():
 	"""Ensure LLM fixtures exist on upgraded sites (idempotent)."""
 	seed_llm_fixtures()
 	sync_oth_reclassification_config()
+	sync_item_classification_system_prompt_from_code()
 	_backfill_item_labels()
 	backfill_item_solids()
-	if os.environ.get("MPD_SYNC_ITEM_AI_PROMPT") == "1":
-		sync_item_classification_system_prompt_from_code()
 
 
 def _backfill_item_labels():

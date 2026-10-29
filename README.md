@@ -36,7 +36,7 @@ bench install-app mpd_customizations
 
 `after_install` and `after_migrate` seed item category codes, LLM fixtures (OpenRouter provider and AI Task Config rows), item labels, cities, and XFloor kit-rate defaults. Each step is idempotent. A step that fails is printed and skipped so the others still run.
 
-Set `OPENROUTER_API_KEY` before the first install if the OpenRouter provider should be created with a real key. Set `MPD_SYNC_ITEM_AI_PROMPT=1` while migrating to overwrite the `item_classification` system prompt from code.
+Set `OPENROUTER_API_KEY` before the first install if the OpenRouter provider should be created with a real key. Migrate always overwrites the `item_classification` and `oth_reclassification` system prompts from code.
 
 ## Develop
 
@@ -107,7 +107,7 @@ Shared platform for the other features.
 
 **LLM.** `LLM Provider` and `AI Task Config` (with parameter rows) live here. `mpd_base/ai/llm.py` is the LiteLLM wrapper (`call_llm`). `mpd_base/ai/task_config.py` loads an active config by `task_key`. `mpd_base/ai/llm_fixtures.py` seeds OpenRouter plus the `item_classification`, `meeting_note_extraction`, and `oth_reclassification` tasks.
 
-**Item AI.** New items are raised as Item Request, not Item (`public/js/item_custom.js`). Saving an Item Request enqueues `run_item_review`, which classifies the item (prefix, group, HSN, UOM) through `item_classification`. `item_ai/dedup.py` keeps a TF-IDF search index used by Item Request and by asset procurement. `bench recompute-item-labels` and the migrate backfill both call `item_ai/backfills.py`.
+**Item AI.** New items are raised as Item Request, not Item (`public/js/item_custom.js`). The requester chooses Stock, Fixed Asset, or Expense, runs dedup, then generates an AI suggestion (prefix, group, HSN, UOM) via `item_classification` / `run_item_review`. They can edit the suggestion and create the Item themselves — there is no Master Approver step. `item_ai/dedup.py` keeps a TF-IDF search index used by Item Request and by asset procurement. `bench recompute-item-labels` and the migrate backfill both call `item_ai/backfills.py`.
 
 **OTH review.** `oth_review/review.py` batch-reviews items still on the catch-all `OTH` prefix and suggests a real prefix, item group, and cleaned name.
 
