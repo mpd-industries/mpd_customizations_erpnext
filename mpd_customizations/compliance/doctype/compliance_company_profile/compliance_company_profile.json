@@ -1,0 +1,148 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "entity_type",
+  "cin",
+  "pan",
+  "tan",
+  "column_break_tax",
+  "financial_year_basis",
+  "turnover_band",
+  "listed",
+  "msme_status",
+  "imports",
+  "exports",
+  "section_borrow",
+  "borrowings",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "entity_type",
+   "fieldtype": "Data",
+   "label": "Entity Type"
+  },
+  {
+   "fieldname": "cin",
+   "fieldtype": "Data",
+   "label": "CIN"
+  },
+  {
+   "fieldname": "pan",
+   "fieldtype": "Data",
+   "label": "PAN"
+  },
+  {
+   "fieldname": "tan",
+   "fieldtype": "Data",
+   "label": "TAN"
+  },
+  {
+   "fieldname": "column_break_tax",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "financial_year_basis",
+   "fieldtype": "Select",
+   "label": "Financial Year Basis",
+   "options": "Financial Year\nCalendar",
+   "default": "Financial Year"
+  },
+  {
+   "fieldname": "turnover_band",
+   "fieldtype": "Data",
+   "label": "Turnover Band"
+  },
+  {
+   "fieldname": "listed",
+   "fieldtype": "Check",
+   "label": "Listed",
+   "default": "0"
+  },
+  {
+   "fieldname": "msme_status",
+   "fieldtype": "Data",
+   "label": "MSME Status"
+  },
+  {
+   "fieldname": "imports",
+   "fieldtype": "Check",
+   "label": "Imports",
+   "default": "0"
+  },
+  {
+   "fieldname": "exports",
+   "fieldtype": "Check",
+   "label": "Exports",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_borrow",
+   "fieldtype": "Section Break",
+   "label": "Borrowings and notes"
+  },
+  {
+   "fieldname": "borrowings",
+   "fieldtype": "Small Text",
+   "label": "Borrowings",
+   "description": "Banks and facilities."
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance",
+ "name": "Compliance Company Profile",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Compliance Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Compliance User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:company"
+}

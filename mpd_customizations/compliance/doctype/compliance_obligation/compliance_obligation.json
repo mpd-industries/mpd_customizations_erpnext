@@ -1,0 +1,311 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "domain",
+  "risk",
+  "status",
+  "law_reference",
+  "authority",
+  "description",
+  "applicability_reason",
+  "penalty_note",
+  "source",
+  "source_reference",
+  "section_scope",
+  "scope",
+  "company",
+  "site",
+  "registration",
+  "bank",
+  "counterparty",
+  "column_people",
+  "responsible_user",
+  "reviewer",
+  "reminder_days",
+  "section_schedule",
+  "frequency",
+  "period_basis",
+  "due_day",
+  "due_month_offset",
+  "effective_from",
+  "effective_to",
+  "generate_ahead_days",
+  "schedule_overrides",
+  "section_proof",
+  "evidence_required",
+  "auto_complete_from_evidence",
+  "evidence_folder",
+  "checklist"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Compliance Domain",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "risk",
+   "fieldtype": "Select",
+   "label": "Risk",
+   "options": "High\nMedium\nLow",
+   "default": "Medium",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nActive\nInactive",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "law_reference",
+   "fieldtype": "Data",
+   "label": "Law Reference"
+  },
+  {
+   "fieldname": "authority",
+   "fieldtype": "Data",
+   "label": "Authority"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "applicability_reason",
+   "fieldtype": "Text",
+   "label": "Why this applies"
+  },
+  {
+   "fieldname": "penalty_note",
+   "fieldtype": "Small Text",
+   "label": "Penalty"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Manual\nAgent\nDocument ingest",
+   "default": "Manual"
+  },
+  {
+   "fieldname": "source_reference",
+   "fieldtype": "Data",
+   "label": "Source Reference",
+   "description": "Citation or URL supplied by an agent."
+  },
+  {
+   "fieldname": "section_scope",
+   "fieldtype": "Section Break",
+   "label": "Scope"
+  },
+  {
+   "fieldname": "scope",
+   "fieldtype": "Select",
+   "label": "Scope",
+   "options": "Group\nCompany\nSite",
+   "default": "Company",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Compliance Site",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "registration",
+   "fieldtype": "Link",
+   "label": "Registration",
+   "options": "Compliance Registration"
+  },
+  {
+   "fieldname": "bank",
+   "fieldtype": "Link",
+   "label": "Bank",
+   "options": "Bank Account"
+  },
+  {
+   "fieldname": "counterparty",
+   "fieldtype": "Data",
+   "label": "Counterparty"
+  },
+  {
+   "fieldname": "column_people",
+   "fieldtype": "Column Break",
+   "label": "People"
+  },
+  {
+   "fieldname": "responsible_user",
+   "fieldtype": "Link",
+   "label": "Owner",
+   "options": "User",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "reviewer",
+   "fieldtype": "Link",
+   "label": "Reviewer",
+   "options": "User",
+   "description": "Set a reviewer when a second person must approve completion."
+  },
+  {
+   "fieldname": "reminder_days",
+   "fieldtype": "Data",
+   "label": "Reminder Days",
+   "description": "Comma-separated days before the due date. Blank uses Compliance Settings."
+  },
+  {
+   "fieldname": "section_schedule",
+   "fieldtype": "Section Break",
+   "label": "Schedule"
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "options": "One-time\nMonthly\nQuarterly\nHalf-yearly\nYearly\nExpiry-based\nEvent-driven",
+   "default": "Monthly",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_basis",
+   "fieldtype": "Select",
+   "label": "Period Basis",
+   "options": "Financial Year\nCalendar",
+   "default": "Financial Year"
+  },
+  {
+   "fieldname": "due_day",
+   "fieldtype": "Int",
+   "label": "Due Day",
+   "default": "20"
+  },
+  {
+   "fieldname": "due_month_offset",
+   "fieldtype": "Int",
+   "label": "Due Month Offset",
+   "default": "1",
+   "description": "Months after the period end. 1 means the 20th of the following month."
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From"
+  },
+  {
+   "fieldname": "effective_to",
+   "fieldtype": "Date",
+   "label": "Effective To"
+  },
+  {
+   "fieldname": "generate_ahead_days",
+   "fieldtype": "Int",
+   "label": "Generate Ahead (days)",
+   "description": "Blank uses Compliance Settings."
+  },
+  {
+   "fieldname": "schedule_overrides",
+   "fieldtype": "Table",
+   "label": "Due Date Overrides",
+   "options": "Compliance Schedule Override"
+  },
+  {
+   "fieldname": "section_proof",
+   "fieldtype": "Section Break",
+   "label": "Proof"
+  },
+  {
+   "fieldname": "evidence_required",
+   "fieldtype": "Check",
+   "label": "Evidence Required",
+   "default": "1"
+  },
+  {
+   "fieldname": "auto_complete_from_evidence",
+   "fieldtype": "Check",
+   "label": "Auto Complete From Evidence",
+   "default": "0"
+  },
+  {
+   "fieldname": "evidence_folder",
+   "fieldtype": "Link",
+   "label": "Evidence Folder",
+   "options": "Drive Folder",
+   "read_only": 1
+  },
+  {
+   "fieldname": "checklist",
+   "fieldtype": "Table",
+   "label": "Checklist",
+   "options": "Compliance Checklist Item"
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance",
+ "name": "Compliance Obligation",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Compliance Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Compliance User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "COMP-OBL-.#####"
+}

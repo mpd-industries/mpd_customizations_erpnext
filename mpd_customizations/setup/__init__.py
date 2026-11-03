@@ -16,6 +16,8 @@ FEATURE_INSTALLERS = [
 	("mpd_customizations.mpd_base.install", "after_install", "after_migrate"),
 	("mpd_customizations.costing.install", "after_install", "after_migrate"),
 	("mpd_customizations.xfloor_costing.install", "after_install", "after_migrate"),
+	("mpd_customizations.drive.install", "after_install", "after_migrate"),
+	("mpd_customizations.compliance.install", "after_install", "after_migrate"),
 ]
 
 

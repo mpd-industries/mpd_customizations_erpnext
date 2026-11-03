@@ -1,0 +1,217 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-29 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "folder",
+  "original_filename",
+  "status",
+  "column_break_file",
+  "s3_key",
+  "size",
+  "mime_type",
+  "upload_id",
+  "is_trashed",
+  "trashed_on",
+  "section_break_ai",
+  "ai_status",
+  "ai_document_type",
+  "ai_subject",
+  "ai_document_date",
+  "ai_confidence",
+  "column_break_ai",
+  "ai_tags",
+  "ai_suggested_path",
+  "ai_summary",
+  "ai_context",
+  "routed_to_doctype",
+  "routed_to_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "folder",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Folder",
+   "options": "Drive Folder",
+   "reqd": 1
+  },
+  {
+   "fieldname": "original_filename",
+   "fieldtype": "Data",
+   "label": "Original Filename"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nUploaded"
+  },
+  {
+   "fieldname": "column_break_file",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "s3_key",
+   "fieldtype": "Small Text",
+   "label": "S3 Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Float",
+   "label": "Size (bytes)",
+   "precision": "0"
+  },
+  {
+   "fieldname": "mime_type",
+   "fieldtype": "Data",
+   "label": "MIME Type"
+  },
+  {
+   "fieldname": "upload_id",
+   "fieldtype": "Data",
+   "label": "Multipart Upload ID",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_trashed",
+   "fieldtype": "Check",
+   "label": "Trashed"
+  },
+  {
+   "fieldname": "trashed_on",
+   "fieldtype": "Datetime",
+   "label": "Trashed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ai",
+   "fieldtype": "Section Break",
+   "label": "AI"
+  },
+  {
+   "fieldname": "ai_status",
+   "fieldtype": "Select",
+   "label": "AI Status",
+   "options": "\nQueued\nProcessing\nFiled\nNeeds Review\nFailed\nSkipped",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "ai_document_type",
+   "fieldtype": "Data",
+   "label": "Document Type"
+  },
+  {
+   "fieldname": "ai_subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "fieldname": "ai_document_date",
+   "fieldtype": "Date",
+   "label": "Document Date"
+  },
+  {
+   "fieldname": "ai_confidence",
+   "fieldtype": "Float",
+   "label": "Confidence",
+   "precision": "2"
+  },
+  {
+   "fieldname": "column_break_ai",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ai_tags",
+   "fieldtype": "Small Text",
+   "label": "Tags"
+  },
+  {
+   "fieldname": "ai_suggested_path",
+   "fieldtype": "Small Text",
+   "label": "Suggested Path",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ai_summary",
+   "fieldtype": "Text",
+   "label": "Overview"
+  },
+  {
+   "fieldname": "ai_context",
+   "fieldtype": "JSON",
+   "label": "Key Facts"
+  },
+  {
+   "fieldname": "routed_to_doctype",
+   "fieldtype": "Link",
+   "label": "Routed To",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "routed_to_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Routed Record",
+   "options": "routed_to_doctype"
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Drive",
+ "name": "Drive File",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Drive Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "All",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

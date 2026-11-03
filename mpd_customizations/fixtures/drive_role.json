@@ -1,0 +1,16 @@
+[
+ {
+  "desk_access": 1,
+  "doctype": "Role",
+  "is_custom": 1,
+  "name": "Drive Admin",
+  "role_name": "Drive Admin"
+ },
+ {
+  "desk_access": 1,
+  "doctype": "Role",
+  "is_custom": 1,
+  "name": "Compliance Manager",
+  "role_name": "Compliance Manager"
+ }
+]

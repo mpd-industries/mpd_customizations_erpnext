@@ -1,0 +1,40 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"overdue\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Overdue Activities\",\"col\":4}},{\"id\":\"review\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pending Review\",\"col\":4}},{\"id\":\"drafts\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Draft Obligations\",\"col\":4}}]",
+ "creation": "2026-10-30 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "check",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Compliance",
+ "links": [
+  {"hidden": 0, "label": "Activities", "link_to": "Compliance Activity", "link_type": "DocType", "type": "Link"},
+  {"hidden": 0, "label": "Register", "link_to": "Compliance Obligation", "link_type": "DocType", "type": "Link"},
+  {"hidden": 0, "label": "Registrations", "link_to": "Compliance Registration", "link_type": "DocType", "type": "Link"},
+  {"hidden": 0, "is_query_report": 1, "label": "Overdue Activities", "link_to": "Overdue Activities", "link_type": "Report", "type": "Link"},
+  {"hidden": 0, "is_query_report": 1, "label": "On-time Scorecard", "link_to": "On-time Scorecard", "link_type": "Report", "type": "Link"}
+ ],
+ "modified": "2026-10-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance",
+ "name": "Compliance",
+ "number_cards": [
+  {"label": "Overdue Activities", "number_card_name": "Overdue Activities"},
+  {"label": "Pending Review", "number_card_name": "Pending Review"},
+  {"label": "Draft Obligations", "number_card_name": "Draft Obligations"}
+ ],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 2.0,
+ "shortcuts": [],
+ "standard": 1,
+ "title": "Compliance",
+ "type": "Workspace"
+}

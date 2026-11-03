@@ -1,0 +1,56 @@
+{
+ "app": "mpd_customizations",
+ "creation": "2026-11-03 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Dock",
+ "idx": 0,
+ "items": [
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "folder",
+   "link_type": "URL",
+   "title": "Drive",
+   "url": "/drive"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "list-checks",
+   "link_type": "URL",
+   "title": "Needs Review",
+   "url": "/drive-needs-review"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "check",
+   "link_to": "Compliance",
+   "link_type": "Workspace",
+   "title": "Compliance"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "layout-dashboard",
+   "link_to": "XFloor Costing",
+   "link_type": "Sidebar",
+   "title": "XFloor"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "globe",
+   "link_to": "Xfloor CMS",
+   "link_type": "Sidebar",
+   "title": "XFloor CMS"
+  }
+ ],
+ "modified": "2026-11-03 12:45:00.000000",
+ "modified_by": "Administrator",
+ "mount_on": "erpnext",
+ "name": "mpd_customizations",
+ "owner": "Administrator",
+ "standard": 1,
+ "user": ""
+}

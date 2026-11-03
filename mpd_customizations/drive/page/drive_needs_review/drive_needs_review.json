@@ -1,0 +1,14 @@
+{
+ "doctype": "Page",
+ "module": "Drive",
+ "name": "drive-needs-review",
+ "page_name": "drive-needs-review",
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "All"},
+  {"role": "Drive Admin"}
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Needs Review"
+}

@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "scripts": {
+    "postinstall": "cd drive_ui && yarn install && cd ../compliance_ui && yarn install",
+    "dev": "cd drive_ui && yarn dev",
+    "build": "cd drive_ui && yarn build && cd ../compliance_ui && yarn build"
+  }
+}

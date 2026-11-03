@@ -1,0 +1,38 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "step",
+  "is_done"
+ ],
+ "fields": [
+  {
+   "fieldname": "step",
+   "fieldtype": "Small Text",
+   "label": "Step",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "is_done",
+   "fieldtype": "Check",
+   "label": "Done",
+   "in_list_view": 1,
+   "default": "0"
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance",
+ "name": "Compliance Checklist Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1
+}

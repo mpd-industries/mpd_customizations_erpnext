@@ -97,6 +97,61 @@ fixtures.append({"dt": "Print Format", "filters": [["name", "in", ["Floor Projec
 
 fixtures.append({"dt": "Role", "filters": [["name", "in", ["Xfloor CMS Manager", "XFloor Costing Manager"]]]})
 
+# drive
+# -----
+
+fixtures.append({"dt": "Role", "filters": [["name", "in", ["Drive Admin"]]]})
+
+mpd_mcp_tool_modules = [
+	"mpd_customizations.meeting_notes.mcp_registry",
+	"mpd_customizations.drive.mcp_tools",
+	"mpd_customizations.compliance.mcp_tools",
+]
+
+drive_inbox_handlers = {
+	"Compliance": "mpd_customizations.compliance.ai.inbox.process_compliance_inbox",
+	"Statutory Compliance": "mpd_customizations.compliance.ai.inbox.process_compliance_inbox",
+}
+
+website_route_rules = [
+	{"from_route": "/drive/<path:app_path>", "to_route": "drive"},
+	{"from_route": "/compliance/<path:app_path>", "to_route": "compliance"},
+]
+
+has_permission = {
+	"Drive Folder": "mpd_customizations.drive.services.access.has_folder_permission",
+	"Drive File": "mpd_customizations.drive.services.access.has_file_permission",
+	"Compliance Activity": "mpd_customizations.compliance.services.access.has_permission",
+	"Compliance Obligation": "mpd_customizations.compliance.services.access.has_permission",
+	"Compliance Registration": "mpd_customizations.compliance.services.access.has_permission",
+	"Compliance Site": "mpd_customizations.compliance.services.access.has_permission",
+	"Compliance Company Profile": "mpd_customizations.compliance.services.access.has_permission",
+	"Compliance Domain": "mpd_customizations.compliance.services.access.has_permission",
+	"Compliance Settings": "mpd_customizations.compliance.services.access.has_permission",
+	"Compliance Unmatched Evidence": "mpd_customizations.compliance.services.access.has_permission",
+}
+
+permission_query_conditions = {
+	"Drive Folder": "mpd_customizations.drive.services.access.folder_query",
+	"Drive File": "mpd_customizations.drive.services.access.file_query",
+	"Compliance Activity": "mpd_customizations.compliance.services.access.activity_query",
+	"Compliance Obligation": "mpd_customizations.compliance.services.access.obligation_query",
+}
+
+scheduler_events["daily"].extend(
+	[
+		"mpd_customizations.drive.services.tasks.cleanup_pending_uploads",
+		"mpd_customizations.drive.services.tasks.cleanup_trash",
+		"mpd_customizations.compliance.services.reminders.daily",
+	]
+)
+
+doc_events["Task"] = {
+	"on_update": "mpd_customizations.compliance.services.tasks.on_task_update",
+}
+
+fixtures.append({"dt": "Role", "filters": [["name", "in", ["Compliance Manager", "Compliance User"]]]})
+
 # Shared
 # ------
 # Bench commands are collected in commands/__init__.py.

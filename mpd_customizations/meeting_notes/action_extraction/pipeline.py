@@ -461,7 +461,7 @@ def _transcribe_with_diarization(doc):
 	client = SarvamAI(api_subscription_key=api_key)
 
 	job = client.speech_to_text_job.create_job(
-		model="saaras:v3",
+		model="saaras:v4",
 		language_code="unknown",
 		with_diarization=True,
 		mode="codemix",
