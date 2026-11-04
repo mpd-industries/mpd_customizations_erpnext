@@ -29,6 +29,7 @@ const dialogs = reactive({
 })
 const folderTitle = ref('')
 const share = ref({ inherit: 1, rules: [] })
+const shareChoices = ref({ roles: [], users: [] })
 const moving = ref(null)
 const moveFolder = ref(null)
 const moveCrumbs = ref([])
@@ -267,19 +268,106 @@ async function removeForever(item) {
 
 async function openShare(item) {
   if (item.kind !== 'folder') return
-  share.value = await api('mpd_customizations.drive.api.sharing.get_sharing', { folder: item.name })
+  const [current, choices] = await Promise.all([
+    api('mpd_customizations.drive.api.sharing.get_sharing', { folder: item.name }),
+    api('mpd_customizations.drive.api.sharing.share_choices', { folder: item.name }),
+  ])
+  share.value = current
   share.value.folder = item.name
+  shareChoices.value = choices
   dialogs.share = true
 }
 
 function addRule() {
-  share.value.rules.push({ principal_type: 'Role', role: '', user: '', level: 'View' })
+  share.value.rules.push({ principal_type: 'Role', role: '', user: '', level: 'View', draft: '', open: false })
+}
+
+function principalOptions(rule) {
+  if (rule.principal_type === 'User') {
+    return (shareChoices.value.users || []).map((user) => ({
+      value: user.name,
+      label: user.full_name && user.full_name !== user.name ? `${user.full_name} (${user.name})` : user.name,
+    }))
+  }
+  return (shareChoices.value.roles || []).map((name) => ({ value: name, label: name }))
+}
+
+function principalValue(rule) {
+  return rule.principal_type === 'User' ? rule.user || '' : rule.role || ''
+}
+
+function setPrincipalValue(rule, value) {
+  if (rule.principal_type === 'User') {
+    rule.user = value
+    rule.role = ''
+  } else {
+    rule.role = value
+    rule.user = ''
+  }
+}
+
+function filteredPrincipals(rule) {
+  const query = rule.typing ? (rule.draft || '').trim().toLowerCase() : ''
+  const options = principalOptions(rule)
+  const matched = query
+    ? options.filter((option) => option.label.toLowerCase().includes(query) || option.value.toLowerCase().includes(query))
+    : options
+  return matched.slice(0, 50)
+}
+
+function onPrincipalType(rule, type) {
+  rule.principal_type = type
+  rule.role = ''
+  rule.user = ''
+  rule.draft = ''
+  rule.typing = false
+  rule.open = false
+}
+
+function onPrincipalFocus(rule) {
+  rule.open = true
+  rule.typing = false
+  rule.draft = ''
+}
+
+function onPrincipalInput(rule, text) {
+  rule.typing = true
+  rule.draft = text
+  rule.open = true
+}
+
+function choosePrincipal(rule, option) {
+  setPrincipalValue(rule, option.value)
+  rule.typing = false
+  rule.draft = ''
+  rule.open = false
+}
+
+function commitPrincipal(rule) {
+  if (rule.typing) {
+    const text = (rule.draft || '').trim().toLowerCase()
+    const match = principalOptions(rule).find(
+      (option) => option.value.toLowerCase() === text || option.label.toLowerCase() === text,
+    )
+    setPrincipalValue(rule, match ? match.value : '')
+  }
+  rule.typing = false
+  rule.draft = ''
+  rule.open = false
 }
 
 async function saveShare() {
+  const rules = share.value.rules
+    .map((rule) => ({
+      principal_type: rule.principal_type,
+      role: rule.principal_type === 'Role' ? rule.role : '',
+      user: rule.principal_type === 'User' ? rule.user : '',
+      level: rule.level || 'View',
+    }))
+    .filter((rule) => (rule.principal_type === 'User' ? rule.user : rule.role))
   await api('mpd_customizations.drive.api.sharing.set_folder_sharing', {
     folder: share.value.folder,
-    rules: share.value.rules,
+    rules,
     inherit: share.value.inherit_permissions ? 1 : 0,
   })
   dialogs.share = false
@@ -731,13 +819,32 @@ onMounted(() => document.addEventListener('click', closeMenu))
           <input v-model="share.inherit_permissions" type="checkbox" />
           Inherit from parent
         </label>
-        <div v-for="(rule, index) in share.rules" :key="index" class="mb-2 flex gap-2 text-sm">
-          <select v-model="rule.principal_type" class="rounded border px-1">
+        <div v-for="(rule, index) in share.rules" :key="index" class="mb-2 flex items-start gap-2 text-sm">
+          <select class="rounded border px-1" :value="rule.principal_type" @change="onPrincipalType(rule, $event.target.value)">
             <option>Role</option>
             <option>User</option>
           </select>
-          <input v-if="rule.principal_type === 'Role'" v-model="rule.role" class="flex-1 rounded border px-2" placeholder="Role" />
-          <input v-else v-model="rule.user" class="flex-1 rounded border px-2" placeholder="user@example.com" />
+          <div class="min-w-0 flex-1 text-left">
+            <input
+              class="w-full rounded border px-2 py-1"
+              :placeholder="rule.principal_type === 'Role' ? 'Role' : 'User'"
+              :value="rule.typing ? rule.draft : principalValue(rule)"
+              @focus="onPrincipalFocus(rule)"
+              @input="onPrincipalInput(rule, $event.target.value)"
+              @blur="commitPrincipal(rule)"
+            />
+            <ul v-if="rule.open" class="mt-1 max-h-36 overflow-auto rounded border bg-white shadow">
+              <li
+                v-for="option in filteredPrincipals(rule)"
+                :key="option.value"
+                class="cursor-pointer px-2 py-1 hover:bg-[#f1f3f4]"
+                @mousedown.prevent="choosePrincipal(rule, option)"
+              >
+                {{ option.label }}
+              </li>
+              <li v-if="!filteredPrincipals(rule).length" class="px-2 py-1 text-gray-500">No matches</li>
+            </ul>
+          </div>
           <select v-model="rule.level" class="rounded border px-1">
             <option>View</option>
             <option>Edit</option>
