@@ -75,9 +75,7 @@ class RateFetcher:
 			eq_rate = opt.rate_60d_equivalent  # already computed and stored on Material Rate
 
 			if preserve_overrides:
-				is_overridden = (
-					round(existing.working_rate or 0, 2) != round(existing.fetched_rate or 0, 2)
-				)
+				is_overridden = round(existing.working_rate or 0, 2) != round(existing.fetched_rate or 0, 2)
 				if is_overridden:
 					result.overrides_detected = True
 					if round(eq_rate, 2) != round(existing.fetched_rate or 0, 2):
@@ -111,21 +109,24 @@ class RateFetcher:
 			if not opt:
 				continue
 			eq_rate = opt.rate_60d_equivalent  # already computed and stored on Material Rate
-			doc.append("rate_lines", {
-				"item": item_code,
-				"city": city,
-				"supplier": opt.supplier,
-				"rate_source_ref": opt.rate_source_ref,
-				"fetched_rate": eq_rate,
-				"fetched_supplier_credit_days": opt.supplier_credit_days,
-				"rate_freshness": opt.rate_freshness,
-				"working_rate": eq_rate,
-				"working_supplier_credit_days": opt.supplier_credit_days,
-				"last_working_rate": opt.prev_rate,
-				"market_rate_count": opt.market_rate_count,
-				"market_rate_avg": opt.market_rate_avg,
-				"rate_valid_to": opt.rate_valid_to or "",
-			})
+			doc.append(
+				"rate_lines",
+				{
+					"item": item_code,
+					"city": city,
+					"supplier": opt.supplier,
+					"rate_source_ref": opt.rate_source_ref,
+					"fetched_rate": eq_rate,
+					"fetched_supplier_credit_days": opt.supplier_credit_days,
+					"rate_freshness": opt.rate_freshness,
+					"working_rate": eq_rate,
+					"working_supplier_credit_days": opt.supplier_credit_days,
+					"last_working_rate": opt.prev_rate,
+					"market_rate_count": opt.market_rate_count,
+					"market_rate_avg": opt.market_rate_avg,
+					"rate_valid_to": opt.rate_valid_to or "",
+				},
+			)
 
 		# ── Scrap / Byproduct lines sync ────────────────────────────────────────────
 		# Rates are entered manually on doc.scrap_lines — no Material Rate lookup.
@@ -141,12 +142,15 @@ class RateFetcher:
 				existing.item_name = si["item_name"]
 				existing.uom = si["stock_uom"]
 			else:
-				doc.append("scrap_lines", {
-					"item": item_code,
-					"item_name": si["item_name"],
-					"uom": si["stock_uom"],
-					"rate_per_kg": 0.0,
-				})
+				doc.append(
+					"scrap_lines",
+					{
+						"item": item_code,
+						"item_name": si["item_name"],
+						"uom": si["stock_uom"],
+						"rate_per_kg": 0.0,
+					},
+				)
 
 		# Freshness summary
 		for item_code in unique_items:
@@ -167,9 +171,12 @@ class RateFetcher:
 			if existing_pl:
 				if preserve_overrides:
 					is_overridden = (
-						round(existing_pl.working_charge_per_kg or 0, 2) != round(existing_pl.fetched_charge_per_kg or 0, 2)
-						or round(existing_pl.working_freight_per_unit or 0, 2) != round(existing_pl.fetched_freight_per_unit or 0, 2)
-						or bool(existing_pl.working_includes_outward_freight) != bool(existing_pl.fetched_includes_outward_freight)
+						round(existing_pl.working_charge_per_kg or 0, 2)
+						!= round(existing_pl.fetched_charge_per_kg or 0, 2)
+						or round(existing_pl.working_freight_per_unit or 0, 2)
+						!= round(existing_pl.fetched_freight_per_unit or 0, 2)
+						or bool(existing_pl.working_includes_outward_freight)
+						!= bool(existing_pl.fetched_includes_outward_freight)
 					)
 					if is_overridden:
 						result.overrides_detected = True
@@ -184,16 +191,19 @@ class RateFetcher:
 				existing_pl.processing_charge_ref = pc["name"]
 				existing_pl.processor = doc.processor
 			else:
-				doc.append("processing_lines", {
-					"processor": doc.processor,
-					"processing_charge_ref": pc["name"],
-					"fetched_charge_per_kg": pc["charge_per_kg"],
-					"fetched_freight_per_unit": pc.get("fg_freight_per_unit") or 0,
-					"fetched_includes_outward_freight": pc.get("includes_outward_freight"),
-					"working_charge_per_kg": pc["charge_per_kg"],
-					"working_freight_per_unit": pc.get("fg_freight_per_unit") or 0,
-					"working_includes_outward_freight": pc.get("includes_outward_freight"),
-				})
+				doc.append(
+					"processing_lines",
+					{
+						"processor": doc.processor,
+						"processing_charge_ref": pc["name"],
+						"fetched_charge_per_kg": pc["charge_per_kg"],
+						"fetched_freight_per_unit": pc.get("fg_freight_per_unit") or 0,
+						"fetched_includes_outward_freight": pc.get("includes_outward_freight"),
+						"working_charge_per_kg": pc["charge_per_kg"],
+						"working_freight_per_unit": pc.get("fg_freight_per_unit") or 0,
+						"working_includes_outward_freight": pc.get("includes_outward_freight"),
+					},
+				)
 
 		return result
 
@@ -207,13 +217,22 @@ def _get_processing_charge(processor: str, item: str, pricing_dt):
 	all_charges = frappe.get_all(
 		"Processing Charge",
 		filters={"parent": processor, "parenttype": "Processor", "is_active": 1},
-		fields=["name", "item", "item_group", "charge_per_kg", "fg_freight_per_unit",
-		        "includes_outward_freight", "valid_from", "valid_to"],
+		fields=[
+			"name",
+			"item",
+			"item_group",
+			"charge_per_kg",
+			"fg_freight_per_unit",
+			"includes_outward_freight",
+			"valid_from",
+			"valid_to",
+		],
 	)
 
 	# Filter by validity in Python (avoids duplicate-key or_filters bug)
 	valid = [
-		pc for pc in all_charges
+		pc
+		for pc in all_charges
 		if getdate(pc["valid_from"]) <= pricing_date
 		and (not pc.get("valid_to") or getdate(pc["valid_to"]) >= pricing_date)
 	]

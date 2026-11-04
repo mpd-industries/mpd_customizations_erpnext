@@ -40,8 +40,6 @@ def compute_additional_charge_amount(rate: float, basis: str, solids_content_pct
 	raise ValueError(f"Unrecognised basis: {basis!r}")
 
 
-
-
 def compute_credit_charge(
 	total_cost_per_kg: float,
 	credit_days: int,
@@ -60,7 +58,7 @@ def compute_commission_amount(
 	if commission_type == "% of Sale Price":
 		if rate >= 100:
 			raise ValueError("Margin rate must be less than 100%")
-			
+
 		commission_amount = (total_cost_per_kg * rate) / (100 - rate)
 		return commission_amount
 	elif commission_type == "Per kg of Output":
@@ -94,10 +92,10 @@ def compute_margin(
 ) -> float:
 	rate = margin_rate or 0
 	if margin_type == "% of Sale Price":
-    # Prevent division by zero or negative results if rate >= 100
+		# Prevent division by zero or negative results if rate >= 100
 		if rate >= 100:
 			raise ValueError("Margin rate must be less than 100%")
-			
+
 		commission_amount = (total_cost_per_kg * rate) / (100 - rate)
 		return commission_amount
 	elif margin_type == "Per kg of Output":

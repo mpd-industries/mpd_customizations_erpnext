@@ -1,5 +1,6 @@
-import frappe
 from datetime import date, timedelta
+
+import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate
 
@@ -14,13 +15,18 @@ class FreightRate(Document):
 		if self.source_address:
 			self.source_city = frappe.db.get_value("Address", self.source_address, "city") or ""
 		if self.destination_address:
-			addr = frappe.db.get_value("Address", self.destination_address, ["city", "country"], as_dict=True) or {}
+			addr = (
+				frappe.db.get_value("Address", self.destination_address, ["city", "country"], as_dict=True)
+				or {}
+			)
 			self.destination_city = addr.get("city") or ""
 			self.destination_country = addr.get("country") or ""
 
 		# Auto-set is_export
 		if self.destination_country:
-			india_names = frappe.get_all("Country", filters={"country_name": "India"}, fields=["name"], limit=1)
+			india_names = frappe.get_all(
+				"Country", filters={"country_name": "India"}, fields=["name"], limit=1
+			)
 			india_name = india_names[0].name if india_names else "India"
 			self.is_export = 1 if self.destination_country != india_name else 0
 		else:
@@ -59,15 +65,18 @@ class FreightRate(Document):
 def _clear_stale_pending_drafts(doc):
 	if not frappe.db.has_column("Freight Rate", "requested_on"):
 		return
-	frappe.db.delete("Freight Rate", {
-		"source_address": doc.source_address,
-		"destination_address": doc.destination_address,
-		"transport_mode": doc.transport_mode,
-		"incoterms": doc.incoterms or "",
-		"docstatus": 0,
-		"requested_on": ["is", "set"],
-		"name": ["!=", doc.name],
-	})
+	frappe.db.delete(
+		"Freight Rate",
+		{
+			"source_address": doc.source_address,
+			"destination_address": doc.destination_address,
+			"transport_mode": doc.transport_mode,
+			"incoterms": doc.incoterms or "",
+			"docstatus": 0,
+			"requested_on": ["is", "set"],
+			"name": ["!=", doc.name],
+		},
+	)
 
 
 def _end_of_quarter(d: date) -> date:
@@ -75,5 +84,3 @@ def _end_of_quarter(d: date) -> date:
 	# last day of quarter_end_month
 	next_month = date(d.year + (1 if quarter_end_month == 12 else 0), (quarter_end_month % 12) + 1, 1)
 	return next_month - timedelta(days=1)
-
-

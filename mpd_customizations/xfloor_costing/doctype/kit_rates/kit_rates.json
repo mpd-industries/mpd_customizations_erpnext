@@ -1,0 +1,205 @@
+{
+ "actions": [],
+ "creation": "2026-06-25 13:17:16.364461",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+  "field_order": [
+  "section_rates",
+  "rates_effective_date",
+  "top_coat_rate",
+  "pu_top_coat_rate",
+  "screed_rate",
+  "primer_rate",
+  "hibuild_rate",
+  "coving_rate",
+  "default_applicator_rate",
+  "section_gm",
+  "top_coat_gm",
+  "pu_top_coat_gm",
+  "screed_gm",
+  "primer_gm",
+  "hibuild_gm",
+  "coving_gm",
+  "section_history",
+  "rate_revisions"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_rates",
+   "fieldtype": "Section Break",
+   "label": "Kit Rates"
+  },
+  {
+   "fieldname": "rates_effective_date",
+   "fieldtype": "Date",
+   "label": "Rates Effective Date"
+  },
+  {
+   "default": "4230",
+   "fieldname": "top_coat_rate",
+   "fieldtype": "Float",
+   "label": "Epoxy Top Coat Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "4230",
+   "fieldname": "pu_top_coat_rate",
+   "fieldtype": "Float",
+   "label": "PU Top Coat Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "3580",
+   "fieldname": "screed_rate",
+   "fieldtype": "Float",
+   "label": "Screed Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "2012",
+   "fieldname": "primer_rate",
+   "fieldtype": "Float",
+   "label": "Primer Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "1650",
+   "fieldname": "hibuild_rate",
+   "fieldtype": "Float",
+   "label": "Hi-build Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "2800",
+   "fieldname": "coving_rate",
+   "fieldtype": "Float",
+   "label": "Coving Rate",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "default": "10",
+   "fieldname": "default_applicator_rate",
+   "fieldtype": "Float",
+   "label": "Default Applicator Rate (₹/sqft)",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_gm",
+   "fieldtype": "Section Break",
+   "label": "Gross Margin (₹/kit)",
+   "permlevel": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "top_coat_gm",
+   "fieldtype": "Float",
+   "label": "Epoxy Top Coat GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "pu_top_coat_gm",
+   "fieldtype": "Float",
+   "label": "PU Top Coat GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "screed_gm",
+   "fieldtype": "Float",
+   "label": "Screed GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "primer_gm",
+   "fieldtype": "Float",
+   "label": "Primer GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "hibuild_gm",
+   "fieldtype": "Float",
+   "label": "Hi-build GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "coving_gm",
+   "fieldtype": "Float",
+   "label": "Coving GM",
+   "permlevel": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "section_history",
+   "fieldtype": "Section Break",
+   "label": "Revision History"
+  },
+  {
+   "fieldname": "rate_revisions",
+   "fieldtype": "Table",
+   "label": "Rate Revisions",
+   "options": "Kit Rate Revision",
+   "read_only": 1
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-07-15 13:20:00.000000",
+ "modified_by": "Administrator",
+ "module": "XFloor Costing",
+ "name": "Kit rates",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "XFloor Costing Manager",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

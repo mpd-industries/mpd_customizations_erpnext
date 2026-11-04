@@ -2,3 +2,7 @@ mpd_base
 meeting_notes
 Xfloor CMS
 Costing
+asset_organizer
+XFloor Costing
+Drive
+Compliance

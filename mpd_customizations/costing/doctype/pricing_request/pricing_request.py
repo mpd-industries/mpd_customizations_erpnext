@@ -7,7 +7,7 @@ class PricingRequest(Document):
 	ignore_linked_doctypes = ["Pricing Calculation"]
 
 	def after_insert(self):
-		pc_name =_create_calculation(self)
+		pc_name = _create_calculation(self)
 		if pc_name:
 			_run_initial_evaluation(pc_name)
 
@@ -61,8 +61,9 @@ class PricingRequest(Document):
 
 def _run_initial_evaluation(pc_name):
 	from mpd_customizations.costing.services.config import get_config
-	from mpd_customizations.costing.services.rate_source_registry import get_default_registry
 	from mpd_customizations.costing.services.costing_engine import CostingEngine
+	from mpd_customizations.costing.services.rate_source_registry import get_default_registry
+
 	try:
 		CostingEngine(get_default_registry(), get_config()).evaluate(pc_name, "auto")
 	except Exception:
@@ -77,7 +78,9 @@ def _create_calculation(pr):
 		"pricing_request": pr.name,
 		"city": pr.city,
 		"processor": pr.processor or "",
-		"processor_name": frappe.db.get_value("Processor", pr.processor, "processor_name") if pr.processor else "",
+		"processor_name": frappe.db.get_value("Processor", pr.processor, "processor_name")
+		if pr.processor
+		else "",
 		"solids_content_pct": pr.solids_content_pct or 0,
 		"mode": "Draft",
 		"production_days": config.production_days or 30,
@@ -102,17 +105,22 @@ def _create_calculation(pr):
 	if cp:
 		# Pre-populate packaging line from Customer Product default
 		if cp.packaging_material:
-			pc.append("packaging_lines", {
-				"packaging_material": cp.packaging_material,
-				"fill_quantity_kg": cp.fill_quantity_kg or 1.0,
-			})
+			pc.append(
+				"packaging_lines",
+				{
+					"packaging_material": cp.packaging_material,
+					"fill_quantity_kg": cp.fill_quantity_kg or 1.0,
+				},
+			)
 	# Pre-fill from last approved request
 	prev = _get_previous_approved(pr.product or None, pr.customer_product or None, pr.processor or None)
 	if prev:
 		pc.preferred_bom = prev.get("preferred_bom") or ""
 		pc.production_days = prev.get("production_days") or pc.production_days
 		pc.fetched_production_days = pc.production_days
-		pc.supplier_financing_rate_pct = prev.get("supplier_financing_rate_pct") or pc.supplier_financing_rate_pct
+		pc.supplier_financing_rate_pct = (
+			prev.get("supplier_financing_rate_pct") or pc.supplier_financing_rate_pct
+		)
 		pc.fetched_supplier_financing_rate_pct = pc.supplier_financing_rate_pct
 
 		additional_charges = frappe.get_all(
@@ -121,11 +129,14 @@ def _create_calculation(pr):
 			fields=["description", "basis", "rate"],
 		)
 		for c in additional_charges:
-			pc.append("additional_charges", {
-				"description": c.description,
-				"basis": c.basis,
-				"rate": c.rate,
-			})
+			pc.append(
+				"additional_charges",
+				{
+					"description": c.description,
+					"basis": c.basis,
+					"rate": c.rate,
+				},
+			)
 
 		frappe.db.set_value("Pricing Request", pr.name, "previous_pricing_ref", prev["name"])
 
@@ -136,22 +147,30 @@ def _create_calculation(pr):
 			"Costing Processing Line",
 			filters={"parent": prev["name"], "parenttype": "Pricing Calculation"},
 			fields=[
-				"processor", "processing_charge_ref",
-				"fetched_charge_per_kg", "fetched_freight_per_unit", "fetched_includes_outward_freight",
-				"working_charge_per_kg", "working_freight_per_unit", "working_includes_outward_freight",
+				"processor",
+				"processing_charge_ref",
+				"fetched_charge_per_kg",
+				"fetched_freight_per_unit",
+				"fetched_includes_outward_freight",
+				"working_charge_per_kg",
+				"working_freight_per_unit",
+				"working_includes_outward_freight",
 			],
 		)
 		for pl in prev_processing:
-			pc.append("processing_lines", {
-				"processor": pl.processor,
-				"processing_charge_ref": pl.processing_charge_ref,
-				"fetched_charge_per_kg": pl.fetched_charge_per_kg,
-				"fetched_freight_per_unit": pl.fetched_freight_per_unit,
-				"fetched_includes_outward_freight": pl.fetched_includes_outward_freight,
-				"working_charge_per_kg": pl.working_charge_per_kg,
-				"working_freight_per_unit": pl.working_freight_per_unit,
-				"working_includes_outward_freight": pl.working_includes_outward_freight,
-			})
+			pc.append(
+				"processing_lines",
+				{
+					"processor": pl.processor,
+					"processing_charge_ref": pl.processing_charge_ref,
+					"fetched_charge_per_kg": pl.fetched_charge_per_kg,
+					"fetched_freight_per_unit": pl.fetched_freight_per_unit,
+					"fetched_includes_outward_freight": pl.fetched_includes_outward_freight,
+					"working_charge_per_kg": pl.working_charge_per_kg,
+					"working_freight_per_unit": pl.working_freight_per_unit,
+					"working_includes_outward_freight": pl.working_includes_outward_freight,
+				},
+			)
 
 	pc.insert(ignore_permissions=True)
 	frappe.db.set_value("Pricing Request", pr.name, "pricing_calculation", pc.name)
@@ -163,7 +182,11 @@ def _get_previous_approved(product, customer_product, processor):
 	if customer_product:
 		filters = {"customer_product_ref": customer_product, "mode": "Approved"}
 	elif product:
-		filters = {"item": product, "processor": processor, "mode": "Approved"} if processor else {"item": product, "mode": "Approved"}
+		filters = (
+			{"item": product, "processor": processor, "mode": "Approved"}
+			if processor
+			else {"item": product, "mode": "Approved"}
+		)
 	else:
 		return None
 

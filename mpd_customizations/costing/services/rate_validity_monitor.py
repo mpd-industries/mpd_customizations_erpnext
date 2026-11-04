@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import now_datetime, add_to_date
+from frappe.utils import add_to_date, now_datetime
 
 
 def run_rate_validity_check():
@@ -32,9 +32,6 @@ def run_rate_validity_check():
 			subject=f"{len(expiring)} Material Rate(s) expiring within {warning_days} days",
 			message=(
 				f"The following material rates expire within {warning_days} days:<br><br>"
-				+ "<br>".join(
-					f"{r.item} — {r.city} — {r.supplier} — expires {r.valid_to}"
-					for r in expiring
-				)
+				+ "<br>".join(f"{r.item} — {r.city} — {r.supplier} — expires {r.valid_to}" for r in expiring)
 			),
 		)

@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import now_datetime, add_to_date, get_last_day, getdate
+from frappe.utils import add_to_date, get_last_day, getdate, now_datetime
 
 
 class MaterialRate(Document):
@@ -38,6 +38,7 @@ class MaterialRate(Document):
 	def _compute_60d_equivalent(self):
 		from mpd_customizations.costing.services.config import get_config
 		from mpd_customizations.costing.services.cost_calculator import compute_equalized_rate
+
 		config = get_config()
 		self.rate_60d_equivalent = compute_equalized_rate(
 			self.delivered_rate or 0,
@@ -80,6 +81,7 @@ class MaterialRate(Document):
 
 			if ex_from < this_to_cmp and ex_to_cmp > this_from:
 				from datetime import timedelta
+
 				new_valid_to = getdate(self.valid_from) - timedelta(days=1)
 				frappe.db.set_value("Material Rate", existing.name, "valid_to", new_valid_to)
 
@@ -87,12 +89,15 @@ class MaterialRate(Document):
 def _clear_stale_pending_drafts(doc):
 	# Clear other pending-request drafts for same item+city
 	if frappe.db.has_column("Material Rate", "requested_on"):
-		frappe.db.delete("Material Rate", {
-			"item": doc.item,
-			"city": doc.city,
-			"docstatus": 0,
-			"requested_on": ["is", "set"],
-			"name": ["!=", doc.name],
-		})
+		frappe.db.delete(
+			"Material Rate",
+			{
+				"item": doc.item,
+				"city": doc.city,
+				"docstatus": 0,
+				"requested_on": ["is", "set"],
+				"name": ["!=", doc.name],
+			},
+		)
 
 	# Notification and re-evaluation are handled by on_material_rate_submitted in api/costing.py

@@ -103,11 +103,17 @@ class ManualRateSource(BaseRateSource):
 			]
 
 		# Market intelligence — computed once, attached to the best option only
-		prev_rate = (expired[0].get("rate_60d_equivalent") or expired[0].get("delivered_rate") or 0.0) if expired else 0.0
+		prev_rate = (
+			(expired[0].get("rate_60d_equivalent") or expired[0].get("delivered_rate") or 0.0)
+			if expired
+			else 0.0
+		)
 		market_rate_count = len(current)
 		market_rate_avg = (
-			sum(r.get("rate_60d_equivalent") or r.get("delivered_rate") or 0.0 for r in current) / len(current)
-			if current else 0.0
+			sum(r.get("rate_60d_equivalent") or r.get("delivered_rate") or 0.0 for r in current)
+			/ len(current)
+			if current
+			else 0.0
 		)
 		rate_valid_to = str(current[0].get("valid_to")) if current and current[0].get("valid_to") else None
 
@@ -117,7 +123,9 @@ class ManualRateSource(BaseRateSource):
 			freshness = "Current" if r in current else "Expired"
 			score = self._confidence_score(r, pricing_dt, supplier_history_count)
 			second_best_supplier = all_sorted[1].get("supplier") if idx == 0 and len(all_sorted) > 1 else None
-			second_best_rate = all_sorted[1].get("delivered_rate", 0.0) if idx == 0 and len(all_sorted) > 1 else 0.0
+			second_best_rate = (
+				all_sorted[1].get("delivered_rate", 0.0) if idx == 0 and len(all_sorted) > 1 else 0.0
+			)
 			options.append(
 				RateOption(
 					item=item,

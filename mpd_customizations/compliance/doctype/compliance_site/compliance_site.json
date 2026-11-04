@@ -1,0 +1,169 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "location",
+  "company",
+  "site_type",
+  "state",
+  "address",
+  "active",
+  "column_people",
+  "direct_headcount",
+  "contract_headcount",
+  "section_flags",
+  "has_boiler",
+  "has_dg_set",
+  "has_etp",
+  "has_solvent_storage",
+  "has_hazardous_chemicals",
+  "has_food_pharma",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "label": "Location",
+   "options": "Location",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "site_type",
+   "fieldtype": "Select",
+   "label": "Site Type",
+   "options": "Factory\nWarehouse\nOffice\nDepot",
+   "default": "Factory",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Link",
+   "label": "Address",
+   "options": "Address"
+  },
+  {
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_people",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "direct_headcount",
+   "fieldtype": "Int",
+   "label": "Direct Headcount"
+  },
+  {
+   "fieldname": "contract_headcount",
+   "fieldtype": "Int",
+   "label": "Contract Headcount"
+  },
+  {
+   "fieldname": "section_flags",
+   "fieldtype": "Section Break",
+   "label": "Applicability facts"
+  },
+  {
+   "fieldname": "has_boiler",
+   "fieldtype": "Check",
+   "label": "Boiler",
+   "default": "0"
+  },
+  {
+   "fieldname": "has_dg_set",
+   "fieldtype": "Check",
+   "label": "DG Set",
+   "default": "0"
+  },
+  {
+   "fieldname": "has_etp",
+   "fieldtype": "Check",
+   "label": "ETP",
+   "default": "0"
+  },
+  {
+   "fieldname": "has_solvent_storage",
+   "fieldtype": "Check",
+   "label": "Solvent or Petroleum Storage",
+   "default": "0"
+  },
+  {
+   "fieldname": "has_hazardous_chemicals",
+   "fieldtype": "Check",
+   "label": "Hazardous Chemicals",
+   "default": "0"
+  },
+  {
+   "fieldname": "has_food_pharma",
+   "fieldtype": "Check",
+   "label": "Food or Pharma Contact",
+   "default": "0"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance",
+ "name": "Compliance Site",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Compliance Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Compliance User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "hash"
+}

@@ -57,8 +57,8 @@ class FreightRateFetcher:
 				freshness = _compute_freshness(rate_record, pricing_date)
 
 				if preserve_overrides:
-					is_overridden = (
-						round(line.working_freight_per_kg or 0, 4) != round(line.fetched_freight_per_kg or 0, 4)
+					is_overridden = round(line.working_freight_per_kg or 0, 4) != round(
+						line.fetched_freight_per_kg or 0, 4
 					)
 					if is_overridden:
 						result.overrides_detected = True
@@ -118,9 +118,8 @@ def _get_best_freight_rate(
 	)
 
 	def is_valid(r):
-		return (
-			getdate(r["valid_from"]) <= pricing_date
-			and (not r.get("valid_to") or getdate(r["valid_to"]) >= pricing_date)
+		return getdate(r["valid_from"]) <= pricing_date and (
+			not r.get("valid_to") or getdate(r["valid_to"]) >= pricing_date
 		)
 
 	current = [r for r in all_rates if is_valid(r)]

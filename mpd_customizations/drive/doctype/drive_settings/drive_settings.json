@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "creation": "2026-10-29 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "storage_section",
+  "key_prefix",
+  "max_upload_size",
+  "multipart_threshold_mb",
+  "trash_retention_days",
+  "ai_section",
+  "ai_confidence_threshold",
+  "ai_max_file_mb",
+  "year_style",
+  "inbox_routes"
+ ],
+ "fields": [
+  {
+   "fieldname": "storage_section",
+   "fieldtype": "Section Break",
+   "label": "Storage"
+  },
+  {
+   "default": "drive",
+   "fieldname": "key_prefix",
+   "fieldtype": "Data",
+   "label": "S3 Key Prefix"
+  },
+  {
+   "default": "2048",
+   "description": "Megabytes. 0 means no limit.",
+   "fieldname": "max_upload_size",
+   "fieldtype": "Int",
+   "label": "Max Upload Size (MB)"
+  },
+  {
+   "default": "100",
+   "fieldname": "multipart_threshold_mb",
+   "fieldtype": "Int",
+   "label": "Multipart Threshold (MB)"
+  },
+  {
+   "default": "30",
+   "fieldname": "trash_retention_days",
+   "fieldtype": "Int",
+   "label": "Trash Retention (days)"
+  },
+  {
+   "fieldname": "ai_section",
+   "fieldtype": "Section Break",
+   "label": "AI Inbox"
+  },
+  {
+   "default": "0.75",
+   "fieldname": "ai_confidence_threshold",
+   "fieldtype": "Float",
+   "label": "Auto-file Confidence",
+   "precision": "2"
+  },
+  {
+   "default": "20",
+   "fieldname": "ai_max_file_mb",
+   "fieldtype": "Int",
+   "label": "Max File Size for AI (MB)"
+  },
+  {
+   "default": "Financial Year",
+   "fieldname": "year_style",
+   "fieldtype": "Select",
+   "label": "Year Folders",
+   "options": "Financial Year\nCalendar"
+  },
+  {
+   "fieldname": "inbox_routes",
+   "fieldtype": "Table",
+   "label": "Inbox Routes",
+   "options": "Drive Inbox Route"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Drive",
+ "name": "Drive Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Drive Admin",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "All"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

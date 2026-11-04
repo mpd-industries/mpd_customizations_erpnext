@@ -12,7 +12,8 @@ dependencies = [
     "scikit-learn==1.8.0",
     "mcp>=1.0",
     "sarvamai==0.1.28",
-    # "frappe~=15.0.0" # Installed and managed by bench.
+    "pypdf>=6.8.0"
+    # Frappe is installed and managed by bench. This app runs on Frappe 16.
 ]
 
 [build-system]

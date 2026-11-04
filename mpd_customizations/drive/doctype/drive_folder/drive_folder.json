@@ -1,0 +1,130 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-29 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "parent_drive_folder",
+  "inherit_permissions",
+  "is_trashed",
+  "trashed_on",
+  "column_break_inbox",
+  "is_ai_inbox",
+  "inbox_kind",
+  "organise_into",
+  "permissions"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "parent_drive_folder",
+   "fieldtype": "Link",
+   "label": "Parent Folder",
+   "options": "Drive Folder"
+  },
+  {
+   "default": "1",
+   "fieldname": "inherit_permissions",
+   "fieldtype": "Check",
+   "label": "Inherit Permissions"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_trashed",
+   "fieldtype": "Check",
+   "label": "Trashed"
+  },
+  {
+   "fieldname": "trashed_on",
+   "fieldtype": "Datetime",
+   "label": "Trashed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_inbox",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_ai_inbox",
+   "fieldtype": "Check",
+   "label": "AI Inbox"
+  },
+  {
+   "default": "General",
+   "depends_on": "eval:doc.is_ai_inbox",
+   "fieldname": "inbox_kind",
+   "fieldtype": "Select",
+   "label": "Inbox Kind",
+   "options": "General\nCompliance"
+  },
+  {
+   "depends_on": "eval:doc.is_ai_inbox",
+   "fieldname": "organise_into",
+   "fieldtype": "Link",
+   "label": "Organise Into",
+   "options": "Drive Folder"
+  },
+  {
+   "fieldname": "permissions",
+   "fieldtype": "Table",
+   "label": "Sharing",
+   "options": "Drive Folder Permission"
+  }
+ ],
+ "is_tree": 1,
+ "links": [],
+ "modified": "2026-10-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Drive",
+ "name": "Drive Folder",
+ "nsm_parent_field": "parent_drive_folder",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Drive Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "All",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

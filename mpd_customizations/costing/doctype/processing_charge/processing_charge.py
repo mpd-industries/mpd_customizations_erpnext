@@ -40,6 +40,4 @@ class ProcessingCharge(Document):
 			ex_to_cmp = existing.valid_to if existing.valid_to else far_future
 			this_to_cmp = self.valid_to if self.valid_to else far_future
 			if existing.valid_from < this_to_cmp and ex_to_cmp > self.valid_from:
-				frappe.throw(
-					_("Overlap with existing Processing Charge {0}.").format(existing.name)
-				)
+				frappe.throw(_("Overlap with existing Processing Charge {0}.").format(existing.name))

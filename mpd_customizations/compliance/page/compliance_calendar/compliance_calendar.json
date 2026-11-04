@@ -1,0 +1,14 @@
+{
+ "doctype": "Page",
+ "module": "Compliance",
+ "name": "compliance-calendar",
+ "page_name": "compliance-calendar",
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "Compliance Manager"},
+  {"role": "Compliance User"}
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Calendar"
+}

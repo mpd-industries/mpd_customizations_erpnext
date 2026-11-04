@@ -1,0 +1,14 @@
+@import 'frappe-ui/style.css';
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #f8fafd;
+  color: #202124;
+  font-family: 'Google Sans', 'Segoe UI', sans-serif;
+}

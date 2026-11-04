@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "month",
+  "due_day",
+  "due_month_offset",
+  "label"
+ ],
+ "fields": [
+  {
+   "fieldname": "month",
+   "fieldtype": "Int",
+   "label": "Period End Month",
+   "in_list_view": 1,
+   "reqd": 1,
+   "description": "1-12, matching the period end month."
+  },
+  {
+   "fieldname": "due_day",
+   "fieldtype": "Int",
+   "label": "Due Day",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "due_month_offset",
+   "fieldtype": "Int",
+   "label": "Due Month Offset",
+   "in_list_view": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Label",
+   "in_list_view": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance",
+ "name": "Compliance Schedule Override",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1
+}

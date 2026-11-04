@@ -1,0 +1,118 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "default_reminder_days",
+  "overdue_reminder_every_days",
+  "escalation_after_days",
+  "digest_weekday",
+  "generate_ahead_days",
+  "auto_complete_confidence",
+  "create_calendar_events",
+  "library_folder",
+  "inbox_folder",
+  "companies"
+ ],
+ "fields": [
+  {
+   "fieldname": "default_reminder_days",
+   "fieldtype": "Data",
+   "label": "Reminder Days",
+   "default": "90,60,30,15,7,1,0"
+  },
+  {
+   "fieldname": "overdue_reminder_every_days",
+   "fieldtype": "Int",
+   "label": "Repeat Overdue Every (days)",
+   "default": "7"
+  },
+  {
+   "fieldname": "escalation_after_days",
+   "fieldtype": "Int",
+   "label": "Escalate After (days overdue)",
+   "default": "14"
+  },
+  {
+   "fieldname": "digest_weekday",
+   "fieldtype": "Select",
+   "label": "Digest Weekday",
+   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday",
+   "default": "Monday"
+  },
+  {
+   "fieldname": "generate_ahead_days",
+   "fieldtype": "Int",
+   "label": "Generate Ahead (days)",
+   "default": "90"
+  },
+  {
+   "fieldname": "auto_complete_confidence",
+   "fieldtype": "Float",
+   "label": "Auto-complete Confidence",
+   "default": "0.85",
+   "precision": "2"
+  },
+  {
+   "fieldname": "create_calendar_events",
+   "fieldtype": "Check",
+   "label": "Create Calendar Events",
+   "default": "1"
+  },
+  {
+   "fieldname": "library_folder",
+   "fieldtype": "Link",
+   "label": "Compliance Library",
+   "options": "Drive Folder",
+   "read_only": 1
+  },
+  {
+   "fieldname": "inbox_folder",
+   "fieldtype": "Link",
+   "label": "Compliance Inbox",
+   "options": "Drive Folder",
+   "read_only": 1
+  },
+  {
+   "fieldname": "companies",
+   "fieldtype": "Table",
+   "label": "Companies",
+   "options": "Compliance Settings Company"
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance",
+ "name": "Compliance Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1
+  },
+  {
+   "role": "Compliance Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1
+  },
+  {
+   "role": "Compliance User",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "issingle": 1
+}

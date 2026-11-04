@@ -5,3 +5,6 @@
 tags
 node_modules
 __pycache__
+mpd_customizations/public/drive
+mpd_customizations/www/drive.html
+drive_ui/node_modules

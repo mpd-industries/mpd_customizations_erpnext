@@ -4,7 +4,6 @@ from typing import Dict, List, Tuple
 from mpd_customizations.costing.services.rate_option import RateOption
 from mpd_customizations.costing.services.sources.base import BaseRateSource
 
-
 _FRESHNESS_ORDER = {"Current": 0, "Expired": 1, "Missing": 2}
 
 
@@ -28,6 +27,7 @@ class RateSourceRegistry:
 		for pair, options in all_options.items():
 			if not options:
 				from mpd_customizations.costing.services.rate_option import RateOption as RO
+
 				result[pair] = RO(
 					item=pair[0],
 					city=pair[1],
@@ -50,4 +50,5 @@ class RateSourceRegistry:
 
 def get_default_registry() -> RateSourceRegistry:
 	from mpd_customizations.costing.services.sources.manual_rate_source import ManualRateSource
+
 	return RateSourceRegistry([ManualRateSource()])
