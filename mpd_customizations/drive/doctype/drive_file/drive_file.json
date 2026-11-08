@@ -27,6 +27,8 @@
   "ai_suggested_path",
   "ai_summary",
   "ai_context",
+  "content_hash",
+  "duplicate_ok",
   "routed_to_doctype",
   "routed_to_name"
  ],
@@ -156,6 +158,20 @@
    "fieldname": "ai_context",
    "fieldtype": "JSON",
    "label": "Key Facts"
+  },
+  {
+   "fieldname": "content_hash",
+   "fieldtype": "Data",
+   "label": "Content Hash",
+   "length": 64,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "duplicate_ok",
+   "fieldtype": "Check",
+   "label": "Copy Is OK"
   },
   {
    "fieldname": "routed_to_doctype",

@@ -157,6 +157,9 @@ def decide_inbox(
 		children,
 		" ".join(part for part in (document_text, classification.get("title")) if part),
 	)
+	# A subfolder named the same as the subject nests the folder inside itself.
+	if subfolder and subfolder.casefold() == (subject or "").casefold():
+		subfolder = None
 	auto = confidence >= float(threshold)
 	return {
 		"auto_file": auto,

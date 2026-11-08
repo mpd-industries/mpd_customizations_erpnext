@@ -12,6 +12,7 @@ from mpd_customizations.drive.ai.filing import (
 	select_route,
 	suggested_path,
 )
+from mpd_customizations.drive.ai.purpose import format_outline
 from mpd_customizations.drive.services.files import move_file, rename_file
 from mpd_customizations.drive.services.folders import ensure_path
 from mpd_customizations.mpd_base.ai.llm import call_llm
@@ -133,12 +134,16 @@ def _classify_and_file(doc, inbox, from_overview=False):
 		path = suggested_path(target_title, decision["subject"], decision["year"], decision["subfolder"])
 		_store_ai_fields(doc.name, classification, decision, path, keep_summary=from_overview)
 		if decision["auto_file"]:
+			source = doc.folder
 			leaf = ensure_path(inbox.organise_into, decision["segments"], ignore_permissions=True)
 			if decision["title"]:
 				rename_file(doc.name, decision["title"])
 			move_file(doc.name, leaf)
 			doc.reload()
 			_route_after_filing(doc, classification)
+			from mpd_customizations.drive.services.purpose import refresh_folder_meanings
+
+			refresh_folder_meanings([leaf, source])
 	except Exception:
 		frappe.db.set_value("Drive File", doc.name, "ai_status", "Failed")
 		frappe.log_error(title=f"Drive inbox failed for {doc.name}", message=frappe.get_traceback())
@@ -393,45 +398,50 @@ def _subject_folders(parent):
 	return subjects
 
 
-def _library_outline(parent):
-	"""Subject titles under the target, and the subfolders that already exist in each."""
-	if not parent:
-		return [], {}
-	rows = frappe.get_all(
+def _folder_fields():
+	fields = ["name", "title"]
+	if frappe.db.has_column("Drive Folder", "purpose"):
+		fields.append("purpose")
+	return fields
+
+
+def _child_folder_rows(parent):
+	return frappe.get_all(
 		"Drive Folder",
 		filters={"parent_drive_folder": parent, "is_trashed": 0, "is_ai_inbox": 0},
-		fields=["name", "title"],
+		fields=_folder_fields(),
 		order_by="title asc",
 	)
-	subjects = []
-	subfolders = {}
-	for row in rows:
+
+
+def _outline_folders(parent):
+	"""Subject folders under the target, each with its meaning and its child folders."""
+	if not parent:
+		return []
+	folders = []
+	for row in _child_folder_rows(parent):
 		title = (row.title or "").strip()
 		if not title:
 			continue
-		subjects.append(title)
-		children = frappe.get_all(
-			"Drive Folder",
-			filters={"parent_drive_folder": row.name, "is_trashed": 0, "is_ai_inbox": 0},
-			pluck="title",
-			order_by="title asc",
-		)
-		subfolders[title] = [child for child in children if child]
+		children = []
+		for child in _child_folder_rows(row.name):
+			child_title = (child.title or "").strip()
+			if child_title:
+				children.append({"title": child_title, "purpose": child.get("purpose")})
+		folders.append({"title": title, "purpose": row.get("purpose"), "children": children})
+	return folders
+
+
+def _library_outline(parent):
+	"""Subject titles under the target, and the subfolders that already exist in each."""
+	folders = _outline_folders(parent)
+	subjects = [folder["title"] for folder in folders]
+	subfolders = {folder["title"]: [child["title"] for child in folder["children"]] for folder in folders}
 	return subjects, subfolders
 
 
 def _outline_text(parent):
-	subjects, subfolders = _library_outline(parent)
-	if not subjects:
-		return "(none yet)"
-	lines = []
-	for title in subjects:
-		children = subfolders.get(title) or []
-		if children:
-			lines.append(f"{title}: {', '.join(children)}")
-		else:
-			lines.append(title)
-	return "\n".join(lines)
+	return format_outline(_outline_folders(parent))
 
 
 def group_into_existing_subfolders(root):

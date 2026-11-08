@@ -36,7 +36,31 @@ export async function api(method, args = {}) {
   return data.message
 }
 
-export function postFile(fileId, file, onProgress) {
+export async function downloadBlob(method, args, filename) {
+  const response = await fetch(`/api/method/${method}`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Frappe-CSRF-Token': csrfToken(),
+    },
+    body: JSON.stringify(args),
+  })
+  const type = response.headers.get('content-type') || ''
+  if (!response.ok || type.includes('application/json')) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error(errorMessage(data))
+  }
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename || 'download'
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+export function postFile(fileId, file, onProgress, extra = {}) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', '/api/method/mpd_customizations.drive.api.upload.receive_upload')
@@ -44,6 +68,7 @@ export function postFile(fileId, file, onProgress) {
     xhr.setRequestHeader('X-Frappe-CSRF-Token', csrfToken())
     const body = new FormData()
     body.append('file_id', fileId)
+    if (extra.allow_copy) body.append('allow_copy', '1')
     body.append('file', file, file.name)
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) onProgress(event.loaded, event.total)

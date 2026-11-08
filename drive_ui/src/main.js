@@ -15,6 +15,7 @@ const router = createRouter({
     { path: '/recent', name: 'recent', component: () => import('./views/Browser.vue') },
     { path: '/trash', name: 'trash', component: () => import('./views/Browser.vue') },
     { path: '/review', name: 'review', component: () => import('./views/Browser.vue') },
+    { path: '/duplicates', name: 'duplicates', component: () => import('./views/Duplicates.vue') },
   ],
 })
 

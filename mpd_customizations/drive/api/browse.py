@@ -22,14 +22,17 @@ from mpd_customizations.drive.services.files import (
 	trash_file,
 )
 from mpd_customizations.drive.services.folders import (
+	_existing_fields,
 	breadcrumbs,
 	child_folders,
 	create_folder,
 	folder_summary,
+	get_or_create_child,
 	mark_trashed,
 	move_folder,
 	rename_folder,
 )
+from mpd_customizations.drive.services.upload_tree import collect_upload_tree
 from mpd_customizations.drive.services.permissions import level_at_least
 from mpd_customizations.drive.services.sections import group_library
 
@@ -118,7 +121,17 @@ def search(query=None, document_type=None, subject=None, date_from=None, date_to
 				"name": ["in", list(visible)],
 				"title": ["like", like_pattern(term)],
 			},
-			fields=["name", "title", "modified", "is_ai_inbox", "parent_drive_folder"],
+			fields=_existing_fields(
+				[
+					"name",
+					"title",
+					"modified",
+					"is_ai_inbox",
+					"parent_drive_folder",
+					"check_duplicates",
+					"purpose",
+				]
+			),
 			order_by="title asc",
 			limit=50,
 		)
@@ -162,6 +175,26 @@ def list_trash():
 
 
 @frappe.whitelist()
+def ensure_folder_tree(parent, paths):
+	"""Create each directory in `paths`, reusing a child that already has that name."""
+	require_folder(parent, "Edit")
+	if isinstance(paths, str):
+		paths = frappe.parse_json(paths)
+	tree = collect_upload_tree(paths)
+	mapping = {}
+	for folder_path in tree["folders"]:
+		current = parent
+		built = []
+		for segment in folder_path.split("/"):
+			built.append(segment)
+			key = "/".join(built)
+			if key not in mapping:
+				mapping[key] = get_or_create_child(current, segment)
+			current = mapping[key]
+	return {"folders": mapping, "files": tree["files"]}
+
+
+@frappe.whitelist()
 def create_folder_item(title, parent=None):
 	if parent:
 		require_folder(parent, "Edit")
@@ -169,6 +202,20 @@ def create_folder_item(title, parent=None):
 		frappe.throw(frappe._("Only a Drive Admin can create a top-level folder"), frappe.PermissionError)
 	doc = create_folder(title, parent=parent or None)
 	return folder_summary(doc.name)
+
+
+@frappe.whitelist()
+def set_folder_purpose(folder, purpose=""):
+	"""Save a folder meaning. A saved wording is kept when a reorganization rewrites the others."""
+	require_folder(folder, "Edit")
+	if not frappe.db.has_column("Drive Folder", "purpose"):
+		frappe.throw("Folder meanings are not available until the site is migrated.")
+	text = " ".join((purpose or "").split())[:1000]
+	values = {"purpose": text}
+	if frappe.db.has_column("Drive Folder", "purpose_custom"):
+		values["purpose_custom"] = 1 if text else 0
+	frappe.db.set_value("Drive Folder", folder, values)
+	return {"name": folder, "purpose": text, "purpose_custom": 1 if text else 0}
 
 
 @frappe.whitelist()

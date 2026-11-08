@@ -103,6 +103,34 @@ class TestFilingDecision(unittest.TestCase):
 		self.assertIsNone(decision["year"])
 		self.assertEqual(decision["segments"], ["Invoices"])
 
+	def test_subject_is_not_repeated_as_its_own_subfolder(self):
+		decision = decide_inbox(
+			{
+				"subject": "Statutory Documents",
+				"subfolder": "Statutory Documents",
+				"title": "Factory Licence",
+				"confidence": 0.9,
+			},
+			["Statutory Documents"],
+			threshold=0.75,
+			year_style="Financial Year",
+			today=date(2026, 11, 6),
+			subfolders_by_subject={"Statutory Documents": []},
+		)
+		self.assertEqual(decision["segments"], ["Statutory Documents"])
+		self.assertIsNone(decision["subfolder"])
+
+	def test_a_different_subfolder_is_kept(self):
+		decision = decide_inbox(
+			{"subject": "Blueprints", "subfolder": "Boiler House", "confidence": 0.9},
+			["Blueprints"],
+			threshold=0.75,
+			year_style="Financial Year",
+			today=date(2026, 11, 6),
+			subfolders_by_subject={"Blueprints": ["Boiler House"]},
+		)
+		self.assertEqual(decision["segments"], ["Blueprints", "Boiler House"])
+
 	def test_year_folder_is_omitted_unless_requested(self):
 		decision = decide_inbox(
 			{

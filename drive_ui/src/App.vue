@@ -1,17 +1,33 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { api } from './api.js'
 
 const route = useRoute()
 const router = useRouter()
 const searchText = ref(route.query.q || '')
 
+const duplicateCount = ref(0)
+
 const links = [
   { name: 'home', label: 'My Drive', path: '/' },
   { name: 'recent', label: 'Recent', path: '/recent' },
   { name: 'review', label: 'Needs Review', path: '/review' },
+  { name: 'duplicates', label: 'Duplicates', path: '/duplicates' },
   { name: 'trash', label: 'Trash', path: '/trash' },
 ]
+
+async function loadDuplicateCount() {
+  try {
+    const result = await api('mpd_customizations.drive.api.duplicates.list_duplicates')
+    duplicateCount.value = result.count || 0
+  } catch {
+    duplicateCount.value = 0
+  }
+}
+
+onMounted(loadDuplicateCount)
+watch(() => route.fullPath, loadDuplicateCount)
 
 watch(
   () => route.query.q,
@@ -55,6 +71,7 @@ const embedded = new URLSearchParams(window.location.search).get('embed') === '1
           @click="router.push(link.path)"
         >
           {{ link.label }}
+          <span v-if="link.name === 'duplicates' && duplicateCount" class="ml-1 text-xs">{{ duplicateCount }}</span>
         </button>
       </nav>
       <div v-if="!embedded" class="mt-auto flex flex-col gap-1 border-t border-[#e0e0e0] px-3 py-3">
