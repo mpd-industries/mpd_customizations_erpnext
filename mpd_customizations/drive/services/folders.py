@@ -26,6 +26,14 @@ def breadcrumbs(folder_name):
 	return crumbs
 
 
+def _existing_fields(fields):
+	optional = ("check_duplicates", "purpose", "purpose_custom")
+	missing = [field for field in optional if field in fields and not frappe.db.has_column("Drive Folder", field)]
+	if not missing:
+		return fields
+	return [field for field in fields if field not in missing]
+
+
 def child_folders(folder_name=None, include_trashed=False):
 	filters = {}
 	if folder_name:
@@ -37,17 +45,22 @@ def child_folders(folder_name=None, include_trashed=False):
 	rows = frappe.get_all(
 		"Drive Folder",
 		filters=filters,
-		fields=[
-			"name",
-			"title",
-			"owner",
-			"modified",
-			"is_ai_inbox",
-			"inbox_kind",
-			"organise_into",
-			"inherit_permissions",
-			"parent_drive_folder",
-		],
+		fields=_existing_fields(
+			[
+				"name",
+				"title",
+				"owner",
+				"modified",
+				"is_ai_inbox",
+				"inbox_kind",
+				"organise_into",
+				"inherit_permissions",
+				"parent_drive_folder",
+				"check_duplicates",
+				"purpose",
+				"purpose_custom",
+			]
+		),
 		order_by="title asc",
 	)
 	return rows
@@ -137,18 +150,23 @@ def folder_summary(name, user=None):
 	row = frappe.db.get_value(
 		"Drive Folder",
 		name,
-		[
-			"name",
-			"title",
-			"owner",
-			"modified",
-			"is_ai_inbox",
-			"inbox_kind",
-			"organise_into",
-			"inherit_permissions",
-			"parent_drive_folder",
-			"is_trashed",
-		],
+		_existing_fields(
+			[
+				"name",
+				"title",
+				"owner",
+				"modified",
+				"is_ai_inbox",
+				"inbox_kind",
+				"organise_into",
+				"inherit_permissions",
+				"parent_drive_folder",
+				"is_trashed",
+				"check_duplicates",
+				"purpose",
+				"purpose_custom",
+			]
+		),
 		as_dict=True,
 	)
 	if not row:

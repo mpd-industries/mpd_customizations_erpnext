@@ -116,6 +116,20 @@ class DriveStorage:
 		response = self.client.get_object(Bucket=self.bucket, Key=key)
 		return response["Body"].read()
 
+	def sha256(self, key):
+		"""Hash an object without loading it all into memory."""
+		import hashlib
+
+		response = self.client.get_object(Bucket=self.bucket, Key=key)
+		body = response["Body"]
+		digest = hashlib.sha256()
+		while True:
+			chunk = body.read(1024 * 1024)
+			if not chunk:
+				break
+			digest.update(chunk)
+		return digest.hexdigest()
+
 
 def get_storage():
 	"""Build a DriveStorage from the existing S3 File Attachment settings."""

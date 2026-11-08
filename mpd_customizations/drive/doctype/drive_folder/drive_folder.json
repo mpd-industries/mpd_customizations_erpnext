@@ -6,8 +6,11 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "purpose",
+  "purpose_custom",
   "parent_drive_folder",
   "inherit_permissions",
+  "check_duplicates",
   "is_trashed",
   "trashed_on",
   "column_break_inbox",
@@ -26,6 +29,19 @@
    "reqd": 1
   },
   {
+   "description": "What belongs in this folder. The filing model reads it and writes it after files land here, unless you save your own wording.",
+   "fieldname": "purpose",
+   "fieldtype": "Small Text",
+   "label": "Meaning"
+  },
+  {
+   "default": "0",
+   "fieldname": "purpose_custom",
+   "fieldtype": "Check",
+   "label": "Meaning Written by User",
+   "read_only": 1
+  },
+  {
    "fieldname": "parent_drive_folder",
    "fieldtype": "Link",
    "label": "Parent Folder",
@@ -36,6 +52,13 @@
    "fieldname": "inherit_permissions",
    "fieldtype": "Check",
    "label": "Inherit Permissions"
+  },
+  {
+   "default": "0",
+   "description": "When on, files in this folder and the folders inside it are compared by content hash.",
+   "fieldname": "check_duplicates",
+   "fieldtype": "Check",
+   "label": "Check Duplicates"
   },
   {
    "default": "0",

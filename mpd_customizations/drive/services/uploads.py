@@ -56,16 +56,29 @@ def begin_upload(folder, file_name, size, mime_type):
 	return {"file_id": doc.name, "mode": "multipart", "key": key, "upload_id": upload_id, "parts": parts}
 
 
-def store_bytes(file_id, data, content_type=None):
-	"""Write the file from this server, so the browser does not need S3 CORS."""
+def store_bytes(file_id, data, content_type=None, allow_copy=False):
+	"""Write the file from this server, so the browser does not need S3 CORS.
+
+	When the same bytes are already in a folder the user can see, the pending
+	row is removed and nothing is stored, unless the user allowed the copy.
+	"""
+	from mpd_customizations.drive.services.hashing import find_visible_duplicate, sha256_bytes
+
 	doc = frappe.get_doc("Drive File", file_id)
 	if doc.status == "Uploaded":
 		return doc
+	digest = sha256_bytes(data)
+	if not allow_copy:
+		existing = find_visible_duplicate(digest, exclude=file_id, folder=doc.folder)
+		if existing:
+			delete_file_record(file_id)
+			return {"duplicate": existing}
 	get_storage().put_bytes(doc.s3_key, data, content_type or doc.mime_type)
-	return finish_upload(file_id)
+	doc = finish_upload(file_id, content_hash=digest, duplicate_ok=1 if allow_copy else 0)
+	return doc
 
 
-def finish_upload(file_id, parts=None):
+def finish_upload(file_id, parts=None, content_hash=None, duplicate_ok=0):
 	doc = frappe.get_doc("Drive File", file_id)
 	if doc.status == "Uploaded":
 		return doc
@@ -79,6 +92,19 @@ def finish_upload(file_id, parts=None):
 	if doc.size and remote_size and abs(remote_size - int(doc.size)) > 1:
 		frappe.throw(frappe._("Uploaded size does not match the file that was requested"))
 	doc = confirm_file(file_id, size=remote_size or doc.size)
+	if content_hash:
+		frappe.db.set_value(
+			"Drive File",
+			doc.name,
+			{"content_hash": content_hash, "duplicate_ok": 1 if duplicate_ok else 0},
+		)
+	else:
+		frappe.enqueue(
+			"mpd_customizations.drive.services.hashing.hash_uploaded_file",
+			queue="long",
+			file_name=doc.name,
+			enqueue_after_commit=True,
+		)
 	_maybe_enqueue_inbox(doc)
 	return doc
 

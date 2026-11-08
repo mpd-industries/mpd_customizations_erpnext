@@ -1,6 +1,11 @@
 import frappe
 
-from mpd_customizations.drive.ai.inbox import file_from_review, process_inbox_file, reorganize_folder
+from mpd_customizations.drive.ai.inbox import file_from_review, process_inbox_file
+from mpd_customizations.drive.ai.runs import apply_reorganize as apply_run
+from mpd_customizations.drive.ai.runs import cancel_reorganize as cancel_run
+from mpd_customizations.drive.ai.runs import get_reorganize_run as load_run
+from mpd_customizations.drive.ai.runs import revise_reorganize as revise_run
+from mpd_customizations.drive.ai.runs import start_reorganize as begin_run
 from mpd_customizations.drive.services.access import require_folder
 
 
@@ -22,9 +27,33 @@ def accept_filing(file_id, title=None, subject=None, year=None, subfolder=None, 
 
 @frappe.whitelist()
 def reorganize(folder):
-	"""File this folder from each file's AI overview. Files with no overview stay put."""
-	require_folder(folder, "Edit")
-	return reorganize_folder(folder)
+	"""File this folder from each file's AI overview, without a preview."""
+	return begin_run(folder, preview=0)
+
+
+@frappe.whitelist()
+def start_reorganize(folder, instruction=None, input_mode="Full JSON", preview=1):
+	return begin_run(folder, instruction=instruction, input_mode=input_mode, preview=preview)
+
+
+@frappe.whitelist()
+def get_reorganize_run(run):
+	return load_run(run)
+
+
+@frappe.whitelist()
+def apply_reorganize(run, item_names):
+	return apply_run(run, item_names)
+
+
+@frappe.whitelist()
+def revise_reorganize(run, followup):
+	return revise_run(run, followup)
+
+
+@frappe.whitelist()
+def cancel_reorganize(run):
+	return cancel_run(run)
 
 
 @frappe.whitelist()

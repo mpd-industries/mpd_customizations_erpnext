@@ -19,6 +19,7 @@ def after_migrate():
 	_ensure_routes()
 	_ensure_folders()
 	_sync_classify_prompt()
+	_ensure_purpose_task()
 	frappe.db.commit()
 
 
@@ -35,6 +36,44 @@ def _sync_classify_prompt():
 		return
 	doc.system_prompt = INBOX_CLASSIFY_PROMPT
 	doc.save(ignore_permissions=True)
+
+
+def _ensure_purpose_task():
+	"""Create the folder-meaning task from the filing task, and keep its prompt current."""
+	if not frappe.db.exists("DocType", "AI Task Config"):
+		return
+	from mpd_customizations.drive.ai.prompts import FOLDER_PURPOSE_PROMPT
+
+	name = frappe.db.get_value("AI Task Config", {"task_key": "drive_folder_purpose"}, "name")
+	if name:
+		doc = frappe.get_doc("AI Task Config", name)
+		if doc.system_prompt != FOLDER_PURPOSE_PROMPT:
+			doc.system_prompt = FOLDER_PURPOSE_PROMPT
+			doc.save(ignore_permissions=True)
+		return
+	source = frappe.db.get_value(
+		"AI Task Config",
+		{"task_key": "drive_inbox_classify"},
+		["llm_provider", "model"],
+		as_dict=True,
+	)
+	if not source:
+		return
+	frappe.get_doc(
+		{
+			"doctype": "AI Task Config",
+			"name": "drive_folder_purpose",
+			"task_key": "drive_folder_purpose",
+			"task_label": "Drive Folder Meaning",
+			"description": "Writes what belongs in a Drive folder after files are filed there.",
+			"llm_provider": source.llm_provider,
+			"model": source.model,
+			"temperature": 0.1,
+			"max_tokens": 400,
+			"system_prompt": FOLDER_PURPOSE_PROMPT,
+			"is_active": 1,
+		}
+	).insert(ignore_permissions=True)
 
 
 def _ensure_roles():

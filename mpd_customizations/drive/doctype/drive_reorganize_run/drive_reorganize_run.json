@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-11-06 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "folder",
+  "target_folder",
+  "inbox",
+  "instruction",
+  "followups",
+  "revision",
+  "input_mode",
+  "preview",
+  "status",
+  "total_count",
+  "done_count",
+  "items"
+ ],
+ "fields": [
+  {
+   "fieldname": "folder",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Folder",
+   "options": "Drive Folder",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_folder",
+   "fieldtype": "Link",
+   "label": "Target Folder",
+   "options": "Drive Folder"
+  },
+  {
+   "fieldname": "inbox",
+   "fieldtype": "Link",
+   "label": "AI Input",
+   "options": "Drive Folder"
+  },
+  {
+   "fieldname": "instruction",
+   "fieldtype": "Text",
+   "label": "Instruction"
+  },
+  {
+   "fieldname": "followups",
+   "fieldtype": "Long Text",
+   "label": "Follow-ups"
+  },
+  {
+   "default": "1",
+   "fieldname": "revision",
+   "fieldtype": "Int",
+   "label": "Revision"
+  },
+  {
+   "default": "Full JSON",
+   "fieldname": "input_mode",
+   "fieldtype": "Select",
+   "label": "Input Mode",
+   "options": "Full JSON\nName only"
+  },
+  {
+   "default": "1",
+   "fieldname": "preview",
+   "fieldtype": "Check",
+   "label": "Preview"
+  },
+  {
+   "default": "Queued",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Queued\nRunning\nReady\nApplied\nCancelled\nFailed"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_count",
+   "fieldtype": "Int",
+   "label": "Total"
+  },
+  {
+   "default": "0",
+   "fieldname": "done_count",
+   "fieldtype": "Int",
+   "label": "Done"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Drive Reorganize Item"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-06 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Drive",
+ "name": "Drive Reorganize Run",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "Drive Admin",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
