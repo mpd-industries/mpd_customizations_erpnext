@@ -24,17 +24,131 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tif", ".tiff", "
 
 def process_inbox_file(file_name):
 	doc = frappe.get_doc("Drive File", file_name)
-	folder = frappe.get_doc("Drive Folder", doc.folder)
-	if not folder.is_ai_inbox or not folder.organise_into:
+	inbox = inbox_for_folder(doc.folder)
+	if not inbox or not inbox.organise_into:
 		frappe.db.set_value("Drive File", doc.name, "ai_status", "Skipped")
 		return
 
-	handler = resolve_inbox_handler(folder.inbox_kind)
+	handler = resolve_inbox_handler(inbox.inbox_kind)
 	if handler:
 		handler(file_name)
 		return
 
-	_classify_and_file(doc, folder)
+	_classify_and_file(doc, inbox)
+
+
+def inbox_for_folder(folder_name):
+	"""Return the AI Input this folder is, or sits under at any depth."""
+	current = folder_name
+	seen = set()
+	while current and current not in seen:
+		seen.add(current)
+		row = frappe.db.get_value(
+			"Drive Folder",
+			current,
+			["name", "title", "is_ai_inbox", "organise_into", "inbox_kind", "is_trashed", "parent_drive_folder"],
+			as_dict=True,
+		)
+		if not row or row.is_trashed:
+			return None
+		if row.is_ai_inbox:
+			return row
+		current = row.parent_drive_folder
+	return None
+
+
+def queue_inbox_file(file_name):
+	"""Queue an uploaded file for filing when it is inside an AI Input."""
+	row = frappe.db.get_value(
+		"Drive File",
+		file_name,
+		["folder", "status", "is_trashed", "ai_status"],
+		as_dict=True,
+	)
+	if not row or row.is_trashed or row.status != "Uploaded":
+		return False
+	if row.ai_status in ("Queued", "Processing"):
+		return False
+	if not inbox_for_folder(row.folder):
+		return False
+	frappe.db.set_value("Drive File", file_name, "ai_status", "Queued")
+	frappe.enqueue(
+		process_inbox_file,
+		queue="long",
+		file_name=file_name,
+		enqueue_after_commit=True,
+	)
+	return True
+
+
+def inbox_before_move(kind, name):
+	"""Map each file that a move will carry to the AI Input it is in now."""
+	if kind == "folder":
+		files = frappe.get_all(
+			"Drive File",
+			filters={"folder": ["in", _subtree(name)], "is_trashed": 0, "status": "Uploaded"},
+			fields=["name", "folder"],
+		)
+	else:
+		files = frappe.get_all("Drive File", filters={"name": name}, fields=["name", "folder"])
+	return _inbox_by_file(files)
+
+
+def queue_files_entering_inbox(before):
+	"""Queue the moved files that now sit in a different AI Input than before."""
+	if not before:
+		return 0
+	files = frappe.get_all("Drive File", filters={"name": ["in", list(before)]}, fields=["name", "folder"])
+	after = _inbox_by_file(files)
+	queued = 0
+	for file_name, inbox_name in after.items():
+		if inbox_name and inbox_name != before.get(file_name) and queue_inbox_file(file_name):
+			queued += 1
+	return queued
+
+
+def _inbox_by_file(files):
+	by_folder = {}
+	result = {}
+	for row in files:
+		if row.folder not in by_folder:
+			inbox = inbox_for_folder(row.folder)
+			by_folder[row.folder] = inbox.name if inbox else None
+		result[row.name] = by_folder[row.folder]
+	return result
+
+
+def _subtree(root):
+	found = [root]
+	frontier = [root]
+	while frontier:
+		children = frappe.get_all(
+			"Drive Folder",
+			filters={"parent_drive_folder": ["in", frontier], "is_trashed": 0},
+			pluck="name",
+		)
+		frontier = [child for child in children if child not in found]
+		found.extend(frontier)
+	return found
+
+
+def _path_inside_inbox(folder_name, inbox):
+	"""Titles of the subfolders between the AI Input and this folder, like "Scans/Boiler House"."""
+	if not inbox or not inbox.get("is_ai_inbox"):
+		return ""
+	titles = []
+	current = folder_name
+	seen = set()
+	while current and current not in seen and current != inbox.name:
+		seen.add(current)
+		row = frappe.db.get_value("Drive Folder", current, ["title", "parent_drive_folder"], as_dict=True)
+		if not row:
+			return ""
+		titles.append(row.title or "")
+		current = row.parent_drive_folder
+	if current != inbox.name:
+		return ""
+	return "/".join(reversed([title for title in titles if title]))
 
 
 def reorganize_folder(folder_name):
@@ -92,7 +206,8 @@ def reorganize_file(file_name, inbox_name=None, target_folder=None):
 		inbox = frappe.get_doc("Drive Folder", inbox_name)
 		if inbox.is_ai_inbox and inbox.organise_into:
 			handler = resolve_inbox_handler(inbox.inbox_kind)
-			if handler and doc.folder == inbox.name:
+			current_inbox = inbox_for_folder(doc.folder)
+			if handler and current_inbox and current_inbox.name == inbox.name:
 				handler(file_name)
 				return
 			_classify_and_file(doc, inbox, from_overview=True)
@@ -171,11 +286,11 @@ def resolve_inbox_handler(kind):
 def file_from_review(file_name, title=None, subject=None, year=None, subfolder=None, use_year=None):
 	"""Accept or edit a Needs Review suggestion and file the document."""
 	doc = frappe.get_doc("Drive File", file_name)
-	folder = frappe.get_doc("Drive Folder", doc.folder)
-	if not folder.organise_into and doc.ai_status == "Filed":
+	current_inbox = inbox_for_folder(doc.folder)
+	if not current_inbox and doc.ai_status == "Filed":
 		# Already filed; the current folder is the destination, so stop.
 		return doc
-	inbox_name = folder.name if folder.is_ai_inbox else resolve_inbox(folder.name)
+	inbox_name = current_inbox.name if current_inbox else resolve_inbox(doc.folder)
 	target = frappe.db.get_value("Drive Folder", inbox_name, "organise_into") if inbox_name else None
 	if not target:
 		target = doc.folder
@@ -298,9 +413,9 @@ def _classify(doc, folder):
 			filename_only = True
 	config, _params = get_task_config("drive_inbox_classify")
 	outline = _outline_text(folder.organise_into)
-	user_prompt = (
-		f"File name: {doc.original_filename or doc.title}\nExisting folders:\n{outline}\n"
-	)
+	user_prompt = f"File name: {doc.original_filename or doc.title}\n"
+	user_prompt += _location_line(doc, folder)
+	user_prompt += f"Existing folders:\n{outline}\n"
 	if text:
 		user_prompt += f"\nDocument text:\n{text[:20000]}"
 	if filename_only:
@@ -329,6 +444,7 @@ def _classify_overview(doc, folder):
 	outline = _outline_text(folder.organise_into)
 	user_prompt = (
 		f"File name: {doc.original_filename or doc.title}\n"
+		f"{_location_line(doc, folder)}"
 		f"Existing folders:\n{outline}\n\n"
 		f"AI overview:\n{overview}\n"
 	)
@@ -340,6 +456,11 @@ def _classify_overview(doc, folder):
 		reference_name=doc.name,
 	)
 	return result if isinstance(result, dict) else {}
+
+
+def _location_line(doc, inbox):
+	path = _path_inside_inbox(doc.folder, inbox)
+	return f"Dropped into the AI Input under: {path}\n" if path else ""
 
 
 def _with_overview(file_names):

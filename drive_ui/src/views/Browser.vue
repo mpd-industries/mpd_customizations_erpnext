@@ -114,6 +114,16 @@ function onItemClick(event, item) {
   details.value = item
 }
 
+function onKeydown(event) {
+  if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'a') return
+  const target = event.target
+  if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName)) return
+  if (menu.value || Object.values(dialogs).some(Boolean)) return
+  event.preventDefault()
+  selected.value = items.value.map((row) => row.name)
+  if (!lastSelected.value && items.value.length) lastSelected.value = items.value[0].name
+}
+
 function canEditItem(item) {
   return ['Edit', 'Manage'].includes(item.level || listing.value.level)
 }
@@ -547,6 +557,18 @@ async function onItemDrop(event, item) {
   await acceptExternalDrop(event.dataTransfer, item.name)
 }
 
+function onCrumbDragOver(event, crumb) {
+  onItemDragOver(event, { ...crumb, kind: 'folder' })
+}
+
+function onCrumbDragLeave(crumb) {
+  if (dropTarget.value === crumb.name) dropTarget.value = null
+}
+
+function onCrumbDrop(event, crumb) {
+  return onItemDrop(event, { ...crumb, kind: 'folder' })
+}
+
 async function showDetails(item) {
   details.value = item
   purposeDraft.value = item.purpose || ''
@@ -846,9 +868,13 @@ function formatSize(size) {
   return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
-onMounted(() => document.addEventListener('click', closeMenu))
+onMounted(() => {
+  document.addEventListener('click', closeMenu)
+  document.addEventListener('keydown', onKeydown)
+})
 onUnmounted(() => {
   document.removeEventListener('click', closeMenu)
+  document.removeEventListener('keydown', onKeydown)
   window.clearTimeout(reorgTimer)
 })
 </script>
@@ -907,9 +933,20 @@ onUnmounted(() => {
           <span class="shrink-0 text-[#5f6368]">/</span>
           <span class="truncate">Results for “{{ searchQuery }}”</span>
         </template>
-        <template v-for="crumb in listing.breadcrumbs || []" :key="crumb.name">
+        <template v-for="(crumb, index) in listing.breadcrumbs || []" :key="crumb.name">
           <span class="shrink-0 text-[#5f6368]">/</span>
-          <button class="truncate hover:underline" @click="router.push(`/folder/${crumb.name}`)">{{ crumb.title }}</button>
+          <button
+            v-if="index < listing.breadcrumbs.length - 1"
+            class="truncate rounded px-1 hover:underline"
+            :class="dropTarget === crumb.name ? 'bg-[#e8f0fe] text-[#1a73e8] ring-1 ring-[#1a73e8]' : ''"
+            @click="router.push(`/folder/${crumb.name}`)"
+            @dragover="onCrumbDragOver($event, crumb)"
+            @dragleave="onCrumbDragLeave(crumb)"
+            @drop="onCrumbDrop($event, crumb)"
+          >
+            {{ crumb.title }}
+          </button>
+          <span v-else class="truncate px-1">{{ crumb.title }}</span>
         </template>
       </nav>
       <select v-model="sortKey" class="rounded border border-gray-300 px-2 py-1 text-sm">

@@ -10,6 +10,7 @@ from mpd_customizations.drive.ai.inbox import (
 	_outline_text,
 	_settings,
 	_store_ai_fields,
+	inbox_for_folder,
 	resolve_inbox,
 	resolve_inbox_handler,
 )
@@ -141,15 +142,14 @@ def _seed_items(run):
 
 
 def _compliance_file(folder_name):
-	row = frappe.db.get_value(
-		"Drive Folder",
-		folder_name,
-		["is_ai_inbox", "inbox_kind"],
-		as_dict=True,
-	)
-	if not row or not row.is_ai_inbox:
-		return False
-	return bool(resolve_inbox_handler(row.inbox_kind))
+	return bool(_inbox_handler(folder_name))
+
+
+def _inbox_handler(folder_name):
+	inbox = inbox_for_folder(folder_name)
+	if not inbox:
+		return None
+	return resolve_inbox_handler(inbox.inbox_kind)
 
 
 def _propose_items(run):
@@ -185,12 +185,11 @@ def _propose_items(run):
 
 def _propose_one(run, item, config, outline, followups):
 	doc = frappe.get_doc("Drive File", item.file)
-	if not run.preview and _compliance_file(doc.folder):
-		handler = resolve_inbox_handler(frappe.db.get_value("Drive Folder", doc.folder, "inbox_kind"))
-		if handler:
-			handler(doc.name)
-			item.status = "Applied"
-			return
+	handler = None if run.preview else _inbox_handler(doc.folder)
+	if handler:
+		handler(doc.name)
+		item.status = "Applied"
+		return
 	fields = {key: doc.get(key) for key in (
 		"title",
 		"original_filename",

@@ -33,6 +33,10 @@ def _refresh_one(name):
 	row = frappe.db.get_value("Drive Folder", name, fields, as_dict=True)
 	if not row or row.is_trashed or row.is_ai_inbox:
 		return False
+	from mpd_customizations.drive.ai.inbox import inbox_for_folder
+
+	if inbox_for_folder(name):
+		return False
 	custom = bool(row.get("purpose_custom")) and (row.purpose or "").strip()
 	if custom:
 		return False

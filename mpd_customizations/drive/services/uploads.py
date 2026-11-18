@@ -130,18 +130,6 @@ def download_url(file_id, inline=False):
 
 
 def _maybe_enqueue_inbox(doc):
-	folder = frappe.db.get_value(
-		"Drive Folder",
-		doc.folder,
-		["is_ai_inbox", "is_trashed"],
-		as_dict=True,
-	)
-	if not folder or not folder.is_ai_inbox or folder.is_trashed:
-		return
-	frappe.db.set_value("Drive File", doc.name, "ai_status", "Queued")
-	frappe.enqueue(
-		"mpd_customizations.drive.ai.inbox.process_inbox_file",
-		queue="long",
-		file_name=doc.name,
-		enqueue_after_commit=True,
-	)
+	from mpd_customizations.drive.ai.inbox import queue_inbox_file
+
+	queue_inbox_file(doc.name)

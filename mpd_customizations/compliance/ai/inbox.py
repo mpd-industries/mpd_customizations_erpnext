@@ -8,7 +8,7 @@ from mpd_customizations.compliance.ai.prompts import EVIDENCE_EXTRACT_PROMPT
 from mpd_customizations.compliance.services.generate import ensure_expiry_activity
 from mpd_customizations.compliance.services.matching import is_licence, plan_licence, select_target
 from mpd_customizations.drive.ai.filing import year_label
-from mpd_customizations.drive.ai.inbox import _read_for_model
+from mpd_customizations.drive.ai.inbox import _read_for_model, inbox_for_folder
 from mpd_customizations.drive.services.files import move_file, rename_file
 from mpd_customizations.drive.services.folders import ensure_path
 from mpd_customizations.mpd_base.ai.llm import call_llm
@@ -17,8 +17,8 @@ from mpd_customizations.mpd_base.ai.task_config import get_task_config
 
 def process_compliance_inbox(file_name):
 	doc = frappe.get_doc("Drive File", file_name)
-	folder = frappe.get_doc("Drive Folder", doc.folder)
-	if not folder.organise_into:
+	folder = inbox_for_folder(doc.folder)
+	if not folder or not folder.organise_into:
 		frappe.db.set_value("Drive File", file_name, "ai_status", "Skipped")
 		return
 	frappe.db.set_value("Drive File", file_name, "ai_status", "Processing")

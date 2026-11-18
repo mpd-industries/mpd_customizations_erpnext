@@ -2,6 +2,7 @@
 
 import frappe
 
+from mpd_customizations.drive.ai.inbox import inbox_before_move, queue_files_entering_inbox
 from mpd_customizations.drive.services.access import (
 	folders_visible_to,
 	is_drive_admin,
@@ -257,11 +258,13 @@ def rename(kind, name, title):
 def move(kind, name, folder):
 	_require_item(kind, name, "Edit")
 	require_folder(folder, "Edit")
+	before = inbox_before_move(kind, name)
 	if kind == "folder":
 		move_folder(name, folder)
 	else:
 		move_file(name, folder)
-	return {"name": name, "folder": folder}
+	queued = queue_files_entering_inbox(before)
+	return {"name": name, "folder": folder, "queued": queued}
 
 
 @frappe.whitelist()
