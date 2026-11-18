@@ -14,7 +14,7 @@ after_migrate = "mpd_customizations.setup.after_migrate"
 
 # mpd_base
 # --------
-# Item master customizations and the S3-backed File override.
+# Item master customizations. S3 file reading lives in frappe_s3_attachment.
 
 doctype_js = {
 	"Item": "public/js/item_custom.js",
@@ -25,10 +25,6 @@ doc_events = {
 		"before_save": "mpd_customizations.mpd_base.item_ai.item_hooks.before_save",
 		"on_trash": "mpd_customizations.mpd_base.item_ai.item_hooks.on_trash",
 	},
-}
-
-override_doctype_class = {
-	"File": "mpd_customizations.mpd_base.files.file_override.CustomFile",
 }
 
 # costing

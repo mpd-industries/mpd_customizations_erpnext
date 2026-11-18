@@ -42,7 +42,7 @@ def _read_file_as_base64(file_url: str) -> tuple[str, str]:
 	Given a Frappe file URL, returns (base64_data_url, filename).
 	Handles three cases:
 	  - /private/files/... or /files/...  → read from local filesystem
-	  - /api/method/frappe_s3_attachment... → fetch via HTTP (S3 presigned redirect)
+	  - /api/method/frappe_s3_attachment... → read the S3 object
 	  - Anything else                       → try as an absolute filesystem path
 
 	Image files (jpg, png, etc.) are automatically converted to single-page PDFs
@@ -84,22 +84,14 @@ def _read_file_as_base64(file_url: str) -> tuple[str, str]:
 def _fetch_api_file(file_url: str) -> bytes:
 	"""
 	Download a file stored in S3 via frappe_s3_attachment.
-	Parses the S3 key from the URL and fetches the object directly using
-	S3Operations — no HTTP round-trip needed.
+	Parses the S3 key from the URL and fetches the object directly.
 	"""
-	import urllib.parse
+	from frappe_s3_attachment.files import key_from_url, read_s3_bytes
 
-	from frappe_s3_attachment.controller import S3Operations
-
-	parsed = urllib.parse.urlparse(file_url)
-	qs = urllib.parse.parse_qs(parsed.query)
-	key = qs.get("key", [None])[0]
+	key = key_from_url(file_url)
 	if not key:
 		raise ValueError(f"No 'key' parameter found in S3 file URL: {file_url}")
-
-	s3 = S3Operations()
-	response = s3.read_file_from_s3(key)
-	return response["Body"].read()
+	return read_s3_bytes(key)
 
 
 def _split_pdf(pdf_bytes: bytes, pages: list[int]) -> bytes:

@@ -430,19 +430,13 @@ def _openrouter_headers(api_base, model):
 
 
 def _get_audio_bytes(file_url):
-	import urllib.parse
-
 	if "generate_file" in file_url or "frappe_s3_attachment" in file_url:
-		from frappe_s3_attachment.controller import S3Operations
+		from frappe_s3_attachment.files import key_from_url, read_s3_bytes
 
-		params = urllib.parse.parse_qs(urllib.parse.urlparse(file_url).query)
-		s3_key = params.get("key", [None])[0]
+		s3_key = key_from_url(file_url)
 		if not s3_key:
 			frappe.throw(f"Cannot parse S3 key from audio URL: {file_url}")
-		s3 = S3Operations()
-		settings = frappe.get_doc("S3 File Attachment")
-		obj = s3.S3_CLIENT.get_object(Bucket=settings.bucket_name, Key=s3_key)
-		return obj["Body"].read(), s3_key.split("/")[-1]
+		return read_s3_bytes(s3_key), s3_key.split("/")[-1]
 
 	file_path = frappe.get_site_path(file_url.lstrip("/"))
 	with open(file_path, "rb") as f:
